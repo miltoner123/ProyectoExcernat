@@ -44,5 +44,14 @@ class DatabaseSeeder extends Seeder
             'categoria_id' => 1,
             'activo' => true
         ]);
+        for ($i = 1; $i <= 20; $i++) {
+            Producto::create([
+                'nombre' => 'Producto ' . $i,
+                'descripcion' => 'Descripción del producto ' . $i,
+                'imagen' => null,
+                'categoria_id' => rand(1, 3),
+                'activo' => true
+            ]);
+        }
     }
 }

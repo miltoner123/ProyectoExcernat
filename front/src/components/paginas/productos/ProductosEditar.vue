@@ -3,9 +3,9 @@
         <h1>Productos</h1>
 
     </div>
-    <p>Formulario para crear productos</p>
+    <p>Formulario para editar productos</p>
 
-    <form @submit.prevent="crearProducto">
+    <form @submit.prevent="ProductoEditar">
         <div>
             <label for="nombre">Nombre:</label>
             <input type="text" id="nombre" v-model="producto.nombre" required>
@@ -16,7 +16,7 @@
         </div>
         <div>
             <label for="imagen">Imagen:</label>
-            <input type="file" id="imagen" @change="handleFileUpload" required accept="image/*">
+            <input type="file" id="imagen" @change="handleFileUpload" accept="image/*">
         </div>
         <!-- <div>
             <label for="activo">Activo:</label>
@@ -31,29 +31,15 @@
                 </option>
             </select>
         </div>
-        <button type="submit">Crear Producto</button>
+        <button type="submit">Editar Producto</button>
 
     </form>
-<h2>
-    Crear Categoria
-</h2>
-    <form @submit.prevent="crearCategoria">
-        <div>
-            <label for="nombre">Nombre de la categoria:</label>
-            <input type="text" id="nombre" v-model="categoria.nombre" required>
-        </div>
-        <div>
-            <label for="descripcion">Descripción:</label>
-            <textarea id="descripcion" v-model="categoria.descripcion" required></textarea>
-        </div>
-        <button type="submit">Crear Categoria</button>
-    </form>
-
+<pre>{{ categorias}} hola </pre>
 </template>
 <script>
 import axios from 'axios';
 export default {
-    name : 'Productoscreate',
+    name : 'Productoseditar',
     data() {
         return {
             producto: {
@@ -63,27 +49,22 @@ export default {
                 activo: true,
                 categoria_producto_id: ''
         },
-        categorias: [],
-        categoria: {
-            nombre: '',
-            descripcion: ''
-        }   
+        categorias: []
         };
     },
     mounted() {
         this.categoriasGet();
+        this.productoGet();
     },
     methods:{
-        crearCategoria() {
-            axios.post('http://localhost:8000/api/categorias', this.categoria)
+        productoGet() {
+            const productoId = this.$route.params.id;
+            axios.get(`http://localhost:8000/api/productos/${productoId}`)
                 .then(response => {
-                    console.log('Categoria creada:', response.data);
-                    this.categoria.nombre = '';
-                    this.categoria.descripcion = '';    
-                    this.categoriasGet(); // Actualizar la lista de categorías después de crear una nueva
+                    this.producto = response.data;
                 })
                 .catch(error => {
-                    console.error('Error al crear la categoría:', error);
+                    console.error(error);
                 });
         },
         handleFileUpload(event) {
@@ -99,20 +80,27 @@ export default {
                     console.error(error);
                 });
         },
-        crearProducto(){
+        ProductoEditar(){
             const formData = new FormData();
-            for (const key in this.producto) {
-                formData.append(key, this.producto[key]);
-            }
+            formData.append('nombre', this.producto.nombre);
+            formData.append('descripcion', this.producto.descripcion);
+            formData.append('categoria_id', this.producto.categoria_id);
+            formData.append('activo', this.producto.activo);
             formData.append('imagen', this.producto.imagen);
-            axios.post('http://localhost:8000/api/productos', formData)
-                .then(response => {
-                    console.log(response.data);
-                    this.$router.push('/productos');
-                })
-                .catch(error => {
-                    console.error(error);
-                });
+
+            axios.post(`http://localhost:8000/api/productos/${this.$route.params.id}`, formData,{
+                headers: {
+                    'Content-Type': 'multipart/form-data'   
+                },
+            })
+            .then((response) => {
+                console.log('Producto editado:', response.data);
+                this.$router.push('/productos');
+            })
+            .catch((error) => {
+                console.error('Error al editar el producto:', error);
+            });
+
         }
     }
 }

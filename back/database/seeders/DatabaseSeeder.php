@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\CategoriaProducto;
+use App\Models\Categoria;
 use App\Models\Producto;
 
 class DatabaseSeeder extends Seeder
@@ -24,15 +24,15 @@ class DatabaseSeeder extends Seeder
             'email' => 'test@example.com',
         ]);
 
-        CategoriaProducto::create([
+        Categoria::create([
             'nombre' => 'Granolas',
             'descripcion' => 'Productos secos'
         ]);
-        CategoriaProducto::create([
+        Categoria::create([
             'nombre' => 'Multi-cereales',
             'descripcion' => 'Productos líquidos hechos de varios cereales'
         ]);
-        CategoriaProducto::create([
+        Categoria::create([
             'nombre' => 'Monocereales',
             'descripcion' => 'Productos líquidos hechos de un solo cereal'
         ]);
@@ -41,7 +41,8 @@ class DatabaseSeeder extends Seeder
             'nombre' => 'Nutrigranola',
             'descripcion' => 'Granola hecha de avena, miel y frutos secos',
             'imagen' => null,
-            'categoria_producto_id' => 1
+            'categoria_id' => 1,
+            'activo' => true
         ]);
     }
 }

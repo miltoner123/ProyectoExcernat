@@ -10,7 +10,7 @@ class ProductoController extends Controller
 {
     function index(Request $request)
     {
-        $limit = $request->query('limit', 10); // Valor predeterminado de 10 si no se proporciona
+        $limit = $request->query('limit', 10); 
         $productos = Producto::with('categoria')->paginate($limit);
         return response()->json($productos);
     }

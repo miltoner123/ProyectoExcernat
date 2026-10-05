@@ -70,7 +70,7 @@ class DatabaseSeeder extends Seeder
             'descripcion' => 'Granola hecha de avena, miel y frutos secos',
             'imagen' => null,
             'categoria_id' => 1,
-            'activo' => true
+            'estado' => true
         ]);
 
 
@@ -93,7 +93,7 @@ class DatabaseSeeder extends Seeder
 
                 'categoria_id' => rand(1, 3),
 
-                'activo' => true
+                'estado' => true
 
             ]);
 

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DetallePedido extends Model
 {
@@ -13,13 +12,9 @@ class DetallePedido extends Model
 
     protected $fillable = [
         'id_pedido',
-        'id_lote',
-        'cantidad',
-        'precio_unitario',
-    ];
-
-    protected $casts = [
-        'precio_unitario' => 'decimal:2',
+        'id_presentacion',
+        'cantidad_paquetes',
+        'cantidad_unidades',
     ];
 
     public function pedido()
@@ -31,12 +26,12 @@ class DetallePedido extends Model
         );
     }
 
-    public function lote()
+    public function presentacion()
     {
         return $this->belongsTo(
-            Lote::class,
-            'id_lote',
-            'id_lote'
+            Presentacion::class,
+            'id_presentacion',
+            'id_presentacion'
         );
     }
 }

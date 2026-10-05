@@ -52,6 +52,9 @@ class Ubicacion extends Model
             'id_ubicacion'
         );
     }
-    
+    public function asignacionesPersonal()
+    {
+    return $this->hasMany(AsignacionPersonal::class, 'id_ubicacion', 'id_ubicacion');
+    }
 }
 

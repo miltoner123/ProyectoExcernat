@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Pedido extends Model
 {
@@ -12,16 +11,25 @@ class Pedido extends Model
     protected $primaryKey = 'id_pedido';
 
     protected $fillable = [
+        'id_ubicacion_solicitante',
         'tipo',
         'estado',
         'fecha_pedido',
-        'referencia',
         'observacion',
     ];
 
     protected $casts = [
         'fecha_pedido' => 'datetime',
     ];
+
+    public function ubicacionSolicitante()
+    {
+        return $this->belongsTo(
+            Ubicacion::class,
+            'id_ubicacion_solicitante',
+            'id_ubicacion'
+        );
+    }
 
     public function detalles()
     {

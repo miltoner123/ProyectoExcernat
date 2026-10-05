@@ -12,25 +12,41 @@ return new class extends Migration
 
             $table->id('id_detalle_pedido');
 
-            $table->unsignedBigInteger('id_pedido');
+            $table->unsignedBigInteger(
+                'id_pedido'
+            );
 
-            $table->unsignedBigInteger('id_lote');
+            $table->unsignedBigInteger(
+                'id_presentacion'
+            );
 
-            $table->integer('cantidad');
+            $table->integer(
+                'cantidad_paquetes'
+            )->default(0);
 
-            $table->decimal('precio_unitario', 10, 2)->default(0);
+            $table->integer(
+                'cantidad_unidades'
+            )->default(0);
 
             $table->timestamps();
+
 
             $table->foreign('id_pedido')
                 ->references('id_pedido')
                 ->on('pedidos')
                 ->onDelete('cascade');
 
-            $table->foreign('id_lote')
-                ->references('id_lote')
-                ->on('lotes')
+
+            $table->foreign('id_presentacion')
+                ->references('id_presentacion')
+                ->on('presentaciones')
                 ->onDelete('restrict');
+
+
+            $table->unique(
+                ['id_pedido', 'id_presentacion'],
+                'detalle_pedido_presentacion_unique'
+            );
         });
     }
 

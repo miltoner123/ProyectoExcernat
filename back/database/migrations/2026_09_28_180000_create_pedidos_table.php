@@ -8,22 +8,29 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('pedidos', function (Blueprint $table) {
+       Schema::create('pedidos', function (Blueprint $table) {
 
-            $table->id('id_pedido');
+    $table->id('id_pedido');
 
-            $table->string('tipo', 30);
+    $table->unsignedBigInteger('id_ubicacion_solicitante');
 
-            $table->string('estado', 30)->default('PENDIENTE');
+    $table->string('tipo', 30);
 
-            $table->timestamp('fecha_pedido');
+    $table->string('estado', 30)
+        ->default('PENDIENTE');
 
-            $table->string('referencia', 100)->nullable();
+    $table->timestamp('fecha_pedido');
 
-            $table->text('observacion')->nullable();
+    $table->text('observacion')
+        ->nullable();
 
-            $table->timestamps();
-        });
+    $table->timestamps();
+
+    $table->foreign('id_ubicacion_solicitante')
+        ->references('id_ubicacion')
+        ->on('ubicaciones')
+        ->onDelete('restrict');
+});
     }
 
     public function down(): void

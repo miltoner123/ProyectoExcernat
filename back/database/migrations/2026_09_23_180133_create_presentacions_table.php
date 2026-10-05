@@ -20,7 +20,7 @@ return new class extends Migration
             $table->decimal('precio_unitario', 10, 2);
             $table->decimal('precio_paquete', 10, 2)->nullable();
             $table->boolean('estado')->default(true);
-            $table->foreignId('id_producto')->constrained('productos', 'id')->onDelete('cascade');
+            $table->foreignId('id_producto')->constrained('productos', 'id')->onDelete('restrict');
             $table->timestamps();
             
         });

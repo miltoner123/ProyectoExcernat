@@ -2,18 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Pedido;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
-
-use App\Models\Pedido;
-use App\Models\DetallePedido;
-use App\Models\Lote;
 
 class PedidoController extends Controller
 {
-    // LISTADO
-
+    /**
+     * Listar pedidos
+     */
     public function index(Request $request)
     {
         $limit = (int) $request->query('limit', 10);
@@ -23,66 +20,65 @@ class PedidoController extends Controller
         }
 
         $query = Pedido::with([
-            'detalles.lote.presentacion.producto'
+            'ubicacionSolicitante',
+            'detalles.presentacion.producto'
         ]);
 
-        if ($request->filled('tipo')) {
-            $query->where('tipo', $request->tipo);
-        }
-
-        if ($request->filled('estado')) {
-            $query->where('estado', $request->estado);
-        }
-
+        // Buscar por observación
         if ($request->filled('buscar')) {
-
-            $buscar = $request->buscar;
-
-            $query->where(function ($q) use ($buscar) {
-
-                $q->where('referencia', 'ilike', "%{$buscar}%")
-
-                  ->orWhereHas('detalles.lote', function ($sub) use ($buscar) {
-                      $sub->where('codigo_lote', 'ilike', "%{$buscar}%");
-                  });
-            });
+            $query->where(
+                'observacion',
+                'ilike',
+                '%' . $request->buscar . '%'
+            );
         }
 
-        return response()->json(
-            $query->orderBy('id_pedido', 'desc')->paginate($limit)
-        );
+        // Filtrar por estado
+        if ($request->filled('estado')) {
+            $query->where(
+                'estado',
+                $request->estado
+            );
+        }
+
+        // Filtrar por tipo
+        if ($request->filled('tipo')) {
+            $query->where(
+                'tipo',
+                $request->tipo
+            );
+        }
+
+        // Filtrar por ubicación solicitante
+        if ($request->filled('id_ubicacion_solicitante')) {
+            $query->where(
+                'id_ubicacion_solicitante',
+                $request->id_ubicacion_solicitante
+            );
+        }
+
+        $pedidos = $query
+            ->orderBy('fecha_pedido', 'desc')
+            ->paginate($limit);
+
+        return response()->json($pedidos);
     }
 
 
-    // CONSULTAR PEDIDO
-
-    public function show($id)
-    {
-        $pedido = Pedido::with([
-            'detalles.lote.presentacion.producto'
-        ])->find($id);
-
-        if (!$pedido) {
-            return response()->json([
-                'message' => 'Pedido no encontrado.'
-            ], 404);
-        }
-
-        return response()->json($pedido);
-    }
-
-
-    // REGISTRAR PEDIDO
-
+    /**
+     * Registrar pedido
+     */
     public function store(Request $request)
     {
-        $datos = $request->validate([
+        $request->validate([
+            'id_ubicacion_solicitante' =>
+                'required|exists:ubicaciones,id_ubicacion',
 
             'tipo' =>
-                'required|in:COMPRA,VENTA',
+                'required|string|max:30',
 
-            'referencia' =>
-                'nullable|string|max:100',
+            'fecha_pedido' =>
+                'required|date',
 
             'observacion' =>
                 'nullable|string',
@@ -90,163 +86,327 @@ class PedidoController extends Controller
             'detalles' =>
                 'required|array|min:1',
 
-            'detalles.*.id_lote' =>
-                'required|integer|distinct|exists:lotes,id_lote',
+            'detalles.*.id_presentacion' =>
+                'required|exists:presentaciones,id_presentacion',
 
-            'detalles.*.cantidad' =>
-                'required|integer|not_in:0',
+            'detalles.*.cantidad_paquetes' =>
+                'required|integer|min:0',
 
-            'detalles.*.precio_unitario' =>
-                'nullable|numeric|min:0',
+            'detalles.*.cantidad_unidades' =>
+                'required|integer|min:0',
         ]);
 
+        try {
 
-        // VALIDAR LOTES ACTIVOS
+            DB::beginTransaction();
 
-        $idsLotes = array_column($datos['detalles'], 'id_lote');
-
-        $lotesActivos = Lote::whereIn('id_lote', $idsLotes)
-            ->where('estado', true)
-            ->count();
-
-        if ($lotesActivos !== count($idsLotes)) {
-
-            throw ValidationException::withMessages([
-                'detalles' => 'Todos los lotes deben estar activos.'
-            ]);
-        }
-
-
-        // TRANSACCIÓN: TODO SE GUARDA O TODO SE REVIERTE
-
-        $pedido = DB::transaction(function () use ($datos) {
-
+            /*
+             * Crear cabecera del pedido
+             */
             $pedido = Pedido::create([
+                'id_ubicacion_solicitante' =>
+                    $request->id_ubicacion_solicitante,
 
-                'tipo' => $datos['tipo'],
+                'tipo' =>
+                    $request->tipo,
 
-                'estado' => 'PENDIENTE',
+                'estado' =>
+                    'PENDIENTE',
 
-                'fecha_pedido' => now(),
+                'fecha_pedido' =>
+                    $request->fecha_pedido,
 
-                'referencia' => $datos['referencia'] ?? null,
-
-                'observacion' => $datos['observacion'] ?? null,
+                'observacion' =>
+                    $request->observacion,
             ]);
 
 
-            foreach ($datos['detalles'] as $detalle) {
+            /*
+             * Registrar detalles
+             */
+            foreach ($request->detalles as $detalle) {
+
+                // No permitir líneas con cantidad 0
+                if (
+                    $detalle['cantidad_paquetes'] == 0 &&
+                    $detalle['cantidad_unidades'] == 0
+                ) {
+
+                    DB::rollBack();
+
+                    return response()->json([
+                        'message' =>
+                            'Cada detalle debe tener al menos un paquete o una unidad.'
+                    ], 422);
+                }
+
 
                 $pedido->detalles()->create([
+                    'id_presentacion' =>
+                        $detalle['id_presentacion'],
 
-                    'id_lote' => $detalle['id_lote'],
+                    'cantidad_paquetes' =>
+                        $detalle['cantidad_paquetes'],
 
-                    'cantidad' => $detalle['cantidad'],
-
-                    'precio_unitario' => $detalle['precio_unitario'] ?? 0,
+                    'cantidad_unidades' =>
+                        $detalle['cantidad_unidades'],
                 ]);
             }
 
 
-            return $pedido->load([
-                'detalles.lote.presentacion.producto'
-            ]);
-
-        }, 3);
+            DB::commit();
 
 
-        return response()->json([
+            return response()->json([
+                'message' =>
+                    'Pedido registrado correctamente.',
 
-            'message' => 'Pedido registrado correctamente.',
+                'pedido' =>
+                    $pedido->load([
+                        'ubicacionSolicitante',
+                        'detalles.presentacion.producto'
+                    ])
+            ], 201);
 
-            'pedido' => $pedido
 
-        ], 201);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'message' =>
+                    'Error al registrar el pedido.',
+
+                'error' =>
+                    $e->getMessage()
+            ], 500);
+        }
     }
 
 
-    // ACTUALIZAR ESTADO DEL PEDIDO
-
-    public function updateEstado(Request $request, $id)
+    /**
+     * Mostrar un pedido
+     */
+    public function show($id)
     {
-        $pedido = Pedido::find($id);
+        $pedido = Pedido::with([
+            'ubicacionSolicitante',
+            'detalles.presentacion.producto'
+        ])->find($id);
+
 
         if (!$pedido) {
+
             return response()->json([
-                'message' => 'Pedido no encontrado.'
+                'message' =>
+                    'Pedido no encontrado.'
             ], 404);
         }
 
-        $datos = $request->validate([
-            'estado' =>
-                'required|in:PENDIENTE,COMPLETADO,CANCELADO',
-        ]);
 
-
-        // NO PERMITIR CAMBIOS SI YA ESTÁ CANCELADO
-
-        if ($pedido->estado === 'CANCELADO') {
-
-            throw ValidationException::withMessages([
-                'estado' => 'No se puede modificar un pedido cancelado.'
-            ]);
-        }
-
-
-        // SI SE COMPLETA, VERIFICAR QUE TENGA DETALLES
-
-        if ($datos['estado'] === 'COMPLETADO' && $pedido->detalles()->count() === 0) {
-
-            throw ValidationException::withMessages([
-                'estado' => 'No se puede completar un pedido sin detalles.'
-            ]);
-        }
-
-
-        $pedido->estado = $datos['estado'];
-        $pedido->save();
-
-
-        return response()->json([
-
-            'message' => 'Estado del pedido actualizado correctamente.',
-
-            'pedido' => $pedido->load([
-                'detalles.lote.presentacion.producto'
-            ])
-        ]);
+        return response()->json($pedido);
     }
 
 
-    // CANCELAR PEDIDO
+    /**
+     * Actualizar pedido
+     */
+    public function update(Request $request, $id)
+    {
+        $pedido = Pedido::find($id);
 
+
+        if (!$pedido) {
+
+            return response()->json([
+                'message' =>
+                    'Pedido no encontrado.'
+            ], 404);
+        }
+
+
+        /*
+         * Solo se pueden modificar
+         * pedidos pendientes
+         */
+        if ($pedido->estado !== 'PENDIENTE') {
+
+            return response()->json([
+                'message' =>
+                    'Solo se pueden modificar pedidos pendientes.'
+            ], 422);
+        }
+
+
+        $request->validate([
+            'id_ubicacion_solicitante' =>
+                'required|exists:ubicaciones,id_ubicacion',
+
+            'tipo' =>
+                'required|string|max:30',
+
+            'fecha_pedido' =>
+                'required|date',
+
+            'observacion' =>
+                'nullable|string',
+
+            'detalles' =>
+                'required|array|min:1',
+
+            'detalles.*.id_presentacion' =>
+                'required|exists:presentaciones,id_presentacion',
+
+            'detalles.*.cantidad_paquetes' =>
+                'required|integer|min:0',
+
+            'detalles.*.cantidad_unidades' =>
+                'required|integer|min:0',
+        ]);
+
+
+        try {
+
+            DB::beginTransaction();
+
+
+            /*
+             * Actualizar cabecera
+             */
+            $pedido->update([
+                'id_ubicacion_solicitante' =>
+                    $request->id_ubicacion_solicitante,
+
+                'tipo' =>
+                    $request->tipo,
+
+                'fecha_pedido' =>
+                    $request->fecha_pedido,
+
+                'observacion' =>
+                    $request->observacion,
+            ]);
+
+
+            /*
+             * Eliminamos los detalles anteriores
+             * y registramos los nuevos.
+             *
+             * Esto es válido porque el pedido
+             * todavía está PENDIENTE.
+             */
+            $pedido->detalles()->delete();
+
+
+            foreach ($request->detalles as $detalle) {
+
+                if (
+                    $detalle['cantidad_paquetes'] == 0 &&
+                    $detalle['cantidad_unidades'] == 0
+                ) {
+
+                    DB::rollBack();
+
+                    return response()->json([
+                        'message' =>
+                            'Cada detalle debe tener al menos un paquete o una unidad.'
+                    ], 422);
+                }
+
+
+                $pedido->detalles()->create([
+                    'id_presentacion' =>
+                        $detalle['id_presentacion'],
+
+                    'cantidad_paquetes' =>
+                        $detalle['cantidad_paquetes'],
+
+                    'cantidad_unidades' =>
+                        $detalle['cantidad_unidades'],
+                ]);
+            }
+
+
+            DB::commit();
+
+
+            return response()->json([
+                'message' =>
+                    'Pedido actualizado correctamente.',
+
+                'pedido' =>
+                    $pedido->load([
+                        'ubicacionSolicitante',
+                        'detalles.presentacion.producto'
+                    ])
+            ]);
+
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'message' =>
+                    'Error al actualizar el pedido.',
+
+                'error' =>
+                    $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Eliminar pedido
+     */
     public function destroy($id)
     {
         $pedido = Pedido::find($id);
 
+
         if (!$pedido) {
+
             return response()->json([
-                'message' => 'Pedido no encontrado.'
+                'message' =>
+                    'Pedido no encontrado.'
             ], 404);
         }
 
-        if ($pedido->estado === 'CANCELADO') {
+
+        /*
+         * Solo permitimos eliminar
+         * pedidos pendientes.
+         */
+        if ($pedido->estado !== 'PENDIENTE') {
+
             return response()->json([
-                'message' => 'El pedido ya está cancelado.'
+                'message' =>
+                    'Solo se pueden eliminar pedidos pendientes.'
             ], 422);
         }
 
-        if ($pedido->estado === 'COMPLETADO') {
+
+        try {
+
+            $pedido->delete();
+
+
             return response()->json([
-                'message' => 'No se puede cancelar un pedido completado.'
-            ], 422);
+                'message' =>
+                    'Pedido eliminado correctamente.'
+            ]);
+
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'message' =>
+                    'No se pudo eliminar el pedido.',
+
+                'error' =>
+                    $e->getMessage()
+            ], 500);
         }
-
-        $pedido->estado = 'CANCELADO';
-        $pedido->save();
-
-        return response()->json([
-            'message' => 'Pedido cancelado correctamente.'
-        ]);
     }
 }

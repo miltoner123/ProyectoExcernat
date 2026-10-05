@@ -19,8 +19,8 @@
             <input type="file" id="imagen" @change="handleFileUpload" accept="image/*">
         </div>
         <!-- <div>
-            <label for="activo">Activo:</label>
-            <input type="checkbox" id="activo" v-model="activo">
+            <label for="estado">Estado:</label>
+            <input type="checkbox" id="estado" v-model="producto.estado">
         </div> -->
         <div>
             <label for="categoria_id">Categoría:</label>
@@ -46,7 +46,7 @@ export default {
                 nombre: '',
                 descripcion: '',
                 imagen: '',
-                activo: true,
+                estado: true,
                 categoria_producto_id: ''
         },
         categorias: []
@@ -85,7 +85,7 @@ export default {
             formData.append('nombre', this.producto.nombre);
             formData.append('descripcion', this.producto.descripcion);
             formData.append('categoria_id', this.producto.categoria_id);
-            formData.append('activo', this.producto.activo);
+            formData.append('estado', this.producto.estado);
             formData.append('imagen', this.producto.imagen);
 
             axios.post(`http://localhost:8000/api/productos/${this.$route.params.id}`, formData,{

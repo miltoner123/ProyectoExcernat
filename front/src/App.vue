@@ -31,6 +31,7 @@
           <div class="menu-section">
             PRODUCTOS
           </div>
+          
 
           <RouterLink to="/categorias" class="menu-item">
             📁 Categorías
@@ -38,6 +39,24 @@
 
           <RouterLink to="/productos" class="menu-item">
             📦 Productos
+          </RouterLink>
+          <RouterLink to="/presentaciones" class="menu-item">
+            📋Presentaciones
+          </RouterLink>
+          <RouterLink to="/lotes" class="menu-item">
+            🏷️Lotes
+          </RouterLink>
+          <div class="menu-section">
+          INVENTARIO
+          </div>
+          <RouterLink to="/ubicaciones" class="menu-item">
+            📍Ubicaciones
+          </RouterLink>
+          <RouterLink to="/inventarios" class="menu-item">
+            📦Inventarios
+          </RouterLink>
+          <RouterLink to="/movimientos" class="menu-item">
+            🔄 Movimientos de Inventario
           </RouterLink>
 
         </nav>

@@ -19,8 +19,8 @@
             <input type="file" id="imagen" @change="handleFileUpload" required accept="image/*">
         </div>
         <!-- <div>
-            <label for="activo">Activo:</label>
-            <input type="checkbox" id="activo" v-model="activo">
+            <label for="estado">Estado:</label>
+            <input type="checkbox" id="estado" v-model="producto.estado">
         </div> -->
         <div>
             <label for="categoria_id">Categoría:</label>
@@ -60,7 +60,7 @@ export default {
                 nombre: '',
                 descripcion: '',
                 imagen: '',
-                activo: true,
+                estado: true,
                 categoria_producto_id: ''
         },
         categorias: [],

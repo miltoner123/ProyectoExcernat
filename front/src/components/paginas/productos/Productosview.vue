@@ -18,7 +18,7 @@
                 <th>Descripción</th>
                 <th>Imagen</th>
                 <th>Categoría</th>
-                <th>Activo</th>
+                <th>Estado</th>
                 <th>Opciones</th>
             </tr>
         </thead>
@@ -27,11 +27,11 @@
                 <td>{{ producto.id }}</td>
                 <td>{{ producto.nombre }}</td>
                 <td>{{ producto.descripcion }}</td>
-                <td>
+                <td> 
                     <img :src="'http://localhost:8000/imagenes/' + producto.imagen" alt="Imagen del producto" style="max-width: 45px; max-height: 100px;" v-if="producto.imagen">
                 </td>
                 <td>{{ producto.categoria.nombre }}</td>
-                <td>{{ producto.activo }}</td>
+                <td>{{ producto.estado }}</td>
                 <td>
                     <button @click="editarProducto(producto.id)">Editar</button>
                     <button @click="eliminarProducto(producto.id)">Eliminar</button>

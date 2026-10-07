@@ -53,7 +53,7 @@ Route::get('/movimientos-inventario/{id}', [\App\Http\Controllers\MovimientoInve
 Route::get('/pedidos', [\App\Http\Controllers\PedidoController::class,'index']);
 Route::post('/pedidos', [\App\Http\Controllers\PedidoController::class,'store']);
 Route::get('/pedidos/{id}', [\App\Http\Controllers\PedidoController::class,'show']);
-Route::put('/pedidos/{id}/estado', [\App\Http\Controllers\PedidoController::class,'updateEstado']);
+Route::post('/pedidos/{id}', [\App\Http\Controllers\PedidoController::class,'update']);
 Route::delete('/pedidos/{id}', [\App\Http\Controllers\PedidoController::class,'destroy']);
 
 Route::get('/personas', [\App\Http\Controllers\PersonaController::class,'index']);

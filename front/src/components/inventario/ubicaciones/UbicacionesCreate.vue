@@ -238,13 +238,9 @@ export default {
     computed: {
 
         eventosDisponibles() {
-
             return this.eventos.filter(evento =>
-
-                ['PLANIFICADO', 'ACTIVO'].includes(evento.estado)
-
+                evento.estado === true
             );
-
         }
 
     },
@@ -254,8 +250,17 @@ export default {
 
         this.eventosGet();
 
-    },
+        if (this.$route.query.tipo) {
+            this.ubicacion.tipo = this.$route.query.tipo;
+        }
 
+        if (this.$route.query.id_evento) {
+            this.ubicacion.id_evento = Number(
+                this.$route.query.id_evento
+            );
+        }
+
+    },
 
     methods: {
 
@@ -265,12 +270,9 @@ export default {
                 'http://localhost:8000/api/eventos'
             )
 
-            .then(response => {
-
-                this.eventos = response.data;
-
+                    .then(response => {
+                this.eventos = response.data.data;
             })
-
             .catch(error => {
 
                 console.error(

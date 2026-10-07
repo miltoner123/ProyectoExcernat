@@ -304,7 +304,7 @@ class DatabaseSeeder extends Seeder
             'lugar' => 'Campo Ferial Chuquiago Marka',
             'fecha_inicio' => '2026-10-10',
             'fecha_fin' => '2026-10-19',
-            'estado' => 'PLANIFICADO',
+            'estado' => true,
             'observacion' => 'Evento de prueba para gestión de stands'
         ]);
 
@@ -315,7 +315,7 @@ class DatabaseSeeder extends Seeder
             'lugar' => 'Recinto Ferial',
             'fecha_inicio' => '2026-11-05',
             'fecha_fin' => '2026-11-14',
-            'estado' => 'PLANIFICADO',
+            'estado' => true,
             'observacion' => 'Evento de prueba'
         ]);
         /*

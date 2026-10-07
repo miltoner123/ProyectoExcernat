@@ -48,9 +48,21 @@ const routes = [
   { path: "/movimientos", component: () => import("./components/inventario/movimientos/MovimientosView.vue")},
   { path: "/movimientos/crear", component: () => import("./components/inventario/movimientos/MovimientosCreate.vue")},
   { path: "/movimientos/detalle/:id",component: () => import("./components/inventario/movimientos/MovimientosDetalle.vue")},
+  { path: "/eventos", component: () => import("./components/eventos/EventosView.vue") },
+  { path: "/eventos/crear", component: () => import("./components/eventos/EventosCreate.vue") },
+  { path: "/eventos/editar/:id", component: () => import("./components/eventos/EventosEditar.vue") },
+  { path: "/eventos/:id/stands", component: () => import("./components/eventos/StandsView.vue") },
 
+  { path: "/personas", component: () => import("./components/personal/personas/PersonasView.vue") },
+  { path: "/personas/crear", component: () => import("./components/personal/personas/PersonasCreate.vue") },
 
- ]
+  { path: "/cargos", component: () => import("./components/personal/cargos/CargosView.vue") },
+  { path: "/cargos/crear", component: () => import("./components/personal/cargos/CargosCreate.vue") },
+
+  { path: "/personal", component: () => import("./components/personal/empleados/PersonalView.vue") },
+  { path: "/personal/crear", component: () => import("./components/personal/empleados/PersonalCreate.vue") },
+
+   ] 
 
 const router = createRouter({
   history: createWebHistory(),

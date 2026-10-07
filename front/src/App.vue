@@ -58,6 +58,25 @@
           <RouterLink to="/movimientos" class="menu-item">
             🔄 Movimientos de Inventario
           </RouterLink>
+          <div class="menu-section">
+              EVENTOS
+          </div>
+          <RouterLink to="/eventos" class="menu-item">
+              📅 Eventos
+          </RouterLink>
+          <div class="menu-section">
+              PERSONAL
+          </div>
+
+          <RouterLink to="/personas" class="menu-item">
+              👥 Personas
+          </RouterLink>
+          <RouterLink to="/cargos" class="menu-item">
+              💼 Cargos
+          </RouterLink>
+          <RouterLink to="/personal" class="menu-item">
+              👤 Personal
+          </RouterLink>
 
         </nav>
 

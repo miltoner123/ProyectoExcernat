@@ -77,6 +77,9 @@
           <RouterLink to="/personal" class="menu-item">
               👤 Personal
           </RouterLink>
+          <RouterLink to="/asignaciones" class="menu-item">
+              📌 Asignaciones
+          </RouterLink>
 
         </nav>
 

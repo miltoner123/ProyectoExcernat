@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -11,17 +12,24 @@ return new class extends Migration
 
             $table->id('id_lote');
             $table->unsignedBigInteger('id_presentacion');
+
             $table->string('codigo_lote', 100)->unique();
+
             $table->date('fecha_produccion');
+            $table->unsignedSmallInteger('vida_util_meses');
             $table->date('fecha_vencimiento');
+
             $table->integer('cantidad_producida');
+
             $table->boolean('estado')->default(true);
             $table->text('observacion')->nullable();
+
             $table->timestamps();
+            $table->softDeletes();
+
             $table->foreign('id_presentacion')->references('id_presentacion')->on('presentaciones')->onDelete('restrict');
         });
     }
-
 
     public function down(): void
     {

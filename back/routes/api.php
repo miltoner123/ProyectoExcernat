@@ -26,6 +26,9 @@ Route::post('/lotes', [\App\Http\Controllers\LoteController::class, 'store']);
 Route::get('/lotes/{id}', [\App\Http\Controllers\LoteController::class, 'show']);
 Route::post('/lotes/{id}', [\App\Http\Controllers\LoteController::class, 'update']);
 Route::delete('/lotes/{id}', [\App\Http\Controllers\LoteController::class, 'destroy']);
+Route::get('/lotes-papelera', [\App\Http\Controllers\LoteController::class, 'papelera']);
+Route::post('/lotes/{id}/restaurar', [\App\Http\Controllers\LoteController::class, 'restaurar']);
+Route::post('/lotes/{id}/estado', [\App\Http\Controllers\LoteController::class, 'cambiarEstado']);
 
 Route::get('/ubicaciones', [\App\Http\Controllers\UbicacionController::class,'index']);
 Route::post('/ubicaciones', [\App\Http\Controllers\UbicacionController::class,'store']);

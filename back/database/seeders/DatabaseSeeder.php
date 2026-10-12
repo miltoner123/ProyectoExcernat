@@ -253,10 +253,9 @@ class DatabaseSeeder extends Seeder
              * después de la producción.
              */
 
-            $fechaVencimiento =
-                $fechaProduccion
-                    ->copy()
-                    ->addYear();
+            $duraciones = [8, 12, 18];
+            $vidaUtilMeses = $duraciones[($i - 1) % count($duraciones)];
+            $fechaVencimiento = $fechaProduccion->copy()->addMonthsNoOverflow($vidaUtilMeses);
 
 
             Lote::create([
@@ -276,7 +275,7 @@ class DatabaseSeeder extends Seeder
                 'fecha_produccion' =>
                     $fechaProduccion
                         ->format('Y-m-d'),
-
+                'vida_util_meses' => $vidaUtilMeses,
                 'fecha_vencimiento' =>
                     $fechaVencimiento
                         ->format('Y-m-d'),

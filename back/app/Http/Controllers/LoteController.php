@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Lote;
+use Carbon\Carbon;
+use Illuminate\Validation\Rule;
 
 class LoteController extends Controller
 {
@@ -91,59 +93,30 @@ class LoteController extends Controller
 
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'id_presentacion' =>
-                'required|exists:presentaciones,id_presentacion',
+{
+    $datos = $request->validate([
+        'id_presentacion' => 'required|exists:presentaciones,id_presentacion',
+        'codigo_lote' => ['required', 'string', 'max:100', Rule::unique('lotes', 'codigo_lote')],
+        'fecha_produccion' => 'required|date',
+        'vida_util_meses' => 'required|integer|min:1|max:120',
+        'cantidad_producida' => 'required|integer|min:1',
+        'estado' => 'sometimes|boolean',
+        'observacion' => 'nullable|string',
+    ]);
 
-            'codigo_lote' =>
-                'required|string|max:100|unique:lotes,codigo_lote',
+    $fechaProduccion = Carbon::parse($datos['fecha_produccion']);
 
-            'fecha_produccion' =>
-                'required|date',
+    $datos['fecha_vencimiento'] = $fechaProduccion->copy()->addMonthsNoOverflow((int) $datos['vida_util_meses'])->toDateString();
 
-            'fecha_vencimiento' =>
-                'required|date|after:fecha_produccion',
+    $datos['estado'] = $datos['estado'] ?? true;
 
-            'cantidad_producida' =>
-                'required|integer|min:1',
+    $lote = Lote::create($datos);
 
-            'observacion' =>
-                'nullable|string'
-        ]);
-
-
-        $lote = new Lote();
-
-        $lote->id_presentacion =
-            $request->id_presentacion;
-
-        $lote->codigo_lote =
-            $request->codigo_lote;
-
-        $lote->fecha_produccion =
-            $request->fecha_produccion;
-
-        $lote->fecha_vencimiento =
-            $request->fecha_vencimiento;
-
-        $lote->cantidad_producida =
-            $request->cantidad_producida;
-
-        $lote->estado =
-            $request->estado ?? true;
-
-        $lote->observacion =
-            $request->observacion;
-
-        $lote->save();
-
-
-        return response()->json([
-            'message' => 'Lote registrado correctamente',
-            'lote' => $lote
-        ], 201);
-    }
+    return response()->json([
+        'message' => 'Lote registrado correctamente',
+        'lote' => $lote
+    ], 201);
+}
 
 
     public function show($id)
@@ -167,105 +140,106 @@ class LoteController extends Controller
 
 
     public function update(Request $request, $id)
-    {
-        $lote = Lote::find($id);
+{
+    $lote = Lote::find($id);
 
-
-        if (!$lote) {
-
-            return response()->json([
-                'message' => 'Lote no encontrado'
-            ], 404);
-
-        }
-
-
-        $request->validate([
-
-            'id_presentacion' =>
-                'required|exists:presentaciones,id_presentacion',
-
-            'codigo_lote' =>
-                'required|string|max:100|unique:lotes,codigo_lote,'
-                . $id . ',id_lote',
-
-            'fecha_produccion' =>
-                'required|date',
-
-            'fecha_vencimiento' =>
-                'required|date|after:fecha_produccion',
-
-            'cantidad_producida' =>
-                'required|integer|min:1',
-
-            'observacion' =>
-                'nullable|string'
-
-        ]);
-
-
-        $lote->id_presentacion =
-            $request->id_presentacion;
-
-        $lote->codigo_lote =
-            $request->codigo_lote;
-
-        $lote->fecha_produccion =
-            $request->fecha_produccion;
-
-        $lote->fecha_vencimiento =
-            $request->fecha_vencimiento;
-
-        $lote->cantidad_producida =
-            $request->cantidad_producida;
-
-        $lote->estado =
-            $request->estado;
-
-        $lote->observacion =
-            $request->observacion;
-
-        $lote->save();
-
-
+    if (!$lote) {
         return response()->json([
-            'message' => 'Lote actualizado correctamente',
-            'lote' => $lote
-        ]);
+            'message' => 'Lote no encontrado'
+        ], 404);
     }
+
+    $datos = $request->validate([
+        'id_presentacion' => 'required|exists:presentaciones,id_presentacion',
+        'codigo_lote' => ['required', 'string', 'max:100', Rule::unique('lotes', 'codigo_lote')->ignore($lote->id_lote, 'id_lote')],
+        'fecha_produccion' => 'required|date',
+        'vida_util_meses' => 'required|integer|min:1|max:120',
+        'cantidad_producida' => 'required|integer|min:1',
+        'estado' => 'required|boolean',
+        'observacion' => 'nullable|string',
+    ]);
+
+    $fechaProduccion = Carbon::parse($datos['fecha_produccion']);
+
+    $datos['fecha_vencimiento'] = $fechaProduccion->copy()->addMonthsNoOverflow((int) $datos['vida_util_meses'])->toDateString();
+
+    $lote->update($datos);
+
+    return response()->json([
+        'message' => 'Lote actualizado correctamente',
+        'lote' => $lote->fresh()
+    ]);
+}
 
 
     public function destroy($id)
     {
         $lote = Lote::find($id);
 
+        if (!$lote) {
+            return response()->json(['message' => 'Lote no encontrado'], 404);
+        }
+
+        $tieneInventario = $lote->inventarios()->exists();
+        $tieneMovimientos = $lote->detallesMovimiento()->exists();
+
+        if ($tieneInventario || $tieneMovimientos) {
+            return response()->json([
+                'message' => 'Este lote tiene registros de inventario o movimientos. No puede enviarse a la papelera. Puede inactivarlo para conservar su historial.'
+            ], 422);
+        }
+
+        $lote->delete();
+
+        return response()->json([
+            'message' => 'Lote enviado a la papelera correctamente.'
+        ]);
+    }
+    public function papelera(Request $request)
+        {
+            $limit = min(max((int) $request->input('limit', 10), 1), 100);
+
+            $lotes = Lote::onlyTrashed()->with('presentacion.producto')->orderBy('deleted_at', 'desc')->paginate($limit);
+
+            return response()->json($lotes);
+        }
+        public function restaurar($id)
+        {
+            $lote = Lote::onlyTrashed()->find($id);
+
+            if (!$lote) {
+                return response()->json([
+                    'message' => 'Lote eliminado no encontrado.'
+                ], 404);
+            }
+
+            $lote->restore();
+
+            return response()->json([
+                'message' => 'Lote restaurado correctamente.',
+                'lote' => $lote
+            ]);
+        }
+    public function cambiarEstado(Request $request, $id)
+    {
+        $datos = $request->validate([
+            'estado' => 'required|boolean'
+        ]);
+
+        $lote = Lote::find($id);
 
         if (!$lote) {
-
             return response()->json([
-                'message' => 'Lote no encontrado'
+                'message' => 'Lote no encontrado.'
             ], 404);
-
         }
 
+        $lote->estado = $datos['estado'];
+        $lote->save();
 
-        try {
-
-            $lote->delete();
-
-
-            return response()->json([
-                'message' => 'Lote eliminado correctamente'
-            ]);
-
-
-        } catch (\Exception $e) {
-
-            return response()->json([
-                'message' =>
-                    'No se puede eliminar el lote porque tiene registros relacionados'
-            ], 409);
-
-        }
+        return response()->json([
+            'message' => $lote->estado ? 'Lote activado correctamente.' : 'Lote inactivado correctamente.',
+            'lote' => $lote
+        ]);
     }
 }

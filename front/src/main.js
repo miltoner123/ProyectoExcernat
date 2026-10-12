@@ -38,7 +38,10 @@ const routes = [
   { path: "/presentaciones/editar/:id", component: () => import("./components/paginas/presentaciones/PresentacionesEditar.vue") },
   { path: "/lotes", component: () => import("./components/paginas/lotes/LotesView.vue") },
   { path: "/lotes/crear", component: () => import("./components/paginas/lotes/LotesCreate.vue") },
+  { path: "/lotes/papelera", component: () => import("./components/paginas/lotes/LotesPapelera.vue") },
   { path: "/lotes/editar/:id", component: () => import("./components/paginas/lotes/LotesEditar.vue") },
+  
+
   { path: "/ubicaciones", component: () => import("./components/inventario/ubicaciones/UbicacionesView.vue")},
   { path: "/ubicaciones/editar/:id", component: () => import("./components/inventario/ubicaciones/UbicacionesEditar.vue")},
   { path: "/ubicaciones/crear", component: () => import("./components/inventario/ubicaciones/UbicacionesCreate.vue")},
@@ -61,7 +64,8 @@ const routes = [
 
   { path: "/personal", component: () => import("./components/personal/empleados/PersonalView.vue") },
   { path: "/personal/crear", component: () => import("./components/personal/empleados/PersonalCreate.vue") },
-
+  { path: "/asignaciones", component: () => import("./components/personal/asignaciones/AsignacionesView.vue") },
+  { path: "/asignaciones/crear", component: () => import("./components/personal/asignaciones/AsignacionesCreate.vue") },
    ] 
 
 const router = createRouter({

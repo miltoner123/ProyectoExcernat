@@ -50,6 +50,9 @@ class AsignacionPersonalController extends Controller
         if ($request->filled('id_evento')) {
             $query->where('id_evento', $request->id_evento);
         }
+        if ($request->filled('tipo_remuneracion')) {
+            $query->where('tipo_remuneracion', $request->tipo_remuneracion);
+        }
 
         // Filtrar por estado
         if ($request->has('estado')) {

@@ -1,327 +1,482 @@
+
 <template>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1>Productos</h1>
-    <span> Esta es la vista de Productos</span>
-        <button @click="crearProducto">Crear Producto</button>
+    <div class="contenedor-productos">
+
+        <!-- ENCABEZADO -->
+        <div class="encabezado">
+            <div>
+                <h1>Productos</h1>
+                <p>Gestión y administración de productos</p>
+            </div>
+
+            <button class="btn-crear" @click="crearProducto">
+                + Crear Producto
+            </button>
+        </div>
+
+        <!-- INFORMACIÓN DE REGISTROS -->
+        <div class="barra-superior">
+            <span>
+                Total de productos:
+                <strong>{{ pagination.total }}</strong>
+            </span>
+
+            <span>
+                Página {{ pagination.current_page }}
+                de {{ pagination.last_page }}
+            </span>
+        </div>
+
+        <!-- TABLA -->
+        <div class="tabla-contenedor">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Imagen</th>
+                        <th>Categoría</th>
+                        <th>Estado</th>
+                        <th>Opciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr v-if="cargando">
+                        <td colspan="7" class="mensaje-tabla">
+                            Cargando productos...
+                        </td>
+                    </tr>
+
+                    <template v-else>
+                        <tr
+                            v-for="producto in productos"
+                            :key="producto.id"
+                        >
+                            <td>{{ producto.id }}</td>
+
+                            <td>
+                                <strong>{{ producto.nombre }}</strong>
+                            </td>
+
+                            <td>{{ producto.descripcion || '—' }}</td>
+
+                            <td>
+                                <img
+                                    v-if="producto.imagen"
+                                    :src="'http://localhost:8000/imagenes/' + producto.imagen"
+                                    alt="Imagen del producto"
+                                    class="imagen-producto"
+                                >
+
+                                <span v-else class="sin-imagen">
+                                    Sin imagen
+                                </span>
+                            </td>
+
+                            <td>
+                                {{ producto.categoria?.nombre || 'Sin categoría' }}
+                            </td>
+
+                            <td>
+                                <span
+                                    class="etiqueta-estado"
+                                    :class="producto.estado ? 'estado-activo' : 'estado-inactivo'"
+                                >
+                                    {{ producto.estado ? 'Activo' : 'Inactivo' }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="acciones">
+
+                                    <button
+                                        class="btn-editar"
+                                        @click="editarProducto(producto.id)"
+                                    >
+                                        Editar
+                                    </button>
+
+                                    <button
+                                        :class="producto.estado ? 'btn-inactivar' : 'btn-activar'"
+                                        @click="cambiarEstadoProducto(producto)"
+                                    >
+                                        {{ producto.estado ? 'Inactivar' : 'Activar' }}
+                                    </button>
+
+                                    <button
+                                        class="btn-eliminar"
+                                        @click="eliminarProducto(producto.id)"
+                                    >
+                                        Eliminar
+                                    </button>
+
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr v-if="productos.length === 0">
+                            <td colspan="7" class="mensaje-tabla">
+                                No se encontraron productos.
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PAGINACIÓN -->
+        <div class="paginacion">
+
+            <button
+                @click="paginaAnterior"
+                :disabled="pagination.current_page <= 1 || cargando"
+            >
+                Anterior
+            </button>
+
+            <span>
+                Página {{ pagination.current_page }}
+                de {{ pagination.last_page }}
+            </span>
+
+            <button
+                @click="paginaSiguiente"
+                :disabled="pagination.current_page >= pagination.last_page || cargando"
+            >
+                Siguiente
+            </button>
+
+        </div>
 
     </div>
-    <div style="">
-        <button @click="pagination.current_page -- ; productosGet()">Anterior</button>
-        <button @click="pagination.current_page ++ ; productosGet()">Siguiente</button>
-
-    </div>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Imagen</th>
-                <th>Categoría</th>
-                <th>Estado</th>
-                <th>Opciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr v-for="producto in productos" :key="producto.id">
-                <td>{{ producto.id }}</td>
-                <td>{{ producto.nombre }}</td>
-                <td>{{ producto.descripcion }}</td>
-                <td> 
-                    <img :src="'http://localhost:8000/imagenes/' + producto.imagen" alt="Imagen del producto" style="max-width: 45px; max-height: 100px;" v-if="producto.imagen">
-                </td>
-                <td>{{ producto.categoria.nombre }}</td>
-                <td>{{ producto.estado }}</td>
-                <td>
-                    <button @click="editarProducto(producto.id)">Editar</button>
-                    <button @click="eliminarProducto(producto.id)">Eliminar</button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
 </template>
+
 <script>
 import axios from 'axios';
+
 export default {
 
     data() {
         return {
             productos: [],
+            cargando: false,
+
             pagination: {
                 current_page: 1,
                 last_page: 1,
                 per_page: 10,
                 total: 0
             }
-        }
+        };
     },
+
     mounted() {
         this.productosGet();
     },
+
     methods: {
+
         productosGet() {
-            axios.get('http://localhost:8000/api/productos?limit=10' + '&page=' + this.pagination.current_page)
-                .then(response => {
-                    this.productos = response.data.data;
-                    this.pagination.totalPages = response.data.last_page;
-                    this.pagination.total = response.data.total;
-                })
-                .catch(error => {
-                    console.error(error);
-                });
+
+            this.cargando = true;
+
+            axios.get('http://localhost:8000/api/productos', {
+                params: {
+                    limit: this.pagination.per_page,
+                    page: this.pagination.current_page
+                }
+            })
+            .then(response => {
+
+                this.productos = response.data.data;
+
+                this.pagination.current_page = response.data.current_page;
+                this.pagination.last_page = response.data.last_page;
+                this.pagination.total = response.data.total;
+
+            })
+            .catch(error => {
+
+                console.error('Error al obtener productos:', error);
+                alert('No se pudieron cargar los productos.');
+
+            })
+            .finally(() => {
+
+                this.cargando = false;
+
+            });
         },
+
         crearProducto() {
             this.$router.push('/productos/crear');
         },
-        eliminarProducto(id) {
-            if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
-                axios.delete(`http://localhost:8000/api/productos/${id}`)
-                    .then(response => {
-                        this.productosGet();
-                    })
-                    .catch(error => {
-                        console.error(error);
-                    });
-            }
-        },
+
         editarProducto(id) {
             this.$router.push(`/productos/editar/${id}`);
+        },
+
+        cambiarEstadoProducto(producto) {
+
+            const nuevoEstado = !Boolean(producto.estado);
+            const accion = nuevoEstado ? 'activar' : 'inactivar';
+
+            if (!confirm(`¿Está seguro de ${accion} el producto ${producto.nombre}?`)) {
+                return;
+            }
+
+            axios.post(
+                `http://localhost:8000/api/productos/${producto.id}/estado`,
+                {
+                    estado: nuevoEstado
+                }
+            )
+            .then(response => {
+
+                alert(response.data.message);
+
+                producto.estado = Boolean(response.data.producto.estado);
+
+            })
+            .catch(error => {
+
+                alert(
+                    error.response?.data?.message ||
+                    'Error al cambiar el estado del producto.'
+                );
+
+            });
+        },
+
+        eliminarProducto(id) {
+
+            if (!confirm('¿Está seguro de enviar este producto a la papelera?')) {
+                return;
+            }
+
+            axios.delete(`http://localhost:8000/api/productos/${id}`)
+
+            .then(response => {
+
+                alert(response.data.message);
+
+                if (this.productos.length === 1 && this.pagination.current_page > 1) {
+                    this.pagination.current_page--;
+                }
+
+                this.productosGet();
+
+            })
+            .catch(error => {
+
+                if (error.response?.status === 422) {
+
+                    alert(
+                        error.response.data.message ||
+                        'No se puede eliminar este producto porque tiene registros relacionados.'
+                    );
+
+                } else {
+
+                    alert(
+                        error.response?.data?.message ||
+                        'Ocurrió un error al eliminar el producto.'
+                    );
+
+                }
+
+            });
+        },
+
+        paginaAnterior() {
+
+            if (this.pagination.current_page > 1) {
+                this.pagination.current_page--;
+                this.productosGet();
+            }
+
+        },
+
+        paginaSiguiente() {
+
+            if (this.pagination.current_page < this.pagination.last_page) {
+                this.pagination.current_page++;
+                this.productosGet();
+            }
+
         }
 
     }
-
-}
+};
 </script>
+
 <style scoped>
-
-/* =========================================
-   TÍTULO
-========================================= */
-
-h1 {
-    font-size: 26px;
-    font-weight: 600;
-    color: #1f2937;
-
-    margin-bottom: 25px;
-
-    padding-bottom: 12px;
-
-    border-bottom: 2px solid #e5e7eb;
+.contenedor-productos {
+    width: 100%;
 }
 
+.encabezado {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
 
-/* =========================================
-   TABLA
-========================================= */
+.encabezado h1 {
+    margin: 0 0 5px;
+    color: #1f2937;
+}
+
+.encabezado p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.btn-crear {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.barra-superior {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    color: #4b5563;
+    font-size: 14px;
+}
+
+.tabla-contenedor {
+    width: 100%;
+    overflow-x: auto;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
 
 table {
     width: 100%;
-
     border-collapse: collapse;
-
-    background-color: #ffffff;
-
-    border-radius: 8px;
-
-    overflow: hidden;
-
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-
-/* =========================================
-   CABECERA DE LA TABLA
-========================================= */
-
-thead {
-    background-color: #1f2937;
-}
-
-thead th {
-    color: white;
-
-    font-size: 14px;
-
-    font-weight: 600;
-
+th,
+td {
+    padding: 12px;
     text-align: left;
-
-    padding: 14px 15px;
-
-    border-bottom: 2px solid #374151;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 13px;
 }
 
-
-/* =========================================
-   FILAS
-========================================= */
-
-tbody tr {
-    transition: background-color 0.2s ease;
-}
-
-tbody tr:nth-child(even) {
-    background-color: #f9fafb;
+th {
+    background: #f3f4f6;
+    color: #374151;
+    font-weight: 600;
 }
 
 tbody tr:hover {
-    background-color: #eef4ff;
+    background: #f9fafb;
 }
 
-
-/* =========================================
-   CELDAS
-========================================= */
-
-tbody td {
-    padding: 13px 15px;
-
-    border-bottom: 1px solid #e5e7eb;
-
-    color: #374151;
-
-    font-size: 14px;
-
-    vertical-align: middle;
-}
-
-
-/* ID */
-
-tbody td:first-child {
-    font-weight: 600;
-
-    color: #6b7280;
-
-    width: 70px;
-}
-
-
-/* =========================================
-   COLUMNA DESCRIPCIÓN
-========================================= */
-
-tbody td:nth-child(3) {
-    max-width: 300px;
-
-    line-height: 1.5;
-}
-
-
-/* =========================================
-   BOTONES
-========================================= */
-
-button {
-    border: none;
-
-    padding: 8px 13px;
-
+.imagen-producto {
+    max-width: 55px;
+    max-height: 65px;
+    object-fit: contain;
     border-radius: 5px;
+}
 
+.sin-imagen {
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+.etiqueta-estado {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.estado-activo {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.estado-inactivo {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.acciones {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+}
+
+.acciones button {
+    border: none;
+    padding: 7px 11px;
+    border-radius: 5px;
+    color: white;
     cursor: pointer;
-
-    font-size: 13px;
-
-    font-weight: 500;
-
-    margin-right: 6px;
-
-    transition: all 0.2s ease;
 }
 
-
-/* BOTÓN EDITAR */
-
-button:first-child {
-    background-color: #f59e0b;
-
-    color: white;
+.btn-editar {
+    background: #2563eb;
 }
 
-button:first-child:hover {
-    background-color: #d97706;
-
-    transform: translateY(-1px);
+.btn-activar {
+    background: #16a34a;
 }
 
-
-/* BOTÓN ELIMINAR */
-
-button:last-child {
-    background-color: #dc2626;
-
-    color: white;
+.btn-inactivar {
+    background: #d97706;
 }
 
-button:last-child:hover {
-    background-color: #b91c1c;
-
-    transform: translateY(-1px);
+.btn-eliminar {
+    background: #dc2626;
 }
 
-
-/* =========================================
-   COLUMNA OPCIONES
-========================================= */
-
-td:last-child {
-    white-space: nowrap;
-}
-
-
-/* =========================================
-   IMAGEN
-========================================= */
-
-td:nth-child(4) {
+.mensaje-tabla {
+    text-align: center;
+    padding: 25px;
     color: #6b7280;
-
-    font-size: 13px;
 }
 
-
-/* =========================================
-   RESPONSIVE
-========================================= */
-
-@media (max-width: 900px) {
-
-    table {
-        display: block;
-
-        overflow-x: auto;
-
-        white-space: nowrap;
-    }
-
+.paginacion {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
 }
 
-
-/* =========================================
-   RESPONSIVE CELULAR
-========================================= */
-
-@media (max-width: 600px) {
-
-    h1 {
-        font-size: 21px;
-    }
-
-    thead th,
-    tbody td {
-        padding: 10px;
-
-        font-size: 12px;
-    }
-
-    button {
-        padding: 6px 9px;
-
-        font-size: 11px;
-    }
-
+.paginacion button {
+    padding: 8px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    background: white;
+    cursor: pointer;
 }
 
+.paginacion button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+    .encabezado,
+    .barra-superior {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
 </style>

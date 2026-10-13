@@ -17,8 +17,10 @@ return new class extends Migration
             $table->string('descripcion')->nullable();
             $table->string('imagen')->nullable();
             $table->boolean('estado')->default(true);
-            $table->foreignId('categoria_id')->constrained('categorias')->onDelete('cascade');
+            
             $table->timestamps();
+            $table->softDeletes();
+            $table->foreignId('categoria_id')->constrained('categorias')->onDelete('restrict');
         });
     }
 

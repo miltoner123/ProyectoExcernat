@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Producto extends Model
 {
@@ -14,6 +15,7 @@ class Producto extends Model
         'estado',
         'categoria_id',
     ];
+    use SoftDeletes;
 
     public function categoria()
     {

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\belongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Presentacion extends Model
 {
@@ -23,6 +24,7 @@ class Presentacion extends Model
         'precio_paquete',
         'estado',
     ];
+    use SoftDeletes;
 
     public function producto()
     {

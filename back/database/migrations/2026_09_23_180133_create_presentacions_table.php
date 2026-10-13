@@ -22,6 +22,7 @@ return new class extends Migration
             $table->boolean('estado')->default(true);
             $table->foreignId('id_producto')->constrained('productos', 'id')->onDelete('restrict');
             $table->timestamps();
+            $table->softDeletes();
             
         });
     }

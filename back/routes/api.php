@@ -11,15 +11,23 @@ Route::post('/productos', [\App\Http\Controllers\ProductoController::class, 'sto
 Route::delete('/productos/{id}', [\App\Http\Controllers\ProductoController::class, 'destroy']);
 Route::get('/productos/{id}', [\App\Http\Controllers\ProductoController::class, 'show']); 
 Route::post('/productos/{id}', [\App\Http\Controllers\ProductoController::class, 'update']);
+Route::get('/productos-papelera', [\App\Http\Controllers\ProductoController::class, 'papelera']);
+Route::post('/productos/{id}/restaurar', [\App\Http\Controllers\ProductoController::class, 'restaurar']);
+Route::post('/productos/{id}/estado', [\App\Http\Controllers\ProductoController::class, 'cambiarEstado']);
 
 Route::get('/categorias', [\App\Http\Controllers\CategoriaController::class, 'index']);
 Route::post('/categorias', [\App\Http\Controllers\CategoriaController::class, 'store']);
+Route::delete('/categorias/{id}', [\App\Http\Controllers\CategoriaController::class, 'destroy']);
+Route::get('/categorias-papelera', [\App\Http\Controllers\CategoriaController::class, 'papelera']);
+Route::post('/categorias/{id}/restaurar', [\App\Http\Controllers\CategoriaController::class, 'restaurar']);
 
 Route::get('/presentaciones', [\App\Http\Controllers\PresentacionController::class, 'index']);
 Route::post('/presentaciones', [\App\Http\Controllers\PresentacionController::class, 'store']);
 Route::get('/presentaciones/{id}', [\App\Http\Controllers\PresentacionController::class, 'show']);
 Route::post('/presentaciones/{id}', [\App\Http\Controllers\PresentacionController::class, 'update']);
 Route::delete('/presentaciones/{id}', [\App\Http\Controllers\PresentacionController::class, 'destroy']);
+Route::get('/presentaciones-papelera', [\App\Http\Controllers\PresentacionController::class, 'papelera']);
+Route::post('/presentaciones/{id}/restaurar', [\App\Http\Controllers\PresentacionController::class, 'restaurar']);
 
 route::get('/lotes', [\App\Http\Controllers\LoteController::class, 'index']);
 Route::post('/lotes', [\App\Http\Controllers\LoteController::class, 'store']);

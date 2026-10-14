@@ -10,83 +10,64 @@ use Illuminate\Validation\Rule;
 class LoteController extends Controller
 {
 
+        
     public function index(Request $request)
     {
-        $limit = $request->query('limit', 10);
+        $limit = min(max((int) $request->query('limit', 10), 1), 100);
         $buscar = $request->query('buscar');
         $estado = $request->query('estado');
-        $query = Lote::with([
-            'presentacion.producto'
-        ]);
+        $vencimiento = $request->query('vencimiento');
 
+        $query = Lote::with('presentacion.producto');
 
         // BUSCADOR
         if ($buscar) {
-
             $query->where(function ($q) use ($buscar) {
-
-                $q->where(
-                    'codigo_lote',
-                    'ilike',
-                    '%' . $buscar . '%'
-                )
-
-                ->orWhereHas(
-                    'presentacion',
-                    function ($presentacion) use ($buscar) {
-
-                        $presentacion
-                            ->where(
-                                'nombre_presentacion',
-                                'ilike',
-                                '%' . $buscar . '%'
-                            )
-
-                            ->orWhere(
-                                'codigo_sku',
-                                'ilike',
-                                '%' . $buscar . '%'
-                            );
-
-                    }
-                )
-
-                ->orWhereHas(
-                    'presentacion.producto',
-                    function ($producto) use ($buscar) {
-
-                        $producto->where(
-                            'nombre',
-                            'ilike',
-                            '%' . $buscar . '%'
-                        );
-
-                    }
-                );
-
+                $q->where('codigo_lote', 'ilike', '%' . $buscar . '%')
+                    ->orWhereHas('presentacion', function ($presentacion) use ($buscar) {
+                        $presentacion->where('nombre_presentacion', 'ilike', '%' . $buscar . '%')
+                            ->orWhere('codigo_sku', 'ilike', '%' . $buscar . '%');
+                    })
+                    ->orWhereHas('presentacion.producto', function ($producto) use ($buscar) {
+                        $producto->where('nombre', 'ilike', '%' . $buscar . '%');
+                    });
             });
-
         }
 
-
-        // FILTRO POR ESTADO
+        // FILTRO DE ESTADO
         if ($estado !== null && $estado !== '') {
-
-            $query->where(
-                'estado',
-                filter_var(
-                    $estado,
-                    FILTER_VALIDATE_BOOLEAN
-                )
-            );
-
+            $query->where('estado', filter_var($estado, FILTER_VALIDATE_BOOLEAN));
         }
 
+        // FILTRO DE VENCIMIENTO
+        $hoy = now()->startOfDay();
+        $fecha90 = $hoy->copy()->addDays(90);
+        $fecha180 = $hoy->copy()->addDays(180);
 
-        $lotes = $query
-            ->orderBy('id_lote', 'desc')
+        switch ($vencimiento) {
+            case 'VENCIDO':
+                $query->whereDate('fecha_vencimiento', '<', $hoy->toDateString());
+                break;
+
+            case 'PROXIMO':
+                $query->whereDate('fecha_vencimiento', '>=', $hoy->toDateString())
+                    ->whereDate('fecha_vencimiento', '<=', $fecha90->toDateString());
+                break;
+
+            case 'PREVENTIVO':
+                $query->whereDate('fecha_vencimiento', '>', $fecha90->toDateString())
+                    ->whereDate('fecha_vencimiento', '<=', $fecha180->toDateString());
+                break;
+
+            case 'VIGENTE':
+                $query->whereDate('fecha_vencimiento', '>', $fecha180->toDateString());
+                break;
+        }
+
+        // MOSTRAR PRIMERO LOS LOTES CON VENCIMIENTO MÁS CERCANO
+        $lotes = $query->orderBy('fecha_vencimiento', 'asc')
+            ->orderBy('id_lote', 'asc')
             ->paginate($limit);
-
 
         return response()->json($lotes);
     }

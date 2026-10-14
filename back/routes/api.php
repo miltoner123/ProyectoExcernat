@@ -28,6 +28,8 @@ Route::post('/presentaciones/{id}', [\App\Http\Controllers\PresentacionControlle
 Route::delete('/presentaciones/{id}', [\App\Http\Controllers\PresentacionController::class, 'destroy']);
 Route::get('/presentaciones-papelera', [\App\Http\Controllers\PresentacionController::class, 'papelera']);
 Route::post('/presentaciones/{id}/restaurar', [\App\Http\Controllers\PresentacionController::class, 'restaurar']);
+Route::post('/presentaciones/{id}/estado', [\App\Http\Controllers\PresentacionController::class, 'cambiarEstado']);
+
 
 route::get('/lotes', [\App\Http\Controllers\LoteController::class, 'index']);
 Route::post('/lotes', [\App\Http\Controllers\LoteController::class, 'store']);

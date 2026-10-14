@@ -9,10 +9,6 @@
 
             <div class="botones-encabezado">
 
-                <button class="btn-papelera" @click="irPapelera">
-                    Papelera
-                </button>
-
                 <button class="btn-crear" @click="crearLote">
                     + Crear Lote
                 </button>
@@ -222,9 +218,7 @@ export default {
     },
 
     methods: {
-        irPapelera() {
-            this.$router.push('/lotes/papelera');
-        },
+
         lotesGet() {
             const solicitud = ++this.solicitudActual;
             this.cargando = true;

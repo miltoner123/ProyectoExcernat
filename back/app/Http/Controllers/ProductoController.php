@@ -114,7 +114,6 @@ class ProductoController extends Controller
                 $imagen->move(public_path('imagenes'), $nombreArchivo);
                 $producto->imagen = $nombreArchivo;
             }
-            $producto->estado = 1;
             $producto->categoria_id = $request->categoria_id;
             $producto->save();
             return response()->json(['message' => 'Producto actualizado correctamente', 'producto' => $producto]);

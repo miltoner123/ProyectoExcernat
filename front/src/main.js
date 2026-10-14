@@ -38,7 +38,6 @@ const routes = [
   { path: "/presentaciones/editar/:id", component: () => import("./components/paginas/presentaciones/PresentacionesEditar.vue") },
   { path: "/lotes", component: () => import("./components/paginas/lotes/LotesView.vue") },
   { path: "/lotes/crear", component: () => import("./components/paginas/lotes/LotesCreate.vue") },
-  { path: "/lotes/papelera", component: () => import("./components/paginas/lotes/LotesPapelera.vue") },
   { path: "/lotes/editar/:id", component: () => import("./components/paginas/lotes/LotesEditar.vue") },
   
 

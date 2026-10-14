@@ -16,7 +16,36 @@ class PresentacionController extends Controller
         return response()->json($presentaciones);
     }
 
+    public function cambiarEstado(Request $request, $id)
+{
+    $datos = $request->validate([
+        'estado' => 'required|boolean'
+    ]);
 
+    $presentacion = Presentacion::find($id);
+
+    if (!$presentacion) {
+        return response()->json([
+            'message' => 'Presentación no encontrada.'
+        ], 404);
+    }
+
+    if ($datos['estado'] && (!$presentacion->producto || !$presentacion->producto->estado)) {
+        return response()->json([
+            'message' => 'No se puede activar una presentación si su producto está inactivo.'
+        ], 422);
+    }
+
+    $presentacion->estado = $datos['estado'];
+    $presentacion->save();
+
+    return response()->json([
+        'message' => $presentacion->estado
+            ? 'Presentación activada correctamente.'
+            : 'Presentación inactivada correctamente.',
+        'presentacion' => $presentacion
+    ]);
+}
     function store(Request $request)
     {
         $presentacion = new Presentacion();

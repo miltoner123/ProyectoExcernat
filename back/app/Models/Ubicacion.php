@@ -3,13 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-
 
 class Ubicacion extends Model
 {
     protected $table = 'ubicaciones';
-
     protected $primaryKey = 'id_ubicacion';
 
     protected $fillable = [
@@ -22,19 +19,20 @@ class Ubicacion extends Model
         'estado',
     ];
 
+    protected $casts = [
+        'estado' => 'boolean',
+    ];
 
-    public function evento(){
-        return $this->belongsTo(Evento::class,
-            'id_evento',
-            'id_evento'
-        );
+    public function evento()
+    {
+        return $this->belongsTo(Evento::class, 'id_evento', 'id_evento');
     }
-    public function inventarios(){
-    return $this->hasMany(Inventario::class,
-        'id_ubicacion',
-        'id_ubicacion'
-    );
+
+    public function inventarios()
+    {
+        return $this->hasMany(Inventario::class, 'id_ubicacion', 'id_ubicacion');
     }
+
     public function movimientosOrigen()
     {
         return $this->hasMany(
@@ -52,9 +50,14 @@ class Ubicacion extends Model
             'id_ubicacion'
         );
     }
+
     public function asignacionesPersonal()
     {
-    return $this->hasMany(AsignacionPersonal::class, 'id_ubicacion', 'id_ubicacion');
+        return $this->hasMany(
+            AsignacionPersonal::class,
+            'id_ubicacion',
+            'id_ubicacion'
+        );
     }
 }
 

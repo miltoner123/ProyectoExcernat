@@ -24,7 +24,7 @@ Route::post('/categorias/{id}/restaurar', [\App\Http\Controllers\CategoriaContro
 Route::get('/presentaciones', [\App\Http\Controllers\PresentacionController::class, 'index']);
 Route::post('/presentaciones', [\App\Http\Controllers\PresentacionController::class, 'store']);
 Route::get('/presentaciones/{id}', [\App\Http\Controllers\PresentacionController::class, 'show']);
-Route::post('/presentaciones/{id}', [\App\Http\Controllers\PresentacionController::class, 'update']);
+Route::put('/presentaciones/{id}', [\App\Http\Controllers\PresentacionController::class, 'update']);
 Route::delete('/presentaciones/{id}', [\App\Http\Controllers\PresentacionController::class, 'destroy']);
 Route::get('/presentaciones-papelera', [\App\Http\Controllers\PresentacionController::class, 'papelera']);
 Route::post('/presentaciones/{id}/restaurar', [\App\Http\Controllers\PresentacionController::class, 'restaurar']);

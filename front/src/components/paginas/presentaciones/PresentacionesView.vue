@@ -39,7 +39,7 @@
 
                 <tbody>
                     <tr v-if="cargando">
-                        <td colspan="11" class="mensaje">
+                        <td colspan="12" class="mensaje">
                             Cargando presentaciones...
                         </td>
                     </tr>
@@ -123,7 +123,7 @@
                         </tr>
 
                         <tr v-if="presentaciones.length === 0">
-                            <td colspan="11" class="mensaje">
+                            <td colspan="12" class="mensaje">
                                 No se encontraron presentaciones.
                             </td>
                         </tr>

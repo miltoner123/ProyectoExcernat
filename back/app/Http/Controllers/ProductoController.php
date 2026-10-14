@@ -9,21 +9,24 @@ use App\Models\Categoria;
 
 class ProductoController extends Controller
 {
-    function index(Request $request)
-    {
-        $limit = $request->query('limit', 10); 
-        $productos = Producto::with('categoria')->paginate($limit);
-        return response()->json($productos);
-    }
+  public function index(Request $request)
+{
+    $limit = min(max((int) $request->query('limit', 10), 1), 100);
+
+    $productos = Producto::with([
+        'categoria',
+        'presentaciones'
+    ])
+    ->orderBy('id', 'desc')
+    ->paginate($limit);
+
+    return response()->json($productos);
+}
     function store(Request $request)
     {
-        $imagen = $request->file('imagen');
-        $nombreArchivo = time() . '_' . $imagen->getClientOriginalName();
-        $imagen->move(public_path('imagenes'), $nombreArchivo);
         $producto = new Producto();
         $producto->nombre = $request->nombre;
         $producto->descripcion = $request->descripcion;
-        $producto->imagen = $nombreArchivo;
         $producto->estado= 1;
         $producto->categoria_id = $request->categoria_id;
         $producto->save();
@@ -108,12 +111,6 @@ class ProductoController extends Controller
         if ($producto) {
             $producto->nombre = $request->nombre;
             $producto->descripcion = $request->descripcion;
-            if ($request->hasFile('imagen')) {
-                $imagen = $request->file('imagen');
-                $nombreArchivo = time() . '_' . $imagen->getClientOriginalName();
-                $imagen->move(public_path('imagenes'), $nombreArchivo);
-                $producto->imagen = $nombreArchivo;
-            }
             $producto->categoria_id = $request->categoria_id;
             $producto->save();
             return response()->json(['message' => 'Producto actualizado correctamente', 'producto' => $producto]);

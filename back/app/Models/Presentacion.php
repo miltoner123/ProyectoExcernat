@@ -1,21 +1,21 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\belongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Presentacion extends Model
 {
-    protected $table = 'presentaciones';
+    use SoftDeletes;
 
+    protected $table = 'presentaciones';
     protected $primaryKey = 'id_presentacion';
 
     protected $fillable = [
         'id_producto',
         'codigo_sku',
         'nombre_presentacion',
+        'imagen',
         'peso_neto',
         'unidad_medida',
         'tipo_envase',
@@ -24,21 +24,28 @@ class Presentacion extends Model
         'precio_paquete',
         'estado',
     ];
-    use SoftDeletes;
 
+    protected $casts = [
+        'estado' => 'boolean',
+    ];
+
+    // Cada presentación pertenece a un producto.
     public function producto()
     {
-        return $this->belongsTo(Producto::class,
+        return $this->belongsTo(
+            Producto::class,
             'id_producto',
             'id'
         );
     }
+
+    // Una presentación puede tener varios lotes.
     public function lotes()
-{
-    return $this->hasMany(
-        Lote::class,
-        'id_presentacion',
-        'id_presentacion'
-    );
-}
+    {
+        return $this->hasMany(
+            Lote::class,
+            'id_presentacion',
+            'id_presentacion'
+        );
+    }
 }

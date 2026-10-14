@@ -13,6 +13,7 @@ return new class extends Migration
             $table->id('id_presentacion');
             $table->string('codigo_sku')->unique();
             $table->string('nombre_presentacion');
+            $table->string('imagen')->nullable();
             $table->decimal('peso_neto', 10, 2);
             $table->string('unidad_medida');
             $table->string('tipo_envase');

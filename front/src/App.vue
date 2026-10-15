@@ -33,11 +33,7 @@
           </div>
           
 
-          <RouterLink to="/categorias" class="menu-item">
-            📁 Categorías
-          </RouterLink>
-
-          <RouterLink to="/productos" class="menu-item">
+             <RouterLink to="/productos" class="menu-item">
             📦 Productos
           </RouterLink>
           <RouterLink to="/presentaciones" class="menu-item">

@@ -55,9 +55,11 @@ Route::delete('/eventos/{id}', [\App\Http\Controllers\EventoController::class,'d
 
 Route::get('/inventarios', [\App\Http\Controllers\InventarioController::class,'index']);
 Route::post('/inventarios', [\App\Http\Controllers\InventarioController::class,'store']);
+Route::get('/inventarios/consulta', [\App\Http\Controllers\InventarioController::class, 'consulta']);
 Route::get('/inventarios/{id}', [\App\Http\Controllers\InventarioController::class,'show']);
 Route::post('/inventarios/{id}', [\App\Http\Controllers\InventarioController::class,'update']);
 Route::delete('/inventarios/{id}', [\App\Http\Controllers\InventarioController::class,'destroy']);
+
 
 Route::get('/movimientos-inventario', [\App\Http\Controllers\MovimientoInventarioController::class,'index']);
 Route::post('/movimientos-inventario', [\App\Http\Controllers\MovimientoInventarioController::class,'store']);

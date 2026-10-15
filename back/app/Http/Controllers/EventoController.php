@@ -11,74 +11,92 @@ class EventoController extends Controller
     public function index(Request $request)
     {
         $limit = (int) $request->query('limit', 10);
-
-        if (!in_array($limit, [10, 25, 50])) {
-            $limit = 10;
-        }
+        if (!in_array($limit, [10, 25, 50])) $limit = 10;
 
         $query = Evento::with('responsable.persona');
 
-        // Buscar
         if ($request->filled('buscar')) {
             $buscar = $request->buscar;
 
             $query->where(function ($q) use ($buscar) {
                 $q->where('nombre', 'ilike', "%{$buscar}%")
-                    ->orWhere('tipo', 'ilike', "%{$buscar}%")
-                    ->orWhere('departamento', 'ilike', "%{$buscar}%")
-                    ->orWhere('lugar', 'ilike', "%{$buscar}%");
+                  ->orWhere('tipo', 'ilike', "%{$buscar}%")
+                  ->orWhere('departamento', 'ilike', "%{$buscar}%")
+                  ->orWhere('lugar', 'ilike', "%{$buscar}%");
             });
         }
 
-        // Filtrar por tipo
         if ($request->filled('tipo')) {
             $query->where('tipo', $request->tipo);
         }
 
-        // Filtrar por departamento
         if ($request->filled('departamento')) {
             $query->where('departamento', $request->departamento);
         }
 
-        // Filtrar por estado
-        if ($request->has('estado')) {
-            $query->where('estado', filter_var($request->estado, FILTER_VALIDATE_BOOLEAN));
+        if ($request->has('estado') && $request->estado !== '') {
+            $query->where(
+                'estado',
+                filter_var($request->estado, FILTER_VALIDATE_BOOLEAN)
+            );
         }
 
-        $eventos = $query->orderBy('fecha_inicio', 'desc')->paginate($limit);
-
-        return response()->json($eventos);
+        return response()->json(
+            $query->orderByDesc('fecha_inicio')->paginate($limit)
+        );
     }
 
-
-    // REGISTRAR EVENTO
-    public function store(Request $request)
+    // VALIDACIONES COMPARTIDAS
+    private function validar(Request $request)
     {
-        $request->validate([
+        return $request->validate([
             'nombre' => 'required|string|max:255',
             'tipo' => 'required|string|max:50',
             'departamento' => 'required|string|max:100',
             'lugar' => 'required|string|max:255',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
-            'id_responsable' => 'nullable|exists:personal,id_personal',
+            'id_responsable' => 'nullable|integer|exists:personal,id_personal',
             'presupuesto_estimado' => 'nullable|numeric|min:0',
-            'estado' => 'nullable|boolean',
             'observacion' => 'nullable|string',
+            'estado' => 'sometimes|boolean'
         ]);
+    }
 
-        $evento = Evento::create([
-            'nombre' => $request->nombre,
-            'tipo' => $request->tipo,
-            'departamento' => $request->departamento,
-            'lugar' => $request->lugar,
-            'fecha_inicio' => $request->fecha_inicio,
-            'fecha_fin' => $request->fecha_fin,
-            'id_responsable' => $request->id_responsable,
-            'presupuesto_estimado' => $request->presupuesto_estimado,
-            'estado' => $request->estado ?? true,
-            'observacion' => $request->observacion,
-        ]);
+    // COMPROBAR STOCK EN LOS STANDS DEL EVENTO
+    private function tieneStockPendiente(Evento $evento)
+    {
+        return $evento->ubicaciones()
+            ->where('tipo', 'STAND')
+            ->whereHas('inventarios', function ($query) {
+                $query->where('stock_actual', '>', 0);
+            })
+            ->exists();
+    }
+
+    // COMPROBAR HISTORIAL OPERATIVO
+    private function tieneHistorial(Evento $evento)
+    {
+        if ($evento->asignacionesPersonal()->exists()) {
+            return true;
+        }
+
+        return $evento->ubicaciones()
+            ->where(function ($query) {
+                $query->whereHas('inventarios')
+                    ->orWhereHas('movimientosOrigen')
+                    ->orWhereHas('movimientosDestino');
+            })
+            ->exists();
+    }
+
+    // CREAR EVENTO
+    public function store(Request $request)
+    {
+        $datos = $this->validar($request);
+        $datos['estado'] = $datos['estado'] ?? true;
+
+        $evento = Evento::create($datos);
 
         return response()->json([
             'message' => 'Evento registrado correctamente.',
@@ -86,13 +104,13 @@ class EventoController extends Controller
         ], 201);
     }
 
-
     // MOSTRAR EVENTO
     public function show($id)
     {
         $evento = Evento::with([
             'responsable.persona',
-            'ubicaciones'
+            'ubicaciones',
+            'asignacionesPersonal'
         ])->find($id);
 
         if (!$evento) {
@@ -103,7 +121,6 @@ class EventoController extends Controller
 
         return response()->json($evento);
     }
-
 
     // ACTUALIZAR EVENTO
     public function update(Request $request, $id)
@@ -116,40 +133,51 @@ class EventoController extends Controller
             ], 404);
         }
 
-        $request->validate([
-            'nombre' => 'required|string|max:255',
-            'tipo' => 'required|string|max:50',
-            'departamento' => 'required|string|max:100',
-            'lugar' => 'required|string|max:255',
-            'fecha_inicio' => 'required|date',
-            'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
-            'id_responsable' => 'nullable|exists:personal,id_personal',
-            'presupuesto_estimado' => 'nullable|numeric|min:0',
-            'estado' => 'required|boolean',
-            'observacion' => 'nullable|string',
-        ]);
+        $datos = $this->validar($request);
+        $nuevoEstado = $datos['estado'] ?? $evento->estado;
 
-        $evento->update([
-            'nombre' => $request->nombre,
-            'tipo' => $request->tipo,
-            'departamento' => $request->departamento,
-            'lugar' => $request->lugar,
-            'fecha_inicio' => $request->fecha_inicio,
-            'fecha_fin' => $request->fecha_fin,
-            'id_responsable' => $request->id_responsable,
-            'presupuesto_estimado' => $request->presupuesto_estimado,
-            'estado' => $request->estado,
-            'observacion' => $request->observacion,
-        ]);
+        // No permitir cerrar el evento con mercadería pendiente.
+        if (!$nuevoEstado && $this->tieneStockPendiente($evento)) {
+            return response()->json([
+                'message' => 'No se puede cerrar el evento: uno o más stands todavía tienen existencias. Registre las ventas, devoluciones o ajustes correspondientes.'
+            ], 422);
+        }
+
+        // Proteger datos históricos cuando ya existan operaciones.
+        if ($this->tieneHistorial($evento)) {
+            $protegidos = [
+                'nombre', 'tipo', 'departamento', 'lugar',
+                'fecha_inicio', 'fecha_fin', 'id_responsable'
+            ];
+
+            foreach ($protegidos as $campo) {
+                $actual = $evento->{$campo};
+                $nuevo = $datos[$campo] ?? null;
+
+                if ($actual instanceof \DateTimeInterface) {
+                    $actual = $actual->format('Y-m-d');
+                }
+
+                if ((string) ($actual ?? '') !== (string) ($nuevo ?? '')) {
+                    return response()->json([
+                        'message' => "No se puede modificar {$campo} porque el evento ya tiene historial operativo."
+                    ], 422);
+                }
+            }
+        }
+
+        $datos['estado'] = $nuevoEstado;
+        $evento->update($datos);
 
         return response()->json([
-            'message' => 'Evento actualizado correctamente.',
-            'evento' => $evento->load('responsable.persona')
+            'message' => $nuevoEstado
+                ? 'Evento actualizado correctamente.'
+                : 'Evento inactivado correctamente. Las existencias de sus stands están en cero.',
+            'evento' => $evento->fresh()->load('responsable.persona')
         ]);
     }
 
-
-    // ELIMINAR EVENTO
+    // ELIMINAR EVENTO SIN HISTORIAL
     public function destroy($id)
     {
         $evento = Evento::find($id);
@@ -160,10 +188,12 @@ class EventoController extends Controller
             ], 404);
         }
 
-        // No eliminar si tiene ubicaciones/stands relacionados
-        if ($evento->ubicaciones()->exists()) {
+        if (
+            $evento->ubicaciones()->exists() ||
+            $evento->asignacionesPersonal()->exists()
+        ) {
             return response()->json([
-                'message' => 'No se puede eliminar el evento porque tiene ubicaciones o stands relacionados.'
+                'message' => 'El evento tiene ubicaciones o personal asignado. No puede eliminarse; conserve su historial.'
             ], 422);
         }
 

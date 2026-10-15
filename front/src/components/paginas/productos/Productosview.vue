@@ -7,7 +7,9 @@
                 <h1>Productos</h1>
                 <p>Gestión y administración de productos y sus presentaciones</p>
             </div>
-
+            <button class="btn-categorias" @click="$router.push('/categorias')">
+                Categorías
+            </button>
             <button class="btn-crear" @click="crearProducto">
                 + Crear Producto
             </button>
@@ -505,7 +507,24 @@ export default {
     gap: 15px;
     margin-bottom: 25px;
 }
+.acciones-encabezado {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
 
+.btn-categorias {
+    background: #475569;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    cursor: pointer;
+}
+
+.btn-categorias:hover {
+    background: #334155;
+}
 .encabezado h1 {
     margin: 0 0 5px;
     color: #1f2937;

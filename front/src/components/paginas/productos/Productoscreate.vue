@@ -14,10 +14,7 @@
             <label for="descripcion">Descripción:</label>
             <textarea id="descripcion" v-model="producto.descripcion" required></textarea>
         </div>
-        <div>
-            <label for="imagen">Imagen:</label>
-            <input type="file" id="imagen" @change="handleFileUpload" required accept="image/*">
-        </div>
+
         <!-- <div>
             <label for="estado">Estado:</label>
             <input type="checkbox" id="estado" v-model="producto.estado">
@@ -59,7 +56,6 @@ export default {
             producto: {
                 nombre: '',
                 descripcion: '',
-                imagen: '',
                 estado: true,
                 categoria_producto_id: ''
         },
@@ -104,8 +100,7 @@ export default {
             for (const key in this.producto) {
                 formData.append(key, this.producto[key]);
             }
-            formData.append('imagen', this.producto.imagen);
-            axios.post('http://localhost:8000/api/productos', formData)
+                axios.post('http://localhost:8000/api/productos', formData)
                 .then(response => {
                     console.log(response.data);
                     this.$router.push('/productos');

@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Inventario;
+use App\Models\Lote;
+use App\Models\Ubicacion;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class InventarioController extends Controller
 {
@@ -106,77 +110,64 @@ class InventarioController extends Controller
     }
 
 
+    // CONSULTAR EXISTENCIAS DE UN LOTE EN UNA UBICACIÓN
+    public function consulta(Request $request)
+    {
+        $datos = $request->validate([
+            'id_ubicacion' => 'required|integer|exists:ubicaciones,id_ubicacion',
+            'id_lote' => 'required|integer|exists:lotes,id_lote'
+        ]);
+
+        $inventario = Inventario::with(['ubicacion', 'lote.presentacion.producto'])
+            ->where('id_ubicacion', $datos['id_ubicacion'])
+            ->where('id_lote', $datos['id_lote'])->first();
+
+        return response()->json([
+            'inventario' => $inventario,
+            'stock_actual' => (int) ($inventario?->stock_actual ?? 0)
+        ]);
+    }
+
     // REGISTRAR INVENTARIO
 
     public function store(Request $request)
     {
-        $request->validate([
-
-            'id_ubicacion' =>
-                'required|exists:ubicaciones,id_ubicacion',
-
-            'id_lote' =>
-                'required|exists:lotes,id_lote',
-
-            'stock_minimo' =>
-                'required|integer|min:0',
-
+        $datos = $request->validate([
+            'id_ubicacion' => 'required|integer|exists:ubicaciones,id_ubicacion',
+            'id_lote' => 'required|integer|exists:lotes,id_lote',
+            'stock_minimo' => 'required|integer|min:0'
         ]);
 
+        $inventario = DB::transaction(function () use ($datos) {
+            // Serializa altas para la misma ubicación; no modifica el stock.
+            $ubicacion = Ubicacion::whereKey($datos['id_ubicacion'])
+                ->lockForUpdate()->firstOrFail();
+            $lote = Lote::whereKey($datos['id_lote'])->firstOrFail();
 
-        // VERIFICAR DUPLICADOS
+            if (!$ubicacion->estado || !$lote->estado) {
+                throw ValidationException::withMessages([
+                    'inventario' => 'La ubicación y el lote deben estar activos.'
+                ]);
+            }
 
-        $existe = Inventario::where(
-            'id_ubicacion',
-            $request->id_ubicacion
-        )
-        ->where(
-            'id_lote',
-            $request->id_lote
-        )
-        ->exists();
+            if (Inventario::where('id_ubicacion', $datos['id_ubicacion'])
+                ->where('id_lote', $datos['id_lote'])->exists()) {
+                throw ValidationException::withMessages([
+                    'inventario' => 'Este lote ya tiene inventario en la ubicación seleccionada.'
+                ]);
+            }
 
-
-        if ($existe) {
-
-            return response()->json([
-                'message' =>
-                    'Este lote ya tiene un inventario registrado en la ubicación seleccionada.'
-            ], 422);
-        }
-
-
-        $inventario = Inventario::create([
-
-            'id_ubicacion' =>
-                $request->id_ubicacion,
-
-            'id_lote' =>
-                $request->id_lote,
-
-            'stock_actual' =>
-                0,
-
-            'stock_minimo' =>
-                $request->stock_minimo,
-
-        ]);
-
+            return Inventario::create([
+                ...$datos,
+                'stock_actual' => 0
+            ]);
+        }, 3);
 
         return response()->json([
-
-            'message' =>
-                'Inventario registrado correctamente',
-
-            'inventario' =>
-                $inventario->load([
-                    'ubicacion',
-                    'lote.presentacion.producto'
-                ])
-
+            'message' => 'Inventario registrado correctamente.',
+            'inventario' => $inventario->load(['ubicacion', 'lote.presentacion.producto'])
         ], 201);
     }
-
 
     // CONSULTAR INVENTARIO
 

@@ -28,8 +28,16 @@ class Persona extends Model
         'estado' => 'boolean',
     ];
         public function personal()
+    {
+        return $this->hasOne(Personal::class, 'id_persona', 'id_persona');
+    }
+    public function usuario()
 {
-    return $this->hasOne(Personal::class, 'id_persona', 'id_persona');
+    return $this->hasOne(
+        \App\Models\User::class,
+        'id_persona',
+        'id_persona'
+    );
 }
 
 }

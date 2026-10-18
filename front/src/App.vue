@@ -1,96 +1,61 @@
+<script setup>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import api from './services/api';
+import { sesion, establecerUsuario } from './services/sesion';
+const router = useRouter();
+const saliendo = ref(false);
+async function cerrarSesion() {
+  saliendo.value = true;
+  try {
+    await api.post('/api/logout');
+    establecerUsuario(null);
+    await router.replace('/login');
+  } catch (error) {
+    alert('No se pudo cerrar la sesión. Inténtalo nuevamente.');
+  } finally { saliendo.value = false; }
+}
+</script>
+
 <template>
   <div id="app">
-
-    <!-- Barra superior -->
-    <header class="topbar">
-      <div class="logo">
-        EXCERNAT
-      </div>
-
-      <div class="topbar-user">
-        Sistema de Gestión Administrativa
-      </div>
-    </header>
-
-    <!-- Contenedor general -->
-    <div class="app-container">
-
-      <!-- Menú lateral -->
-      <aside class="sidebar">
-
-        <div class="sidebar-title">
-          MENÚ PRINCIPAL
+    <template v-if="sesion.usuario">
+      <header class="topbar">
+        <div class="logo">EXCERNAT</div>
+        <div class="topbar-user">
+          {{ sesion.usuario.name }}
+          <button class="btn-salir" :disabled="saliendo" @click="cerrarSesion">Cerrar sesión</button>
         </div>
-
-        <nav class="menu">
-
-          <RouterLink to="/" class="menu-item">
-            🏠 Dashboard principal
-          </RouterLink>
-
-          <div class="menu-section">
-            PRODUCTOS
-          </div>
-          
-
-             <RouterLink to="/productos" class="menu-item">
-            📦 Productos
-          </RouterLink>
-          <RouterLink to="/presentaciones" class="menu-item">
-            📋Presentaciones
-          </RouterLink>
-          <RouterLink to="/lotes" class="menu-item">
-            🏷️Lotes
-          </RouterLink>
-          <div class="menu-section">
-          INVENTARIO
-          </div>
-          <RouterLink to="/ubicaciones" class="menu-item">
-            📍Ubicaciones
-          </RouterLink>
-          <RouterLink to="/inventarios" class="menu-item">
-            📦Inventarios
-          </RouterLink>
-          <RouterLink to="/movimientos" class="menu-item">
-            🔄 Movimientos de Inventario
-          </RouterLink>
-          <div class="menu-section">
-              EVENTOS
-          </div>
-          <RouterLink to="/eventos" class="menu-item">
-              📅 Eventos
-          </RouterLink>
-          <div class="menu-section">
-              PERSONAL
-          </div>
-
-          <RouterLink to="/personas" class="menu-item">
-              👥 Personas
-          </RouterLink>
-          <RouterLink to="/cargos" class="menu-item">
-              💼 Cargos
-          </RouterLink>
-          <RouterLink to="/personal" class="menu-item">
-              👤 Personal
-          </RouterLink>
-          <RouterLink to="/asignaciones" class="menu-item">
-              📌 Asignaciones
-          </RouterLink>
-
-        </nav>
-
-      </aside>
-
-      <!-- Contenido -->
-      <main class="main-content">
-        <RouterView />
-      </main>
-
-    </div>
-
+      </header>
+      <div class="app-container">
+        <aside class="sidebar">
+          <div class="sidebar-title">MENÚ PRINCIPAL</div>
+          <nav class="menu">
+            <RouterLink to="/" class="menu-item">🏠 Dashboard principal</RouterLink>
+            <div class="menu-section">PRODUCTOS</div>
+            <RouterLink to="/productos" class="menu-item">📦 Productos</RouterLink>
+            <RouterLink to="/categorias" class="menu-item">📂 Categorías</RouterLink>
+            <RouterLink to="/presentaciones" class="menu-item">📋 Presentaciones</RouterLink>
+            <RouterLink to="/lotes" class="menu-item">🏷️ Lotes</RouterLink>
+            <div class="menu-section">INVENTARIO</div>
+            <RouterLink to="/ubicaciones" class="menu-item">📍 Ubicaciones</RouterLink>
+            <RouterLink to="/inventarios" class="menu-item">📦 Inventarios</RouterLink>
+            <RouterLink to="/movimientos" class="menu-item">🔄 Movimientos de Inventario</RouterLink>
+            <div class="menu-section">EVENTOS</div>
+            <RouterLink to="/eventos" class="menu-item">📅 Eventos</RouterLink>
+            <div class="menu-section">PERSONAL</div>
+            <RouterLink to="/personas" class="menu-item">👥 Personas</RouterLink>
+            <RouterLink to="/cargos" class="menu-item">💼 Cargos</RouterLink>
+            <RouterLink to="/personal" class="menu-item">👤 Personal</RouterLink>
+            <RouterLink to="/asignaciones" class="menu-item">📌 Asignaciones</RouterLink>
+          </nav>
+        </aside>
+        <main class="main-content"><RouterView /></main>
+      </div>
+    </template>
+    <RouterView v-else />
   </div>
 </template>
-
 
 <style>
 
@@ -553,4 +518,7 @@ table tbody tr:hover {
 
 }
 
+
+.btn-salir { margin-left: 16px; background: #ef4444; color: white; border: 0; border-radius: 6px; padding: 8px 12px; cursor: pointer; }
+.btn-salir:disabled { opacity: .6; cursor: wait; }
 </style>

@@ -1,4 +1,3 @@
-
 <template>
   <div class="login-container">
     <form class="login-card" @submit.prevent="iniciarSesion">
@@ -32,6 +31,7 @@
 
 <script>
 import api from '../../services/api';
+import { establecerUsuario } from '../../services/sesion';
 
 export default {
   name: 'LoginView',
@@ -55,13 +55,14 @@ export default {
         await api.get('/sanctum/csrf-cookie');
 
         // Enviar credenciales a Laravel
-        await api.post('/api/login', {
+        const respuesta = await api.post('/api/login', {
           email: this.email,
           password: this.password
         });
 
-        // Redirigir al inicio del sistema
-        this.$router.push('/');
+        establecerUsuario(respuesta.data.usuario);
+        const destino = this.$route.query.redirect;
+        this.$router.replace(typeof destino === 'string' && destino.startsWith('/') && !destino.startsWith('//') ? destino : '/');
       } catch (error) {
         this.error =
           error.response?.data?.errors?.email?.[0] ||

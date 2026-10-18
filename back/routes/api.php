@@ -11,6 +11,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/usuario', [AuthController::class, 'usuario']);
     Route::post('/logout', [AuthController::class, 'logout']);
 });
+Route::middleware('auth:sanctum')->group(function () {
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
 // })->middleware('auth:sanctum');
@@ -108,3 +109,4 @@ Route::post('/asistencias', [\App\Http\Controllers\AsistenciaController::class,'
 Route::get('/asistencias/{id}', [\App\Http\Controllers\AsistenciaController::class,'show']);
 Route::post('/asistencias/{id}', [\App\Http\Controllers\AsistenciaController::class,'update']);   
 Route::delete('/asistencias/{id}', [\App\Http\Controllers\AsistenciaController::class,'destroy']);
+});

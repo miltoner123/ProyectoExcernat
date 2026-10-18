@@ -1,6 +1,8 @@
 import { createApp } from "vue";
 //import './style.css';
 import App from "./App.vue";
+import api from "./services/api";
+import { sesion, establecerUsuario } from "./services/sesion";
 import Login from './components/auth/Login.vue';
  
 
@@ -10,10 +12,7 @@ import HomeView from "./components/HomeView.vue";
 import AboutView from "./components/AboutView.vue";
 
 const routes = [
-  {path: '/login',
-    name: 'Login',
-    component: Login
-},
+  { path: '/login', name: 'Login', component: Login, meta: { publica: true } },
   { path: "/", component: HomeView },
   { path: "/about", component: AboutView },
   { path: "/productos", component: () => import("./components/paginas/productos/ProductosView.vue") },
@@ -58,4 +57,19 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 })
-createApp(App).use(router).mount("#app")
+router.beforeEach(async (to) => {
+  if (!sesion.comprobada) {
+    try {
+      const { data } = await api.get('/api/usuario');
+      establecerUsuario(data);
+    } catch {
+      establecerUsuario(null);
+    }
+    sesion.comprobada = true;
+  }
+  if (to.meta.publica) return sesion.usuario ? '/' : true;
+  if (!sesion.usuario) return { path: '/login', query: { redirect: to.fullPath } };
+  return true;
+});
+
+createApp(App).use(router).mount('#app');

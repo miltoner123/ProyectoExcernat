@@ -73,7 +73,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 const API = 'http://localhost:8000/api';
 export default {
   data() {
@@ -100,7 +100,7 @@ export default {
       const registros = [];
       let pagina = 1, ultima = 1;
       do {
-        const { data } = await axios.get(`${API}/${endpoint}`, { params: {...parametros, page:pagina, limit:50} });
+        const { data } = await api.get(`${API}/${endpoint}`, { params: {...parametros, page:pagina, limit:50} });
         registros.push(...(data.data || []));
         ultima = data.last_page || 1;
         pagina++;
@@ -182,7 +182,7 @@ export default {
       if (!confirm('¿Confirmar el movimiento? No podrá editarse ni eliminarse.')) return;
       this.guardando = true;
       try {
-        const { data } = await axios.post(`${API}/movimientos-inventario`, m);
+        const { data } = await api.post(`${API}/movimientos-inventario`, m);
         alert(data.message || 'Movimiento registrado.');
         this.$router.push('/movimientos');
       } catch (error) {

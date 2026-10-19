@@ -232,7 +232,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 
 export default {
 
@@ -326,7 +326,7 @@ export default {
 
         personalGet() {
 
-            return axios.get(
+            return api.get(
                 'http://localhost:8000/api/personal',
                 {
                     params: {
@@ -345,7 +345,7 @@ export default {
 
         ubicacionesGet() {
 
-            return axios.get(
+            return api.get(
                 'http://localhost:8000/api/ubicaciones',
                 {
                     params: {
@@ -364,7 +364,7 @@ export default {
 
         eventosGet() {
 
-            return axios.get(
+            return api.get(
                 'http://localhost:8000/api/eventos',
                 {
                     params: {
@@ -468,7 +468,7 @@ export default {
                         : null
             };
 
-            axios.post(
+            api.post(
                 'http://localhost:8000/api/asignaciones-personal',
                 datos
             )

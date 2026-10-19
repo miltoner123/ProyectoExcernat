@@ -79,7 +79,7 @@
 </template>
 <script>
 
-import axios from 'axios';
+import api from '../../../services/api';
 export default {
     data() {
         return {
@@ -132,7 +132,7 @@ export default {
     },
     methods: {
         presentacionesGet() {
-            axios.get(
+            api.get(
                 'http://localhost:8000/api/presentaciones',
                 {
                     params: {
@@ -160,7 +160,7 @@ export default {
                 vida_util_meses: Number(this.lote.vida_util_meses)
             };
 
-            axios.post('http://localhost:8000/api/lotes', datos)
+            api.post('http://localhost:8000/api/lotes', datos)
                 .then(response => {
                     alert('Lote registrado correctamente');
                     this.$router.push('/lotes');

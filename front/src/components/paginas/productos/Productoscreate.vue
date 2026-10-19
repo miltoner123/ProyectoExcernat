@@ -48,7 +48,7 @@
 
 </template>
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 export default {
     name : 'Productoscreate',
     data() {
@@ -71,7 +71,7 @@ export default {
     },
     methods:{
         crearCategoria() {
-            axios.post('http://localhost:8000/api/categorias', this.categoria)
+            api.post('http://localhost:8000/api/categorias', this.categoria)
                 .then(response => {
                     console.log('Categoria creada:', response.data);
                     this.categoria.nombre = '';
@@ -87,7 +87,7 @@ export default {
             this.producto.imagen = file;
         },
         async categoriasGet() {
-            axios.get('http://localhost:8000/api/categorias')
+            api.get('http://localhost:8000/api/categorias')
                 .then(response => {
                     this.categorias = response.data;
                 })
@@ -100,7 +100,7 @@ export default {
             for (const key in this.producto) {
                 formData.append(key, this.producto[key]);
             }
-                axios.post('http://localhost:8000/api/productos', formData)
+                api.post('http://localhost:8000/api/productos', formData)
                 .then(response => {
                     console.log(response.data);
                     this.$router.push('/productos');

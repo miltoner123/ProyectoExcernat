@@ -33,7 +33,7 @@
 <pre>{{ categorias}} hola </pre>
 </template>
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 export default {
     name : 'Productoseditar',
     data() {
@@ -54,7 +54,7 @@ export default {
     methods:{
         productoGet() {
             const productoId = this.$route.params.id;
-            axios.get(`http://localhost:8000/api/productos/${productoId}`)
+            api.get(`http://localhost:8000/api/productos/${productoId}`)
                 .then(response => {
                     this.producto = response.data;
                 })
@@ -67,7 +67,7 @@ export default {
             this.producto.imagen = file;
         },
         async categoriasGet() {
-            axios.get('http://localhost:8000/api/categorias')
+            api.get('http://localhost:8000/api/categorias')
                 .then(response => {
                     this.categorias = response.data;
                 })
@@ -82,7 +82,7 @@ export default {
             formData.append('categoria_id', this.producto.categoria_id);
             formData.append('estado', this.producto.estado);
   
-            axios.post(`http://localhost:8000/api/productos/${this.$route.params.id}`, formData,{
+            api.post(`http://localhost:8000/api/productos/${this.$route.params.id}`, formData,{
                 headers: {
                     'Content-Type': 'multipart/form-data'   
                 },

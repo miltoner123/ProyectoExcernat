@@ -194,7 +194,7 @@
 
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 
 export default {
 
@@ -237,7 +237,7 @@ export default {
 
             this.cargando = true;
 
-            axios.get(
+            api.get(
                 'http://localhost:8000/api/inventarios',
                 {
                     params: {
@@ -296,7 +296,7 @@ export default {
 
         ubicacionesGet() {
 
-            axios.get(
+            api.get(
                 'http://localhost:8000/api/ubicaciones',
                 {
                     params: {

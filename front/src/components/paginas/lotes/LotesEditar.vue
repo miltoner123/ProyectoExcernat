@@ -149,7 +149,7 @@
 
 <script>
 
-import axios from 'axios';
+import api from '../../../services/api';
 
 export default {
 
@@ -204,7 +204,7 @@ export default {
 
         presentacionesGet() {
 
-            axios.get(
+            api.get(
                 'http://localhost:8000/api/presentaciones',
                 {
                     params: {
@@ -229,7 +229,7 @@ export default {
                 this.$route.params.id;
 
 
-            axios.get(
+            api.get(
                 `http://localhost:8000/api/lotes/${id}`
             )
 
@@ -277,7 +277,7 @@ export default {
                 return;
             }
 
-            axios.post(
+            api.post(
                 `http://localhost:8000/api/lotes/${id}`,
                 datos
             )

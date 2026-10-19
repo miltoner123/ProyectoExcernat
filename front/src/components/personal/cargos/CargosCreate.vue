@@ -71,7 +71,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 
 export default {
 
@@ -100,7 +100,7 @@ export default {
                 descripcion: this.cargo.descripcion || null
             };
 
-            axios.post(
+            api.post(
                 'http://localhost:8000/api/cargos',
                 datos
             )

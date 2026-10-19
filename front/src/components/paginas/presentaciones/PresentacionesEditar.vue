@@ -95,7 +95,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 
 const API = 'http://localhost:8000/api';
 const STORAGE = 'http://localhost:8000/storage/';
@@ -135,8 +135,8 @@ export default {
                 const id = this.$route.params.id;
 
                 const [resProductos, resPresentacion] = await Promise.all([
-                    axios.get(`${API}/productos`, { params: { limit: 100 } }),
-                    axios.get(`${API}/presentaciones/${id}`)
+                    api.get(`${API}/productos`, { params: { limit: 100 } }),
+                    api.get(`${API}/presentaciones/${id}`)
                 ]);
 
                 this.presentacion = resPresentacion.data;
@@ -201,7 +201,7 @@ export default {
                 // Laravel procesa la actualización y el archivo correctamente.
                 formData.append('_method', 'PUT');
 
-                await axios.post(`${API}/presentaciones/${id}`, formData);
+                await api.post(`${API}/presentaciones/${id}`, formData);
 
                 alert('Presentación actualizada correctamente.');
                 this.$router.push('/presentaciones');

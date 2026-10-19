@@ -94,7 +94,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 
 export default {
     data() {
@@ -128,7 +128,7 @@ export default {
     methods: {
         async productosGet() {
             try {
-                const { data } = await axios.get(
+                const { data } = await api.get(
                     'http://localhost:8000/api/productos',
                     { params: { limit: 100 } }
                 );
@@ -179,7 +179,7 @@ export default {
                     formData.append('imagen', this.imagenSeleccionada);
                 }
 
-                await axios.post(
+                await api.post(
                     'http://localhost:8000/api/presentaciones',
                     formData
                 );

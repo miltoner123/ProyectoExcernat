@@ -62,7 +62,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 const API = 'http://localhost:8000/api';
 
 export default {
@@ -91,7 +91,7 @@ export default {
     async todasLasPaginas(ruta, params = {}) {
       let pagina = 1, resultado = [], ultima = 1;
       do {
-        const { data } = await axios.get(`${API}/${ruta}`, { params: { ...params, page: pagina, limit: 100 } });
+        const { data } = await api.get(`${API}/${ruta}`, { params: { ...params, page: pagina, limit: 100 } });
         resultado.push(...(Array.isArray(data) ? data : data.data || []));
         ultima = Array.isArray(data) ? 1 : Number(data.last_page || 1);
         pagina++;
@@ -119,7 +119,7 @@ export default {
       if (!this.form.id_ubicacion || !this.form.id_lote) return;
       this.cargando = true;
       try {
-        const { data } = await axios.get(`${API}/inventarios/consulta`, {
+        const { data } = await api.get(`${API}/inventarios/consulta`, {
           params: { id_ubicacion: this.form.id_ubicacion, id_lote: this.form.id_lote }
         });
         if (numero !== this.consulta) return;
@@ -139,7 +139,7 @@ export default {
         const existente = this.inventarioExistente;
         const url = existente ? `${API}/inventarios/${existente.id_inventario}` : `${API}/inventarios`;
         const datos = existente ? { stock_minimo: this.form.stock_minimo } : this.form;
-        const { data } = await axios.post(url, datos);
+        const { data } = await api.post(url, datos);
         alert(data.message || 'Inventario guardado correctamente.');
         this.$router.push('/inventarios');
       } catch (e) {

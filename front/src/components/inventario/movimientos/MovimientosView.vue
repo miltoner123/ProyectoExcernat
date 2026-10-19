@@ -65,7 +65,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 const API = 'http://localhost:8000/api/movimientos-inventario';
 export default {
   data() {
@@ -85,7 +85,7 @@ export default {
       if (this.buscar.trim()) params.buscar = this.buscar.trim();
       if (this.tipo) params.tipo = this.tipo;
       try {
-        const { data } = await axios.get(API, { params });
+        const { data } = await api.get(API, { params });
         if (peticion !== this.numeroPeticion) return;
         this.movimientos = data.data || [];
         this.pagina = data.current_page || 1;

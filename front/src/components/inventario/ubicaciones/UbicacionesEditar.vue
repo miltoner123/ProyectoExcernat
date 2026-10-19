@@ -147,7 +147,7 @@
 
 <script>
 
-import axios from 'axios';
+import api from '../../../services/api';
 
 export default {
 
@@ -212,7 +212,7 @@ export default {
 
         eventosGet() {
 
-            axios.get(
+            api.get(
                 'http://localhost:8000/api/eventos'
             )
 
@@ -238,7 +238,7 @@ export default {
 
             const id = this.$route.params.id;
 
-            axios.get(
+            api.get(
                 `http://localhost:8000/api/ubicaciones/${id}`
             )
 
@@ -286,7 +286,7 @@ export default {
 
             this.guardando = true;
 
-            axios.post(
+            api.post(
                 `http://localhost:8000/api/ubicaciones/${id}`,
                 this.ubicacion
             )

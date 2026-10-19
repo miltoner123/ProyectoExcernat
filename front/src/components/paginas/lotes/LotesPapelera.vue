@@ -133,7 +133,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 
 export default {
 
@@ -184,7 +184,7 @@ export default {
         lotesGet() {
             this.cargando = true;
 
-            axios.get('http://localhost:8000/api/lotes-papelera', {
+            api.get('http://localhost:8000/api/lotes-papelera', {
                 params: {
                     page: this.pagination.current_page,
                     limit: this.pagination.per_page
@@ -212,7 +212,7 @@ export default {
 
             this.restaurandoId = lote.id_lote;
 
-            axios.post(
+            api.post(
                 `http://localhost:8000/api/lotes/${lote.id_lote}/restaurar`
             )
             .then(response => {

@@ -215,7 +215,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 
 export default {
 
@@ -300,7 +300,7 @@ export default {
 
         personasGet() {
 
-            return axios.get(
+            return api.get(
                 'http://localhost:8000/api/personas',
                 {
                     params: {
@@ -321,7 +321,7 @@ export default {
 
         cargosGet() {
 
-            return axios.get(
+            return api.get(
                 'http://localhost:8000/api/cargos',
                 {
                     params: {
@@ -341,7 +341,7 @@ export default {
 
         personalGet() {
 
-            return axios.get(
+            return api.get(
                 'http://localhost:8000/api/personal',
                 {
                     params: {
@@ -382,7 +382,7 @@ export default {
                     this.trabajador.tipo_contrato || null
             };
 
-            axios.post(
+            api.post(
                 'http://localhost:8000/api/personal',
                 datos
             )

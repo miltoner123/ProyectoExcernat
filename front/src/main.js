@@ -16,7 +16,7 @@ const routes = [
   { path: '/usuarios', name: 'Usuarios', component: () => import('./components/seguridad/UsuariosView.vue')},
   { path: "/", component: HomeView },
   { path: "/about", component: AboutView },
-  { path: "/productos", component: () => import("./components/paginas/productos/ProductosView.vue") },
+  { path: "/productos", component: () => import("./components/paginas/productos/Productosview.vue") },
   { path: "/productos/crear", component: () => import("./components/paginas/productos/Productoscreate.vue") },
   { path: "/productos/editar/:id", component: () => import("./components/paginas/productos/ProductosEditar.vue")},
   { path: "/categorias", component: () => import("./components/paginas/categorias/CategoriasView.vue") },

@@ -123,7 +123,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 
 const API = 'http://localhost:8000/api/ubicaciones';
 
@@ -170,7 +170,7 @@ export default {
       if (this.estado !== '') params.estado = this.estado;
 
       try {
-        const { data } = await axios.get(API, { params });
+        const { data } = await api.get(API, { params });
 
         if (peticion !== this.numeroPeticion) return;
 
@@ -238,7 +238,7 @@ export default {
       if (!confirm('¿Está seguro de eliminar esta ubicación?')) return;
 
       try {
-        const { data } = await axios.delete(`${API}/${id}`);
+        const { data } = await api.delete(`${API}/${id}`);
 
         alert(data.message || 'Ubicación eliminada correctamente.');
 

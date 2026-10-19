@@ -185,7 +185,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 
 export default {
 
@@ -223,7 +223,7 @@ export default {
             const solicitud = ++this.solicitudActual;
             this.cargando = true;
 
-            axios.get('http://localhost:8000/api/lotes', {
+            api.get('http://localhost:8000/api/lotes', {
                 params: {
                     page: this.pagination.current_page,
                     limit: this.pagination.per_page,
@@ -345,7 +345,7 @@ export default {
         return;
     }
 
-    axios.delete(`http://localhost:8000/api/lotes/${id}`)
+    api.delete(`http://localhost:8000/api/lotes/${id}`)
         .then(response => {
             alert(response.data.message);
             this.lotesGet();
@@ -364,7 +364,7 @@ export default {
             return;
         }
 
-        axios.post(`http://localhost:8000/api/lotes/${lote.id_lote}/estado`, {
+        api.post(`http://localhost:8000/api/lotes/${lote.id_lote}/estado`, {
             estado: nuevoEstado
         })
         .then(response => {

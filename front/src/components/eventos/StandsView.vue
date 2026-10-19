@@ -95,7 +95,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../services/api';
 
 export default {
 
@@ -139,7 +139,7 @@ export default {
 
             const id = this.$route.params.id;
 
-            return axios.get(
+            return api.get(
                 `http://localhost:8000/api/eventos/${id}`
             )
             .then(response => {
@@ -152,7 +152,7 @@ export default {
 
             const id = this.$route.params.id;
 
-            return axios.get(
+            return api.get(
                 'http://localhost:8000/api/ubicaciones',
                 {
                     params: {

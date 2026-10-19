@@ -87,7 +87,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../../services/api';
 
 const API = 'http://localhost:8000/api';
 
@@ -140,7 +140,7 @@ export default {
     methods: {
         async eventosGet() {
             try {
-                const { data } = await axios.get(`${API}/eventos`, {
+                const { data } = await api.get(`${API}/eventos`, {
                     params: { limit: 100 }
                 });
 
@@ -184,7 +184,7 @@ export default {
             };
 
             try {
-                await axios.post(`${API}/ubicaciones`, datos);
+                await api.post(`${API}/ubicaciones`, datos);
 
                 alert('Ubicación registrada correctamente.');
                 this.$router.push('/ubicaciones');

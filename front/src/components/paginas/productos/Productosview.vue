@@ -293,7 +293,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../services/api';
 
 export default {
 
@@ -329,7 +329,7 @@ export default {
 
             this.cargando = true;
 
-            axios.get('http://localhost:8000/api/productos', {
+            api.get('/api/productos', {
                 params: {
                     limit: this.pagination.per_page,
                     page: this.pagination.current_page
@@ -391,8 +391,8 @@ export default {
                 return;
             }
 
-            axios.post(
-                `http://localhost:8000/api/productos/${producto.id}/estado`,
+            api.post(
+                `/api/productos/${producto.id}/estado`,
                 {
                     estado: nuevoEstado
                 }
@@ -424,8 +424,8 @@ export default {
                 return;
             }
 
-            axios.delete(
-                `http://localhost:8000/api/productos/${id}`
+            api.delete(
+                `/api/productos/${id}`
             )
             .then(response => {
 

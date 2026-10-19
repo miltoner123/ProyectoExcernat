@@ -29,6 +29,7 @@
   </div>
 </template>
 
+
 <script>
 import api from '../../services/api';
 import { establecerUsuario } from '../../services/sesion';
@@ -51,23 +52,37 @@ export default {
       this.cargando = true;
 
       try {
-        // Obtener cookie de protección CSRF
+        // 1. Obtener la cookie CSRF de Laravel.
         await api.get('/sanctum/csrf-cookie');
 
-        // Enviar credenciales a Laravel
+        // 2. Autenticar con la sesión de Sanctum.
         const respuesta = await api.post('/api/login', {
           email: this.email,
           password: this.password
         });
 
+        // 3. Guardar los datos del usuario en Vue.
         establecerUsuario(respuesta.data.usuario);
+
+        // 4. Redirigir al sistema.
         const destino = this.$route.query.redirect;
-        this.$router.replace(typeof destino === 'string' && destino.startsWith('/') && !destino.startsWith('//') ? destino : '/');
+
+        this.$router.replace(
+          typeof destino === 'string' &&
+          destino.startsWith('/') &&
+          !destino.startsWith('//')
+            ? destino
+            : '/'
+        );
+
       } catch (error) {
+        console.error('Error de inicio de sesión:', error);
+
         this.error =
           error.response?.data?.errors?.email?.[0] ||
           error.response?.data?.message ||
           'No se pudo iniciar sesión.';
+
       } finally {
         this.cargando = false;
       }
@@ -75,6 +90,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .login-container {

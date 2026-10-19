@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UsuarioController;
 
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('guest');
@@ -15,6 +16,18 @@ Route::middleware('auth:sanctum')->group(function () {
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
 // })->middleware('auth:sanctum');
+
+Route::get('/usuarios', [UsuarioController::class, 'index'])
+    ->middleware('permission:usuarios.ver');
+Route::get('/usuarios/roles', [UsuarioController::class, 'roles'])
+    ->middleware('permission:usuarios.roles');
+Route::get('/usuarios/personas-disponibles', [UsuarioController::class, 'personasDisponibles'])
+    ->middleware('permission:usuarios.crear');
+Route::post('/usuarios', [UsuarioController::class, 'store'])
+    ->middleware('permission:usuarios.crear');
+Route::put('/usuarios/{usuario}', [UsuarioController::class, 'update'])
+    ->middleware('permission:usuarios.editar');
+
 Route::get('/productos', [\App\Http\Controllers\ProductoController::class, 'index']);
 Route::post('/productos', [\App\Http\Controllers\ProductoController::class, 'store']);
 Route::delete('/productos/{id}', [\App\Http\Controllers\ProductoController::class, 'destroy']);

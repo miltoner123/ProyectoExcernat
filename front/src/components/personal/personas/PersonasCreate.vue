@@ -173,7 +173,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../services/api';
 
 export default {
 
@@ -237,10 +237,7 @@ export default {
                     this.persona.sexo || null
             };
 
-            axios.post(
-                'http://localhost:8000/api/personas',
-                datos
-            )
+            await api.post('/api/personas', this.form)
             .then(response => {
 
                 alert(response.data.message);

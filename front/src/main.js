@@ -13,6 +13,7 @@ import AboutView from "./components/AboutView.vue";
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { publica: true } },
+  { path: '/usuarios', name: 'Usuarios', component: () => import('./components/seguridad/UsuariosView.vue')},
   { path: "/", component: HomeView },
   { path: "/about", component: AboutView },
   { path: "/productos", component: () => import("./components/paginas/productos/ProductosView.vue") },

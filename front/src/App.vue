@@ -48,12 +48,14 @@ async function cerrarSesion() {
             <RouterLink to="/cargos" class="menu-item">💼 Cargos</RouterLink>
             <RouterLink to="/personal" class="menu-item">👤 Personal</RouterLink>
             <RouterLink to="/asignaciones" class="menu-item">📌 Asignaciones</RouterLink>
+            <RouterLink to="/usuarios" class="menu-item"> 💻 Gestión de Usuarios
+            </RouterLink>
           </nav>
         </aside>
-        <main class="main-content"><RouterView /></main>
+        <main class="main-content"><RouterView /></main> 
       </div>
-    </template>
-    <RouterView v-else />
+    </template> 
+    <RouterView v-else /> 
   </div>
 </template>
 

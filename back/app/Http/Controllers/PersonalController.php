@@ -44,9 +44,9 @@ class PersonalController extends Controller
         }
 
         // Filtrar por estado
-        if ($request->has('estado')) {
-            $query->where('estado', filter_var($request->estado, FILTER_VALIDATE_BOOLEAN));
-        }
+        if ($request->filled('estado')) {
+        $query->where('estado', filter_var($request->estado, FILTER_VALIDATE_BOOLEAN));
+    }
 
         $personal = $query->orderBy('id_personal', 'desc')->paginate($limit);
 

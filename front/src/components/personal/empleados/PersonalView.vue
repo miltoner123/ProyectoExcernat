@@ -58,6 +58,8 @@
 
         </div>
 
+        <p v-if="error" class="mensaje-error">{{ error }}</p>
+
         <div class="tabla-contenedor">
 
             <table>
@@ -211,6 +213,7 @@ export default {
             estado: '',
 
             cargando: false,
+            error: '',
             temporizadorBusqueda: null,
 
             pagination: {
@@ -237,9 +240,10 @@ export default {
         personalGet() {
 
             this.cargando = true;
+            this.error = '';
 
             api.get(
-                'http://localhost:8000/api/personal',
+                '/api/personal',
                 {
                     params: {
                         page: this.pagination.current_page,
@@ -253,7 +257,7 @@ export default {
             )
             .then(response => {
 
-                this.personal = response.data.data;
+                this.personal = response.data.data || [];
 
                 this.pagination.current_page =
                     response.data.current_page;
@@ -267,10 +271,8 @@ export default {
             })
             .catch(error => {
 
-                console.error(
-                    'Error al obtener personal:',
-                    error
-                );
+                console.error('Error al obtener personal:', error);
+                this.error = error.response?.data?.message || 'No se pudo cargar el personal.';
 
             })
             .finally(() => {
@@ -285,7 +287,7 @@ export default {
         cargosGet() {
 
             api.get(
-                'http://localhost:8000/api/cargos',
+                '/api/cargos',
                 {
                     params: {
                         limit: 50,
@@ -295,7 +297,7 @@ export default {
             )
             .then(response => {
 
-                this.cargos = response.data.data;
+                this.cargos = response.data.data || [];
 
             })
             .catch(error => {
@@ -397,7 +399,7 @@ export default {
             }
 
             api.delete(
-                `http://localhost:8000/api/personal/${trabajador.id_personal}`
+                `/api/personal/${trabajador.id_personal}`
             )
             .then(response => {
 
@@ -615,4 +617,5 @@ th {
     opacity: 0.5;
 }
 
+.mensaje-error { color: #991b1b; background: #fee2e2; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
 </style>

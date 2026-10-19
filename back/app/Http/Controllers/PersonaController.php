@@ -2,139 +2,122 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Personal;
+use App\Models\Persona;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Database\QueryException;
 
-class PersonalController extends Controller
+class PersonaController extends Controller
 {
-    // LISTAR PERSONAL
+    // LISTAR PERSONAS
     public function index(Request $request)
     {
         $limit = (int) $request->query('limit', 10);
         if (!in_array($limit, [10, 25, 50], true)) $limit = 10;
 
-        $query = Personal::with(['persona', 'cargo']);
+        $query = Persona::query();
 
         if ($request->filled('buscar')) {
             $buscar = trim($request->buscar);
-
             $query->where(function ($q) use ($buscar) {
-                $q->where('codigo_empleado', 'ilike', "%{$buscar}%")
-                  ->orWhereHas('persona', function ($p) use ($buscar) {
-                      $p->where('nombres_razon_social', 'ilike', "%{$buscar}%")
-                        ->orWhere('apellidos', 'ilike', "%{$buscar}%")
-                        ->orWhere('numero_documento', 'ilike', "%{$buscar}%");
-                  });
+                $q->where('nombres_razon_social', 'ilike', "%{$buscar}%")
+                  ->orWhere('apellidos', 'ilike', "%{$buscar}%")
+                  ->orWhere('numero_documento', 'ilike', "%{$buscar}%");
             });
         }
 
-        if ($request->filled('id_cargo')) {
-            $query->where('id_cargo', $request->id_cargo);
+        if ($request->filled('tipo_persona')) {
+            $query->where('tipo_persona', $request->tipo_persona);
         }
 
-        if ($request->filled('tipo_contrato')) {
-            $query->where('tipo_contrato', $request->tipo_contrato);
-        }
-
-        // No filtrar cuando estado está vacío.
         if ($request->filled('estado')) {
-            $estado = filter_var(
-                $request->estado,
-                FILTER_VALIDATE_BOOLEAN,
-                FILTER_NULL_ON_FAILURE
-            );
-
-            if ($estado !== null) {
-                $query->where('estado', $estado);
-            }
+            $estado = filter_var($request->estado, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($estado !== null) $query->where('estado', $estado);
         }
 
-        return response()->json(
-            $query->orderByDesc('id_personal')->paginate($limit)
-        );
+        return response()->json($query->orderByDesc('id_persona')->paginate($limit));
     }
 
-    // VALIDACIONES PARA REGISTRO Y EDICIÓN
-    private function validar(Request $request, ?Personal $personal = null): array
+    // VALIDAR PERSONA
+    private function validar(Request $request, ?Persona $persona = null): array
     {
-        return $request->validate([
-            'id_persona' => [
-                'required',
-                'integer',
-                'exists:personas,id_persona',
-                Rule::unique('personal', 'id_persona')
-                    ->ignore($personal?->id_personal, 'id_personal')
+        $datos = $request->validate([
+            'tipo_documento' => ['nullable', Rule::in(['CI', 'NIT', 'OTRO', 'SIN_DOCUMENTO'])],
+            'numero_documento' => [
+                'nullable', 'string', 'max:30',
+                Rule::unique('personas', 'numero_documento')
+                    ->ignore($persona?->id_persona, 'id_persona')
             ],
-            'id_cargo' => ['required', 'integer', 'exists:cargos,id_cargo'],
-            'codigo_empleado' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('personal', 'codigo_empleado')
-                    ->ignore($personal?->id_personal, 'id_personal')
-            ],
-            'fecha_ingreso' => ['required', 'date'],
-            'tipo_contrato' => [
-                'nullable',
-                Rule::in(['INDEFINIDO', 'PLAZO_FIJO', 'EVENTUAL', 'SERVICIOS'])
-            ],
-            'salario_base' => ['nullable', 'numeric', 'min:0'],
+            'nombres_razon_social' => ['required', 'string', 'max:255'],
+            'apellidos' => ['nullable', 'string', 'max:255'],
+            'correo' => ['nullable', 'email', 'max:255'],
+            'telefono' => ['nullable', 'string', 'max:30'],
+            'sexo' => ['nullable', Rule::in(['MASCULINO', 'FEMENINO'])],
+            'tipo_persona' => ['required', Rule::in(['PERSONAL', 'CLIENTE', 'OTRO'])],
             'estado' => ['sometimes', 'boolean']
         ]);
+
+        if (!empty($datos['numero_documento']) && empty($datos['tipo_documento'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'tipo_documento' => 'Debe seleccionar el tipo de documento.'
+            ]);
+        }
+
+        if (($datos['tipo_documento'] ?? null) === 'SIN_DOCUMENTO'
+            && !empty($datos['numero_documento'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'numero_documento' => 'Una persona sin documento no debe registrar número de documento.'
+            ]);
+        }
+
+        return $datos;
     }
 
-    // REGISTRAR PERSONAL
+    // REGISTRAR PERSONA
     public function store(Request $request)
     {
         $datos = $this->validar($request);
-
-        $datos['salario_base'] = $datos['salario_base'] ?? 0;
         $datos['estado'] = $datos['estado'] ?? true;
 
-        $personal = Personal::create($datos);
+        $persona = Persona::create($datos);
 
         return response()->json([
-            'message' => 'Personal registrado correctamente.',
-            'personal' => $personal->load(['persona', 'cargo'])
+            'message' => 'Persona registrada correctamente.',
+            'persona' => $persona
         ], 201);
     }
 
-    // MOSTRAR PERSONAL
+    // MOSTRAR PERSONA
     public function show($id)
     {
-        return response()->json(
-            Personal::with(['persona', 'cargo'])->findOrFail($id)
-        );
+        return response()->json(Persona::findOrFail($id));
     }
 
-    // ACTUALIZAR PERSONAL
+    // ACTUALIZAR PERSONA
     public function update(Request $request, $id)
     {
-        $personal = Personal::findOrFail($id);
-        $datos = $this->validar($request, $personal);
+        $persona = Persona::findOrFail($id);
+        $datos = $this->validar($request, $persona);
 
-        $personal->update($datos);
+        $persona->update($datos);
 
         return response()->json([
-            'message' => 'Personal actualizado correctamente.',
-            'personal' => $personal->refresh()->load(['persona', 'cargo'])
+            'message' => 'Persona actualizada correctamente.',
+            'persona' => $persona->refresh()
         ]);
     }
 
-    // ELIMINAR PERSONAL
+    // ELIMINAR PERSONA
     public function destroy($id)
     {
-        $personal = Personal::findOrFail($id);
+        $persona = Persona::findOrFail($id);
 
         try {
-            $personal->delete();
+            $persona->delete();
         } catch (QueryException $e) {
             if ($e->getCode() === '23503') {
                 return response()->json([
-                    'message' => 'No se puede eliminar este trabajador porque tiene registros relacionados. Puede cambiar su estado a Inactivo.'
+                    'message' => 'No se puede eliminar esta persona porque tiene registros relacionados.'
                 ], 409);
             }
 
@@ -142,7 +125,8 @@ class PersonalController extends Controller
         }
 
         return response()->json([
-            'message' => 'Personal eliminado correctamente.'
+            'message' => 'Persona eliminada correctamente.'
         ]);
     }
 }
+

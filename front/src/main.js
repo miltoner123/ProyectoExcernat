@@ -51,6 +51,7 @@ const routes = [
 
   { path: "/personal", component: () => import("./components/personal/empleados/PersonalView.vue") },
   { path: "/personal/crear", component: () => import("./components/personal/empleados/PersonalCreate.vue") },
+  { path: "/personal/editar/:id", component: () => import("./components/personal/empleados/PersonalEditar.vue") },
   { path: "/asignaciones", component: () => import("./components/personal/asignaciones/AsignacionesView.vue") },
   { path: "/asignaciones/crear", component: () => import("./components/personal/asignaciones/AsignacionesCreate.vue") },
    ] 

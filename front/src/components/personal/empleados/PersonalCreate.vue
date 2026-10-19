@@ -13,31 +13,23 @@
                 <h3>Trabajador</h3>
 
                 <div class="campo">
-
-                    <label>Persona:</label>
-
-                    <select
-                        v-model="trabajador.id_persona"
-                        required
-                    >
-                        <option value="" disabled>
-                            Seleccione una persona
-                        </option>
-
-                        <option
-                            v-for="persona in personasDisponibles"
-                            :key="persona.id_persona"
-                            :value="persona.id_persona"
-                        >
-                            {{ nombrePersona(persona) }}
-                        </option>
-
-                    </select>
-
-                    <small>
-                        Solo se muestran personas registradas como PERSONAL.
+                    <label for="buscar-persona">Buscar persona por nombre, apellido o CI:</label>
+                    <input id="buscar-persona" v-model.trim="buscarPersona" type="search"
+                        placeholder="Escriba un nombre o número de CI..." autocomplete="off"
+                        @input="buscarPersonas" />
+                    <small>Solo personas activas registradas como PERSONAL y sin asignación laboral.</small>
+                    <small v-if="buscandoPersonas">Buscando personas...</small>
+                    <p v-if="errorBusqueda" class="error">{{ errorBusqueda }}</p>
+                    <div v-if="buscarPersona && !buscandoPersonas && personasDisponibles.length" class="resultados">
+                        <button v-for="persona in personasDisponibles" :key="persona.id_persona" type="button"
+                            class="resultado" @click="seleccionarPersona(persona)">
+                            <strong>{{ nombrePersona(persona) }}</strong>
+                            <span>CI/Documento: {{ persona.numero_documento || 'Sin documento' }}</span>
+                        </button>
+                    </div>
+                    <small v-else-if="buscarPersona && !buscandoPersonas && !errorBusqueda && !personaSeleccionada">
+                        No hay personas disponibles con esa búsqueda. Si ya están registradas como trabajadores, no se pueden asignar otra vez.
                     </small>
-
                 </div>
 
                 <div
@@ -234,6 +226,12 @@ export default {
 
             personas: [],
             personalRegistrado: [],
+            buscarPersona: '',
+            buscandoPersonas: false,
+            temporizadorPersona: null,
+            error: '',
+            errorBusqueda: '',
+            personaElegida: null,
             cargos: [],
 
             guardando: false
@@ -244,34 +242,26 @@ export default {
     computed: {
 
         personasDisponibles() {
-
-            const registrados = this.personalRegistrado.map(
-                trabajador => Number(trabajador.id_persona)
+            const registrados = new Set(this.personalRegistrado.map(p => Number(p.id_persona)));
+            return this.personas.filter(p =>
+                p.tipo_persona === 'PERSONAL' &&
+                (p.estado === true || p.estado === 1 || p.estado === '1') &&
+                !registrados.has(Number(p.id_persona))
             );
-
-            return this.personas.filter(persona =>
-                persona.tipo_persona === 'PERSONAL' &&
-                persona.estado === true &&
-                !registrados.includes(Number(persona.id_persona))
-            );
-
         },
 
-
         personaSeleccionada() {
-
-            return this.personas.find(
-                persona =>
-                    Number(persona.id_persona) ===
-                    Number(this.trabajador.id_persona)
-            );
-
+            return this.personaElegida;
         }
 
     },
 
     mounted() {
         this.cargarDatos();
+    },
+
+    beforeUnmount() {
+        clearTimeout(this.temporizadorPersona);
     },
 
     methods: {
@@ -288,76 +278,68 @@ export default {
 
             } catch (error) {
 
-                console.error(
-                    'Error al cargar datos:',
-                    error
-                );
+                console.error('Error al cargar datos:', error);
+                alert(error.response?.data?.message || 'No se pudieron cargar los datos.');
 
             }
 
         },
 
 
-        personasGet() {
+        buscarPersonas() {
+            clearTimeout(this.temporizadorPersona);
+            this.trabajador.id_persona = '';
+            this.personaElegida = null;
+            this.temporizadorPersona = setTimeout(() => this.personasGet(), 350);
+        },
 
-            return api.get(
-                'http://localhost:8000/api/personas',
-                {
-                    params: {
-                        limit: 50,
-                        tipo_persona: 'PERSONAL',
-                        estado: true
-                    }
-                }
-            )
-            .then(response => {
+        async obtenerPaginas(url, params = {}) {
+            let pagina = 1;
+            let ultimaPagina = 1;
+            const registros = [];
+            do {
+                const response = await api.get(url, { params: { ...params, page: pagina, limit: 50 } });
+                registros.push(...(response.data.data || []));
+                ultimaPagina = response.data.last_page || 1;
+                pagina++;
+            } while (pagina <= ultimaPagina);
+            return registros;
+        },
 
-                this.personas = response.data.data;
+        async personasGet() {
+            this.buscandoPersonas = true;
+            this.errorBusqueda = '';
+            const busquedaActual = this.buscarPersona;
+            try {
+                const resultados = await this.obtenerPaginas('/api/personas', {
+                    buscar: busquedaActual,
+                    tipo_persona: 'PERSONAL',
+                    estado: 'true'
+                });
+                if (busquedaActual === this.buscarPersona) this.personas = resultados;
+            } catch (error) {
+                this.errorBusqueda = error.response?.data?.message || 'No se pudieron buscar las personas.';
+                this.personas = [];
+            } finally {
+                if (busquedaActual === this.buscarPersona) this.buscandoPersonas = false;
+            }
+        },
 
-            });
+        async cargosGet() {
+            this.cargos = await this.obtenerPaginas('/api/cargos', { estado: 'true' });
+        },
 
+        async personalGet() {
+            this.personalRegistrado = await this.obtenerPaginas('/api/personal');
         },
 
 
-        cargosGet() {
-
-            return api.get(
-                'http://localhost:8000/api/cargos',
-                {
-                    params: {
-                        limit: 50,
-                        estado: true
-                    }
-                }
-            )
-            .then(response => {
-
-                this.cargos = response.data.data;
-
-            });
-
+        seleccionarPersona(persona) {
+            this.trabajador.id_persona = persona.id_persona;
+            this.personaElegida = persona;
+            this.buscarPersona = '';
+            this.personas = [];
         },
-
-
-        personalGet() {
-
-            return api.get(
-                'http://localhost:8000/api/personal',
-                {
-                    params: {
-                        limit: 50
-                    }
-                }
-            )
-            .then(response => {
-
-                this.personalRegistrado =
-                    response.data.data;
-
-            });
-
-        },
-
 
         nombrePersona(persona) {
 
@@ -373,6 +355,10 @@ export default {
 
         crearPersonal() {
 
+            if (!this.trabajador.id_persona) {
+                alert('Busque y seleccione una persona antes de guardar.');
+                return;
+            }
             this.guardando = true;
 
             const datos = {
@@ -383,7 +369,7 @@ export default {
             };
 
             api.post(
-                'http://localhost:8000/api/personal',
+                '/api/personal',
                 datos
             )
             .then(response => {
@@ -538,4 +524,10 @@ export default {
 
 }
 
+
+.resultados { border: 1px solid #d1d5db; border-radius: 6px; max-height: 240px; overflow-y: auto; }
+.resultado { display: flex; flex-direction: column; width: 100%; padding: 12px; text-align: left; background: white; border: 0; border-bottom: 1px solid #e5e7eb; cursor: pointer; color: #1f2937; }
+.resultado:hover { background: #eff6ff; }
+.resultado span { margin-top: 4px; font-size: 13px; color: #6b7280; }
+.error { color: #b91c1c; font-size: 13px; }
 </style>

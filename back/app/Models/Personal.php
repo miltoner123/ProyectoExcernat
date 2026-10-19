@@ -19,13 +19,13 @@ class Personal extends Model
         'fecha_ingreso',
         'tipo_contrato',
         'salario_base',
-        'estado',
+        'estado'
     ];
 
     protected $casts = [
-        'fecha_ingreso' => 'date',
+        'fecha_ingreso' => 'date:Y-m-d',
         'salario_base' => 'decimal:2',
-        'estado' => 'boolean',
+        'estado' => 'boolean'
     ];
 
     public function persona()
@@ -37,16 +37,19 @@ class Personal extends Model
     {
         return $this->belongsTo(Cargo::class, 'id_cargo', 'id_cargo');
     }
+
     public function eventosResponsable()
     {
-    return $this->hasMany(Evento::class, 'id_responsable', 'id_personal');
+        return $this->hasMany(Evento::class, 'id_responsable', 'id_personal');
     }
+
     public function asignaciones()
     {
-    return $this->hasMany(AsignacionPersonal::class, 'id_personal', 'id_personal');
+        return $this->hasMany(AsignacionPersonal::class, 'id_personal', 'id_personal');
     }
+
     public function asistencias()
     {
-    return $this->hasMany(Asistencia::class, 'id_personal', 'id_personal');
+        return $this->hasMany(Asistencia::class, 'id_personal', 'id_personal');
     }
 }

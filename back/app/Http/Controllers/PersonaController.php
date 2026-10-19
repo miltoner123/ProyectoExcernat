@@ -2,187 +2,147 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Persona;
+use App\Models\Personal;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\QueryException;
 
-class PersonaController extends Controller
+class PersonalController extends Controller
 {
-    // LISTAR PERSONAS
+    // LISTAR PERSONAL
     public function index(Request $request)
     {
         $limit = (int) $request->query('limit', 10);
+        if (!in_array($limit, [10, 25, 50], true)) $limit = 10;
 
-        if (!in_array($limit, [10, 25, 50])) {
-            $limit = 10;
-        }
+        $query = Personal::with(['persona', 'cargo']);
 
-        $query = Persona::query();
-
-        // Buscar por nombre, apellido o documento
         if ($request->filled('buscar')) {
-            $buscar = $request->buscar;
+            $buscar = trim($request->buscar);
 
             $query->where(function ($q) use ($buscar) {
-                $q->where('nombres_razon_social', 'ilike', "%{$buscar}%")
-                    ->orWhere('apellidos', 'ilike', "%{$buscar}%")
-                    ->orWhere('numero_documento', 'ilike', "%{$buscar}%");
+                $q->where('codigo_empleado', 'ilike', "%{$buscar}%")
+                  ->orWhereHas('persona', function ($p) use ($buscar) {
+                      $p->where('nombres_razon_social', 'ilike', "%{$buscar}%")
+                        ->orWhere('apellidos', 'ilike', "%{$buscar}%")
+                        ->orWhere('numero_documento', 'ilike', "%{$buscar}%");
+                  });
             });
         }
 
-        // Filtrar por tipo de persona
-        if ($request->filled('tipo_persona')) {
-            $query->where('tipo_persona', $request->tipo_persona);
+        if ($request->filled('id_cargo')) {
+            $query->where('id_cargo', $request->id_cargo);
         }
 
-        // Filtrar por estado
-        if ($request->has('estado')) {
-            $query->where('estado', filter_var($request->estado, FILTER_VALIDATE_BOOLEAN));
+        if ($request->filled('tipo_contrato')) {
+            $query->where('tipo_contrato', $request->tipo_contrato);
         }
 
-        $personas = $query->orderBy('id_persona', 'desc')->paginate($limit);
+        // No filtrar cuando estado está vacío.
+        if ($request->filled('estado')) {
+            $estado = filter_var(
+                $request->estado,
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            );
 
-        return response()->json($personas);
+            if ($estado !== null) {
+                $query->where('estado', $estado);
+            }
+        }
+
+        return response()->json(
+            $query->orderByDesc('id_personal')->paginate($limit)
+        );
     }
 
+    // VALIDACIONES PARA REGISTRO Y EDICIÓN
+    private function validar(Request $request, ?Personal $personal = null): array
+    {
+        return $request->validate([
+            'id_persona' => [
+                'required',
+                'integer',
+                'exists:personas,id_persona',
+                Rule::unique('personal', 'id_persona')
+                    ->ignore($personal?->id_personal, 'id_personal')
+            ],
+            'id_cargo' => ['required', 'integer', 'exists:cargos,id_cargo'],
+            'codigo_empleado' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('personal', 'codigo_empleado')
+                    ->ignore($personal?->id_personal, 'id_personal')
+            ],
+            'fecha_ingreso' => ['required', 'date'],
+            'tipo_contrato' => [
+                'nullable',
+                Rule::in(['INDEFINIDO', 'PLAZO_FIJO', 'EVENTUAL', 'SERVICIOS'])
+            ],
+            'salario_base' => ['nullable', 'numeric', 'min:0'],
+            'estado' => ['sometimes', 'boolean']
+        ]);
+    }
 
-    // REGISTRAR PERSONA
+    // REGISTRAR PERSONAL
     public function store(Request $request)
     {
-        $request->validate([
-            'tipo_documento' => ['nullable', 'string', Rule::in(['CI', 'NIT', 'OTRO', 'SIN_DOCUMENTO'])],
-            'numero_documento' => 'nullable|string|max:30|unique:personas,numero_documento',
-            'nombres_razon_social' => 'required|string|max:255',
-            'apellidos' => 'nullable|string|max:255',
-            'correo' => 'nullable|email|max:255',
-            'telefono' => 'nullable|string|max:30',
-            'sexo' => ['nullable', 'string', Rule::in(['MASCULINO', 'FEMENINO'])],
-            'tipo_persona' => ['required', 'string', Rule::in(['PERSONAL', 'CLIENTE', 'OTRO'])],
-            'estado' => 'nullable|boolean',
-        ]);
+        $datos = $this->validar($request);
 
-        // Si tiene documento, debe especificar el tipo
-        if ($request->filled('numero_documento') && !$request->filled('tipo_documento')) {
-            return response()->json([
-                'message' => 'Debe seleccionar el tipo de documento.'
-            ], 422);
-        }
+        $datos['salario_base'] = $datos['salario_base'] ?? 0;
+        $datos['estado'] = $datos['estado'] ?? true;
 
-        // Si selecciona SIN_DOCUMENTO, no debe registrar número
-        if ($request->tipo_documento === 'SIN_DOCUMENTO' && $request->filled('numero_documento')) {
-            return response()->json([
-                'message' => 'Una persona SIN_DOCUMENTO no debe tener número de documento.'
-            ], 422);
-        }
-
-        $persona = Persona::create([
-            'tipo_documento' => $request->tipo_documento,
-            'numero_documento' => $request->numero_documento,
-            'nombres_razon_social' => $request->nombres_razon_social,
-            'apellidos' => $request->apellidos,
-            'correo' => $request->correo,
-            'telefono' => $request->telefono,
-            'sexo' => $request->sexo,
-            'tipo_persona' => $request->tipo_persona,
-            'estado' => $request->estado ?? true,
-        ]);
+        $personal = Personal::create($datos);
 
         return response()->json([
-            'message' => 'Persona registrada correctamente.',
-            'persona' => $persona
+            'message' => 'Personal registrado correctamente.',
+            'personal' => $personal->load(['persona', 'cargo'])
         ], 201);
     }
 
-
-    // MOSTRAR PERSONA
+    // MOSTRAR PERSONAL
     public function show($id)
     {
-        $persona = Persona::find($id);
-
-        if (!$persona) {
-            return response()->json([
-                'message' => 'Persona no encontrada.'
-            ], 404);
-        }
-
-        return response()->json($persona);
+        return response()->json(
+            Personal::with(['persona', 'cargo'])->findOrFail($id)
+        );
     }
 
-
-    // ACTUALIZAR PERSONA
+    // ACTUALIZAR PERSONAL
     public function update(Request $request, $id)
     {
-        $persona = Persona::find($id);
+        $personal = Personal::findOrFail($id);
+        $datos = $this->validar($request, $personal);
 
-        if (!$persona) {
-            return response()->json([
-                'message' => 'Persona no encontrada.'
-            ], 404);
-        }
-
-        $request->validate([
-            'tipo_documento' => ['nullable', 'string', Rule::in(['CI', 'NIT', 'OTRO', 'SIN_DOCUMENTO'])],
-            'numero_documento' => [
-                'nullable',
-                'string',
-                'max:30',
-                Rule::unique('personas', 'numero_documento')->ignore($persona->id_persona, 'id_persona')
-            ],
-            'nombres_razon_social' => 'required|string|max:255',
-            'apellidos' => 'nullable|string|max:255',
-            'correo' => 'nullable|email|max:255',
-            'telefono' => 'nullable|string|max:30',
-            'sexo' => ['nullable', 'string', Rule::in(['MASCULINO', 'FEMENINO'])],
-            'tipo_persona' => ['required', 'string', Rule::in(['PERSONAL', 'CLIENTE', 'OTRO'])],
-            'estado' => 'required|boolean',
-        ]);
-
-        if ($request->filled('numero_documento') && !$request->filled('tipo_documento')) {
-            return response()->json([
-                'message' => 'Debe seleccionar el tipo de documento.'
-            ], 422);
-        }
-
-        if ($request->tipo_documento === 'SIN_DOCUMENTO' && $request->filled('numero_documento')) {
-            return response()->json([
-                'message' => 'Una persona SIN_DOCUMENTO no debe tener número de documento.'
-            ], 422);
-        }
-
-        $persona->update([
-            'tipo_documento' => $request->tipo_documento,
-            'numero_documento' => $request->numero_documento,
-            'nombres_razon_social' => $request->nombres_razon_social,
-            'apellidos' => $request->apellidos,
-            'correo' => $request->correo,
-            'telefono' => $request->telefono,
-            'sexo' => $request->sexo,
-            'tipo_persona' => $request->tipo_persona,
-            'estado' => $request->estado,
-        ]);
+        $personal->update($datos);
 
         return response()->json([
-            'message' => 'Persona actualizada correctamente.',
-            'persona' => $persona
+            'message' => 'Personal actualizado correctamente.',
+            'personal' => $personal->refresh()->load(['persona', 'cargo'])
         ]);
     }
 
-
-    // ELIMINAR PERSONA
+    // ELIMINAR PERSONAL
     public function destroy($id)
     {
-        $persona = Persona::find($id);
+        $personal = Personal::findOrFail($id);
 
-        if (!$persona) {
-            return response()->json([
-                'message' => 'Persona no encontrada.'
-            ], 404);
+        try {
+            $personal->delete();
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23503') {
+                return response()->json([
+                    'message' => 'No se puede eliminar este trabajador porque tiene registros relacionados. Puede cambiar su estado a Inactivo.'
+                ], 409);
+            }
+
+            throw $e;
         }
 
-        $persona->delete();
-
         return response()->json([
-            'message' => 'Persona eliminada correctamente.'
+            'message' => 'Personal eliminado correctamente.'
         ]);
     }
 }

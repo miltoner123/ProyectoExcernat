@@ -172,14 +172,15 @@
 
 </template>
 
+
 <script>
 import api from '../../../services/api';
 
 export default {
+    name: 'PersonasCreate',
 
     data() {
         return {
-
             persona: {
                 tipo_documento: '',
                 numero_documento: '',
@@ -191,99 +192,61 @@ export default {
                 tipo_persona: '',
                 estado: true
             },
-
             guardando: false
-
         };
     },
 
     watch: {
-
         'persona.tipo_documento'(valor) {
-
             if (valor === 'SIN_DOCUMENTO') {
                 this.persona.numero_documento = '';
             }
-
         }
-
     },
 
     methods: {
-
-        crearPersona() {
+        async crearPersona() {
+            if (this.guardando) return;
 
             this.guardando = true;
 
             const datos = {
                 ...this.persona,
-
-                tipo_documento:
-                    this.persona.tipo_documento || null,
-
-                numero_documento:
-                    this.persona.numero_documento || null,
-
-                apellidos:
-                    this.persona.apellidos || null,
-
-                correo:
-                    this.persona.correo || null,
-
-                telefono:
-                    this.persona.telefono || null,
-
-                sexo:
-                    this.persona.sexo || null
+                tipo_documento: this.persona.tipo_documento || null,
+                numero_documento: this.persona.numero_documento?.trim() || null,
+                nombres_razon_social: this.persona.nombres_razon_social.trim(),
+                apellidos: this.persona.apellidos?.trim() || null,
+                correo: this.persona.correo?.trim() || null,
+                telefono: this.persona.telefono?.trim() || null,
+                sexo: this.persona.sexo || null
             };
 
-            await api.post('/api/personas', this.form)
-            .then(response => {
+            try {
+                const { data } = await api.post('/api/personas', datos);
 
-                alert(response.data.message);
-
+                alert(data.message || 'Persona registrada correctamente.');
                 this.$router.push('/personas');
 
-            })
-            .catch(error => {
+            } catch (error) {
+                console.error('Error al registrar persona:', error);
 
-                console.error(error);
+                const errores = error.response?.data?.errors;
 
-                if (
-                    error.response?.status === 422 &&
-                    error.response?.data?.errors
-                ) {
+                const mensaje = errores
+                    ? Object.values(errores).flat().join('\n')
+                    : error.response?.data?.message ||
+                      'No se pudo registrar la persona.';
 
-                    alert(
-                        Object.values(
-                            error.response.data.errors
-                        )
-                        .flat()
-                        .join('\n')
-                    );
+                alert(mensaje);
 
-                    return;
-
-                }
-
-                alert(
-                    error.response?.data?.message ||
-                    'No se pudo registrar la persona.'
-                );
-
-            })
-            .finally(() => {
-
+            } finally {
                 this.guardando = false;
-
-            });
-
+            }
         }
-
     }
-
 };
 </script>
+
 
 <style scoped>
 

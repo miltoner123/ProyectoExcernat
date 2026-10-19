@@ -86,17 +86,38 @@ Route::get('/pedidos/{id}', [\App\Http\Controllers\PedidoController::class,'show
 Route::post('/pedidos/{id}', [\App\Http\Controllers\PedidoController::class,'update'])->middleware('role:ADMIN'); // Temporal: permisos de pedidos pendientes
 Route::delete('/pedidos/{id}', [\App\Http\Controllers\PedidoController::class,'destroy'])->middleware('role:ADMIN'); // Temporal: permisos de pedidos pendientes
 
-Route::get('/personas', [\App\Http\Controllers\PersonaController::class,'index'])->middleware('permission:personas.ver');
-Route::post('/personas', [\App\Http\Controllers\PersonaController::class,'store'])->middleware('permission:personas.gestionar');
-Route::get('/personas/{id}', [\App\Http\Controllers\PersonaController::class,'show'])->middleware('permission:personas.ver');
-Route::post('/personas/{id}', [\App\Http\Controllers\PersonaController::class,'update'])->middleware('permission:personas.gestionar');
-Route::delete('/personas/{id}', [\App\Http\Controllers\PersonaController::class,'destroy'])->middleware('permission:personas.gestionar');
 
-Route::get('/cargos', [\App\Http\Controllers\CargoController::class,'index'])->middleware('permission:personal.ver');
-Route::post('/cargos', [\App\Http\Controllers\CargoController::class,'store'])->middleware('permission:personal.gestionar');
-Route::get('/cargos/{id}', [\App\Http\Controllers\CargoController::class,'show'])->middleware('permission:personal.ver');
-Route::post('/cargos/{id}', [\App\Http\Controllers\CargoController::class,'update'])->middleware('permission:personal.gestionar');
-Route::delete('/cargos/{id}', [\App\Http\Controllers\CargoController::class,'destroy'])->middleware('permission:personal.gestionar');
+Route::get('/personal', [\App\Http\Controllers\PersonalController::class, 'index'])
+    ->middleware('permission:personal.ver');
+
+Route::post('/personal', [\App\Http\Controllers\PersonalController::class, 'store'])
+    ->middleware('permission:personal.gestionar');
+
+Route::get('/personal/{id}', [\App\Http\Controllers\PersonalController::class, 'show'])
+    ->middleware('permission:personal.ver');
+
+Route::put('/personal/{id}', [\App\Http\Controllers\PersonalController::class, 'update'])
+    ->middleware('permission:personal.gestionar');
+
+Route::delete('/personal/{id}', [\App\Http\Controllers\PersonalController::class, 'destroy'])
+    ->middleware('permission:personal.gestionar');
+
+
+Route::get('/cargos', [\App\Http\Controllers\CargoController::class, 'index'])
+    ->middleware('permission:personal.ver');
+
+Route::post('/cargos', [\App\Http\Controllers\CargoController::class, 'store'])
+    ->middleware('permission:personal.gestionar');
+
+Route::get('/cargos/{id}', [\App\Http\Controllers\CargoController::class, 'show'])
+    ->middleware('permission:personal.ver');
+
+Route::put('/cargos/{id}', [\App\Http\Controllers\CargoController::class, 'update'])
+    ->middleware('permission:personal.gestionar');
+
+Route::delete('/cargos/{id}', [\App\Http\Controllers\CargoController::class, 'destroy'])
+    ->middleware('permission:personal.gestionar');
+
 
 Route::get('/personal', [\App\Http\Controllers\PersonalController::class,'index'])->middleware('permission:personal.ver');
 Route::post('/personal', [\App\Http\Controllers\PersonalController::class,'store'])->middleware('permission:personal.gestionar');

@@ -15,14 +15,15 @@ class Cargo extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
-        'estado',
+        'estado'
     ];
 
     protected $casts = [
-        'estado' => 'boolean',
+        'estado' => 'boolean'
     ];
-        public function personal()
-{
-    return $this->hasMany(Personal::class, 'id_cargo', 'id_cargo');
-}
+
+    public function personal()
+    {
+        return $this->hasMany(Personal::class, 'id_cargo', 'id_cargo');
+    }
 }

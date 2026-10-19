@@ -44,6 +44,7 @@ const routes = [
 
   { path: "/personas", component: () => import("./components/personal/personas/PersonasView.vue") },
   { path: "/personas/crear", component: () => import("./components/personal/personas/PersonasCreate.vue") },
+  { path: "/personas/editar/:id", component: () => import("./components/personal/personas/PersonasEditar.vue") },
 
   { path: "/cargos", component: () => import("./components/personal/cargos/CargosView.vue") },
   { path: "/cargos/crear", component: () => import("./components/personal/cargos/CargosCreate.vue") },

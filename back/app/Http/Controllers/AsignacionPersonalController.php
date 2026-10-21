@@ -55,7 +55,7 @@ class AsignacionPersonalController extends Controller
         }
 
         // Filtrar por estado
-        if ($request->has('estado')) {
+        if ($request->filled('estado')) {
             $query->where('estado', filter_var($request->estado, FILTER_VALIDATE_BOOLEAN));
         }
 
@@ -270,4 +270,3 @@ class AsignacionPersonalController extends Controller
         return null;
     }
 }
-

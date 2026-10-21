@@ -48,12 +48,14 @@ const routes = [
 
   { path: "/cargos", component: () => import("./components/personal/cargos/CargosView.vue") },
   { path: "/cargos/crear", component: () => import("./components/personal/cargos/CargosCreate.vue") },
+  { path: "/cargos/editar/:id", component: () => import("./components/personal/cargos/CargosEditar.vue") },
 
   { path: "/personal", component: () => import("./components/personal/empleados/PersonalView.vue") },
   { path: "/personal/crear", component: () => import("./components/personal/empleados/PersonalCreate.vue") },
   { path: "/personal/editar/:id", component: () => import("./components/personal/empleados/PersonalEditar.vue") },
   { path: "/asignaciones", component: () => import("./components/personal/asignaciones/AsignacionesView.vue") },
   { path: "/asignaciones/crear", component: () => import("./components/personal/asignaciones/AsignacionesCreate.vue") },
+  { path: "/asignaciones/editar/:id", component: () => import("./components/personal/asignaciones/AsignacionesEditar.vue") },
    ] 
 
 const router = createRouter({

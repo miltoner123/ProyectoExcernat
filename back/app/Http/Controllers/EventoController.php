@@ -8,43 +8,50 @@ use Illuminate\Http\Request;
 class EventoController extends Controller
 {
     // LISTAR EVENTOS
-    public function index(Request $request)
-    {
-        $limit = (int) $request->query('limit', 10);
-        if (!in_array($limit, [10, 25, 50])) $limit = 10;
 
-        $query = Evento::with('responsable.persona');
+public function index(Request $request)
+{
+    $limit = (int) $request->query('limit', 10);
+    if (!in_array($limit, [10, 25, 50], true)) $limit = 10;
 
-        if ($request->filled('buscar')) {
-            $buscar = $request->buscar;
+    $query = Evento::with('responsable.persona');
 
-            $query->where(function ($q) use ($buscar) {
-                $q->where('nombre', 'ilike', "%{$buscar}%")
-                  ->orWhere('tipo', 'ilike', "%{$buscar}%")
-                  ->orWhere('departamento', 'ilike', "%{$buscar}%")
-                  ->orWhere('lugar', 'ilike', "%{$buscar}%");
-            });
-        }
+    if ($request->filled('buscar')) {
+        $buscar = trim($request->query('buscar'));
 
-        if ($request->filled('tipo')) {
-            $query->where('tipo', $request->tipo);
-        }
-
-        if ($request->filled('departamento')) {
-            $query->where('departamento', $request->departamento);
-        }
-
-        if ($request->has('estado') && $request->estado !== '') {
-            $query->where(
-                'estado',
-                filter_var($request->estado, FILTER_VALIDATE_BOOLEAN)
-            );
-        }
-
-        return response()->json(
-            $query->orderByDesc('fecha_inicio')->paginate($limit)
-        );
+        $query->where(function ($q) use ($buscar) {
+            $q->where('nombre', 'ilike', "%{$buscar}%")
+              ->orWhere('tipo', 'ilike', "%{$buscar}%")
+              ->orWhere('departamento', 'ilike', "%{$buscar}%")
+              ->orWhere('lugar', 'ilike', "%{$buscar}%");
+        });
     }
+
+    if ($request->filled('tipo')) {
+        $query->where('tipo', $request->query('tipo'));
+    }
+
+    if ($request->filled('departamento')) {
+        $query->where('departamento', $request->query('departamento'));
+    }
+
+    if ($request->filled('estado')) {
+        $estado = filter_var(
+            $request->query('estado'),
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE
+        );
+
+        if ($estado !== null) {
+            $query->where('estado', $estado);
+        }
+    }
+
+    return response()->json(
+        $query->orderByDesc('fecha_inicio')->paginate($limit)
+    );
+}
+
 
     // VALIDACIONES COMPARTIDAS
     private function validar(Request $request)

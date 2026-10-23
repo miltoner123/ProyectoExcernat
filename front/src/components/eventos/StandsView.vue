@@ -23,11 +23,13 @@
             </div>
         </div>
 
+        <p v-if="error" class="mensaje-error">{{ error }}</p>
+
         <div v-if="cargando">
             Cargando stands...
         </div>
 
-        <div v-else class="tabla-contenedor">
+        <div v-else-if="!error" class="tabla-contenedor">
 
             <table>
 
@@ -103,7 +105,8 @@ export default {
         return {
             evento: null,
             stands: [],
-            cargando: true
+            cargando: true,
+            error: ''
         };
     },
 
@@ -114,60 +117,32 @@ export default {
     methods: {
 
         async cargarDatos() {
-
+            this.cargando = true;
+            this.error = '';
             try {
-
-                await this.eventoGet();
-                await this.standsGet();
-
+                const id = this.$route.params.id;
+                const eventoResponse = await api.get(`/api/eventos/${id}`);
+                this.evento = eventoResponse.data;
+                const resultado = [];
+                let pagina = 1;
+                let ultimaPagina = 1;
+                do {
+                    const response = await api.get('/api/ubicaciones', {
+                        params: { id_evento: id, tipo: 'STAND', limit: 50, page: pagina }
+                    });
+                    const datos = response.data;
+                    resultado.push(...(Array.isArray(datos) ? datos : (datos.data ?? [])));
+                    ultimaPagina = Number(datos.last_page ?? 1);
+                    pagina++;
+                } while (pagina <= ultimaPagina);
+                this.stands = resultado;
             } catch (error) {
-
-                console.error(
-                    'Error al cargar información:',
-                    error
-                );
-
+                console.error('Error al cargar stands:', error);
+                this.error = error.response?.data?.message || 'No se pudieron cargar los stands del evento.';
+                this.stands = [];
             } finally {
-
                 this.cargando = false;
-
             }
-
-        },
-
-        eventoGet() {
-
-            const id = this.$route.params.id;
-
-            return api.get(
-                `http://localhost:8000/api/eventos/${id}`
-            )
-            .then(response => {
-                this.evento = response.data;
-            });
-
-        },
-
-        standsGet() {
-
-            const id = this.$route.params.id;
-
-            return api.get(
-                'http://localhost:8000/api/ubicaciones',
-                {
-                    params: {
-                        id_evento: id,
-                        tipo: 'STAND',
-                        limit: 50
-                    }
-                }
-            )
-            .then(response => {
-
-                this.stands = response.data.data ?? response.data;
-
-            });
-
         },
 
         nuevoStand() {
@@ -262,6 +237,8 @@ th {
     padding: 5px 8px;
     border-radius: 5px;
 }
+
+.mensaje-error { color: #b91c1c; margin-bottom: 15px; }
 
 .sin-registros {
     text-align: center;

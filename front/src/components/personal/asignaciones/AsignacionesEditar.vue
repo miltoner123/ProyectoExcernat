@@ -11,20 +11,42 @@
             <option value="" disabled>Seleccione</option>
             <option v-for="p in personal" :key="p.id_personal" :value="p.id_personal">{{ nombrePersonal(p) }} - {{ p.cargo?.nombre || 'Sin cargo' }}</option>
           </select></div>
-          <div class="campo"><label>Función asignada:</label><input v-model.trim="asignacion.funcion_asignada" maxlength="100" required placeholder="Ej. Vendedor del Stand 1" /></div>
+          <div class="campo"><label>Función asignada:</label><select v-if="standSeleccionado" v-model="asignacion.funcion_asignada" required><option value="" disabled>Seleccione</option><option value="ENCARGADO">Encargado</option><option value="VENDEDOR">Vendedor</option></select><input v-else v-model.trim="asignacion.funcion_asignada" maxlength="100" required placeholder="Ej. Responsable de almacén" /></div>
         </div>
       </div>
-      <div class="seccion">
+<div class="seccion">
         <h3>Destino de la asignación</h3>
-        <div class="fila">
-          <div class="campo"><label>Ubicación:</label><select v-model="asignacion.id_ubicacion" @change="ubicacionSeleccionada">
-            <option :value="null">Sin ubicación específica</option>
-            <option v-for="u in ubicaciones" :key="u.id_ubicacion" :value="u.id_ubicacion">{{ u.nombre }} - {{ u.tipo }}</option>
-          </select></div>
-          <div class="campo"><label>Evento:</label><select v-model="asignacion.id_evento" :disabled="standSeleccionado">
-            <option :value="null">Sin evento</option>
-            <option v-for="e in eventos" :key="e.id_evento" :value="e.id_evento">{{ e.nombre }}</option>
-          </select><small v-if="standSeleccionado">El evento corresponde al stand seleccionado.</small></div>
+        <div class="campo">
+          <label>Tipo de destino:</label>
+          <select v-model="tipoDestino" @change="cambiarDestino">
+            <option value="FERIA">Feria / Evento</option>
+            <option value="OTRO">Sucursal / Almacén</option>
+          </select>
+        </div>
+        <div class="fila" v-if="tipoDestino === 'FERIA'">
+          <div class="campo">
+            <label>Evento:</label>
+            <select v-model="asignacion.id_evento" @change="eventoSeleccionado" required>
+              <option :value="null" disabled>Seleccione un evento</option>
+              <option v-for="e in eventos" :key="e.id_evento" :value="e.id_evento">{{ e.nombre }}</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Stand del evento:</label>
+            <select v-model="asignacion.id_ubicacion" @change="ubicacionSeleccionada" required :disabled="!asignacion.id_evento">
+              <option :value="null" disabled>Seleccione un stand</option>
+              <option v-for="u in ubicacionesFiltradas" :key="u.id_ubicacion" :value="u.id_ubicacion">{{ u.nombre }}</option>
+            </select>
+            <small>Solo se muestran stands del evento seleccionado. Las fechas se sugieren automáticamente y pueden editarse.</small>
+          </div>
+        </div>
+        <div class="campo" v-else>
+          <label>Ubicación:</label>
+          <select v-model="asignacion.id_ubicacion" @change="ubicacionSeleccionada" required>
+            <option :value="null" disabled>Seleccione sucursal o almacén</option>
+            <option v-for="u in ubicacionesFiltradas" :key="u.id_ubicacion" :value="u.id_ubicacion">{{ u.nombre }} - {{ u.tipo }}</option>
+          </select>
+          <small>Las sucursales y almacenes no se vinculan a eventos.</small>
         </div>
       </div>
       <div class="seccion">
@@ -59,12 +81,17 @@ export default {
   data() {
     return {
       asignacion: { id_personal: '', id_ubicacion: null, id_evento: null, funcion_asignada: '', tipo_remuneracion: '', monto_fijo: null, comision_polvo: null, comision_granola: null, fecha_inicio: '', fecha_fin: '', estado: true },
-      personal: [], ubicaciones: [], eventos: [], cargando: true, encontrado: false, guardando: false, error: ''
+      personal: [], ubicaciones: [], eventos: [], tipoDestino: 'OTRO', cargando: true, encontrado: false, guardando: false, error: ''
     };
   },
   computed: {
     ubicacionActual() { return this.ubicaciones.find(u => Number(u.id_ubicacion) === Number(this.asignacion.id_ubicacion)); },
-    standSeleccionado() { return this.ubicacionActual?.tipo === 'STAND'; },
+    standSeleccionado() { return this.tipoDestino === 'FERIA'; },
+    ubicacionesFiltradas() {
+      return this.ubicaciones.filter(u => this.tipoDestino === 'FERIA'
+        ? u.tipo === 'STAND' && Number(u.id_evento) === Number(this.asignacion.id_evento)
+        : ['SUCURSAL', 'ALMACEN'].includes(u.tipo));
+    },
     mostrarMontoFijo() { return ['MONTO_FIJO', 'MIXTO'].includes(this.asignacion.tipo_remuneracion); },
     mostrarComisiones() { return ['COMISION', 'MIXTO'].includes(this.asignacion.tipo_remuneracion); }
   },
@@ -96,20 +123,34 @@ export default {
         this.personal = personal.filter(p => p.estado || Number(p.id_personal) === Number(data.id_personal));
         this.ubicaciones = ubicaciones.filter(u => u.estado || Number(u.id_ubicacion) === Number(data.id_ubicacion));
         this.eventos = eventos.filter(e => e.estado || Number(e.id_evento) === Number(data.id_evento));
+        this.tipoDestino = this.ubicaciones.find(u => Number(u.id_ubicacion) === Number(data.id_ubicacion))?.tipo === 'STAND' ? 'FERIA' : 'OTRO';
         this.encontrado = true;
       } catch (e) { this.error = e.response?.data?.message || 'No se pudo cargar la asignación.'; }
       finally { this.cargando = false; }
     },
+    cambiarDestino() {
+      this.asignacion.id_ubicacion = null;
+      this.asignacion.id_evento = null;
+      this.asignacion.funcion_asignada = '';
+      this.asignacion.fecha_inicio = '';
+      this.asignacion.fecha_fin = '';
+    },
+    eventoSeleccionado() {
+      this.asignacion.id_ubicacion = null;
+      this.asignacion.funcion_asignada = '';
+      const evento = this.eventos.find(e => Number(e.id_evento) === Number(this.asignacion.id_evento));
+      this.asignacion.fecha_inicio = String(evento?.fecha_inicio || '').slice(0, 10);
+      this.asignacion.fecha_fin = String(evento?.fecha_fin || '').slice(0, 10);
+    },
     nombrePersonal(p) { return [p.persona?.nombres_razon_social, p.persona?.apellidos].filter(Boolean).join(' ') || p.codigo_empleado || 'Sin nombre'; },
     ubicacionSeleccionada() {
-      const u = this.ubicacionActual;
-      if (u?.tipo === 'STAND') this.asignacion.id_evento = u.id_evento;
-      else this.asignacion.id_evento = null;
+      if (this.tipoDestino === 'OTRO') this.asignacion.id_evento = null;
+      this.asignacion.funcion_asignada = '';
     },
     async guardar() {
       if (this.guardando) return;
       this.error = '';
-      if (!this.asignacion.id_ubicacion && !this.asignacion.id_evento) { this.error = 'Seleccione una ubicación o un evento.'; return; }
+      if (!this.asignacion.id_ubicacion || (this.tipoDestino === 'FERIA' && !this.asignacion.id_evento)) { this.error = 'Seleccione el destino y su ubicación.'; return; }
       if (this.asignacion.fecha_fin && this.asignacion.fecha_fin < this.asignacion.fecha_inicio) { this.error = 'La fecha final no puede ser anterior a la inicial.'; return; }
       this.guardando = true;
       try {

@@ -31,6 +31,10 @@ class UbicacionController extends Controller
             $query->where('tipo', strtoupper($request->tipo));
         }
 
+        if ($request->filled('id_evento')) {
+            $query->where('id_evento', $request->integer('id_evento'));
+        }
+
         if ($request->has('estado') && $request->estado !== '') {
             $query->where(
                 'estado',
@@ -133,6 +137,7 @@ class UbicacionController extends Controller
     }
 
     // ACTUALIZAR UBICACIÓN
+        
     public function update(Request $request, $id)
     {
         $ubicacion = Ubicacion::find($id);
@@ -144,49 +149,38 @@ class UbicacionController extends Controller
         }
 
         $datos = $this->validar($request);
-
         $datos['id_evento'] = $datos['tipo'] === 'STAND'
             ? ($datos['id_evento'] ?? null)
             : null;
 
-        // No cambiar el evento ni el tipo cuando ya exista historial.
         $tieneHistorial =
             $ubicacion->inventarios()->exists() ||
             $ubicacion->movimientosOrigen()->exists() ||
             $ubicacion->movimientosDestino()->exists() ||
             $ubicacion->asignacionesPersonal()->exists();
 
-        if ($tieneHistorial && (
-            $ubicacion->tipo !== $datos['tipo'] ||
-            (int) $ubicacion->id_evento !== (int) $datos['id_evento']
-        )) {
+        $cambiaTipo = $ubicacion->tipo !== $datos['tipo'];
+        $cambiaEvento = (int) $ubicacion->id_evento !== (int) $datos['id_evento'];
+
+        if ($tieneHistorial && ($cambiaTipo || $cambiaEvento)) {
             return response()->json([
-                'message' => 'No puede cambiar el tipo ni el evento de una ubicación con historial.'
+                'message' => 'Esta ubicación tiene historial operativo. Puede modificar su nombre, departamento y dirección, pero no su tipo ni el evento asociado.'
             ], 422);
         }
 
-        // Permitir conservar una relación histórica aunque
-        // el evento ya haya sido inactivado.
-        $cambiaEvento = (int) $ubicacion->id_evento !==
-                        (int) $datos['id_evento'];
-
-        if ($cambiaEvento || $ubicacion->tipo !== $datos['tipo']) {
+        if ($cambiaTipo || $cambiaEvento) {
             $this->validarRelacion($datos);
-        } else {
-            if ($datos['tipo'] === 'STAND' &&
-                $datos['propiedad'] !== 'TEMPORAL') {
-                return response()->json([
-                    'message' => 'Los stands deben ser ubicaciones temporales.'
-                ], 422);
-            }
+        } elseif ($datos['tipo'] === 'STAND' && $datos['propiedad'] !== 'TEMPORAL') {
+            return response()->json([
+                'message' => 'Los stands deben tener propiedad TEMPORAL.'
+            ], 422);
         }
 
-        // No cerrar ubicaciones con existencias pendientes.
         $nuevoEstado = $datos['estado'] ?? $ubicacion->estado;
 
         if (!$nuevoEstado && $this->tieneStock($ubicacion)) {
             return response()->json([
-                'message' => 'No puede cerrar la ubicación porque todavía tiene existencias. Registre primero las ventas, devoluciones o movimientos correspondientes.'
+                'message' => 'No puede inactivar esta ubicación porque todavía tiene existencias. Registre primero las ventas, devoluciones o movimientos correspondientes.'
             ], 422);
         }
 
@@ -195,7 +189,7 @@ class UbicacionController extends Controller
 
         return response()->json([
             'message' => 'Ubicación actualizada correctamente.',
-            'ubicacion' => $ubicacion->load('evento')
+            'ubicacion' => $ubicacion->fresh()->load('evento')
         ]);
     }
 
@@ -229,3 +223,4 @@ class UbicacionController extends Controller
         ]);
     }
 }
+

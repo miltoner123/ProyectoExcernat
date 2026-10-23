@@ -6,6 +6,8 @@ use App\Models\AsignacionPersonal;
 use App\Models\Ubicacion;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class AsignacionPersonalController extends Controller
 {
@@ -98,11 +100,14 @@ class AsignacionPersonalController extends Controller
             return $validacion;
         }
 
-        $asignacion = AsignacionPersonal::create([
+        $asignacion = DB::transaction(function () use ($request) {
+            if ($request->filled('id_ubicacion')) Ubicacion::whereKey($request->id_ubicacion)->lockForUpdate()->first();
+            $this->validarReglasStand($request);
+            return AsignacionPersonal::create([
             'id_personal' => $request->id_personal,
             'id_ubicacion' => $request->id_ubicacion,
             'id_evento' => $request->id_evento,
-            'funcion_asignada' => $request->funcion_asignada,
+            'funcion_asignada' => ($request->filled('id_ubicacion') && Ubicacion::find($request->id_ubicacion)?->tipo === 'STAND') ? mb_strtoupper(trim($request->funcion_asignada)) : $request->funcion_asignada,
             'tipo_remuneracion' => $request->tipo_remuneracion,
             'monto_fijo' => $request->monto_fijo,
             'comision_polvo' => $request->comision_polvo,
@@ -110,7 +115,8 @@ class AsignacionPersonalController extends Controller
             'fecha_inicio' => $request->fecha_inicio,
             'fecha_fin' => $request->fecha_fin,
             'estado' => $request->estado ?? true,
-        ]);
+            ]);
+        });
 
         return response()->json([
             'message' => 'Asignación registrada correctamente.',
@@ -181,11 +187,14 @@ class AsignacionPersonalController extends Controller
             return $validacion;
         }
 
-        $asignacion->update([
+        DB::transaction(function () use ($request, $asignacion) {
+            if ($request->filled('id_ubicacion')) Ubicacion::whereKey($request->id_ubicacion)->lockForUpdate()->first();
+            $this->validarReglasStand($request, $asignacion->id_asignacion);
+            $asignacion->update([
             'id_personal' => $request->id_personal,
             'id_ubicacion' => $request->id_ubicacion,
             'id_evento' => $request->id_evento,
-            'funcion_asignada' => $request->funcion_asignada,
+            'funcion_asignada' => ($request->filled('id_ubicacion') && Ubicacion::find($request->id_ubicacion)?->tipo === 'STAND') ? mb_strtoupper(trim($request->funcion_asignada)) : $request->funcion_asignada,
             'tipo_remuneracion' => $request->tipo_remuneracion,
             'monto_fijo' => $request->monto_fijo,
             'comision_polvo' => $request->comision_polvo,
@@ -193,7 +202,8 @@ class AsignacionPersonalController extends Controller
             'fecha_inicio' => $request->fecha_inicio,
             'fecha_fin' => $request->fecha_fin,
             'estado' => $request->estado,
-        ]);
+            ]);
+        });
 
         return response()->json([
             'message' => 'Asignación actualizada correctamente.',
@@ -230,7 +240,9 @@ class AsignacionPersonalController extends Controller
     private function validarUbicacionEvento(Request $request)
     {
         if (!$request->filled('id_ubicacion')) {
-            return null;
+            return response()->json([
+                'message' => 'Seleccione un stand del evento o una sucursal/almacén.'
+            ], 422);
         }
 
         $ubicacion = Ubicacion::find($request->id_ubicacion);
@@ -269,4 +281,45 @@ class AsignacionPersonalController extends Controller
 
         return null;
     }
+    // REGLAS: EN STAND SOLO ENCARGADO O VENDEDOR; UN ENCARGADO POR PERIODO.
+    private function validarReglasStand(Request $request, ?int $excluirId = null): void
+    {
+        if (!$request->filled('id_ubicacion')) return;
+
+        $ubicacion = Ubicacion::find($request->id_ubicacion);
+        if (!$ubicacion || $ubicacion->tipo !== 'STAND') return;
+
+        $funcion = mb_strtoupper(trim($request->input('funcion_asignada', '')));
+        if (!in_array($funcion, ['ENCARGADO', 'VENDEDOR'], true)) {
+            throw ValidationException::withMessages([
+                'funcion_asignada' => 'Para un stand solo puede asignar ENCARGADO o VENDEDOR.'
+            ]);
+        }
+
+        // Solo las asignaciones activas bloquean el periodo.
+        if ($funcion !== 'ENCARGADO' || !$request->boolean('estado', true)) return;
+
+        $inicio = $request->input('fecha_inicio');
+        $fin = $request->input('fecha_fin');
+
+        $ocupado = AsignacionPersonal::query()
+            ->where('id_ubicacion', $ubicacion->id_ubicacion)
+            ->where('estado', true)
+            ->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['ENCARGADO'])
+            ->when($excluirId, fn ($q) => $q->where('id_asignacion', '!=', $excluirId))
+            ->where(function ($q) use ($fin) {
+                if ($fin) $q->whereDate('fecha_inicio', '<=', $fin);
+            })
+            ->where(function ($q) use ($inicio) {
+                $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', $inicio);
+            })
+            ->exists();
+
+        if ($ocupado) {
+            throw ValidationException::withMessages([
+                'funcion_asignada' => 'Este stand ya tiene un encargado activo en las fechas seleccionadas. Finalice o ajuste la asignación anterior.'
+            ]);
+        }
+    }
+
 }

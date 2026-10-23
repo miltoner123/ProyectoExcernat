@@ -6,6 +6,9 @@
             <p>Asigne un trabajador a una ubicación o evento.</p>
         </div>
 
+        <p v-if="errorCarga" class="mensaje-error">{{ errorCarga }}</p>
+        <p v-if="cargandoDatos">Cargando trabajadores, ubicaciones y eventos...</p>
+
         <form @submit.prevent="guardar">
 
             <div class="seccion">
@@ -34,75 +37,54 @@
                     <div class="campo">
                         <label>Función asignada:</label>
 
-                        <input
-                            type="text"
-                            v-model="asignacion.funcion_asignada"
-                            placeholder="Ej. Vendedor del Stand 1"
-                            required
-                        >
+                        <select v-if="standSeleccionado" v-model="asignacion.funcion_asignada" required>
+                            <option value="" disabled>Seleccione una función</option>
+                            <option value="ENCARGADO">Encargado</option>
+                            <option value="VENDEDOR">Vendedor</option>
+                        </select>
+                        <input v-else type="text" v-model.trim="asignacion.funcion_asignada" maxlength="100" placeholder="Ej. Responsable de almacén" required>
                     </div>
 
                 </div>
 
             </div>
 
-            <div class="seccion">
-
-                <h3>Destino de la asignación</h3>
-
-                <div class="fila">
-
-                    <div class="campo">
-                        <label>Ubicación:</label>
-
-                        <select
-                            v-model="asignacion.id_ubicacion"
-                            @change="ubicacionSeleccionada"
-                        >
-                            <option :value="null">
-                                Sin ubicación específica
-                            </option>
-
-                            <option
-                                v-for="ubicacion in ubicaciones"
-                                :key="ubicacion.id_ubicacion"
-                                :value="ubicacion.id_ubicacion"
-                            >
-                                {{ ubicacion.nombre }} - {{ ubicacion.tipo }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div class="campo">
-                        <label>Evento:</label>
-
-                        <select
-                            v-model="asignacion.id_evento"
-                            :disabled="standSeleccionado"
-                        >
-                            <option :value="null">
-                                Sin evento
-                            </option>
-
-                            <option
-                                v-for="evento in eventos"
-                                :key="evento.id_evento"
-                                :value="evento.id_evento"
-                            >
-                                {{ evento.nombre }}
-                            </option>
-                        </select>
-
-                        <small v-if="standSeleccionado">
-                            El evento se obtiene automáticamente del stand.
-                        </small>
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="seccion">
+<div class="seccion">
+        <h3>Destino de la asignación</h3>
+        <div class="campo">
+          <label>Tipo de destino:</label>
+          <select v-model="tipoDestino" @change="cambiarDestino">
+            <option value="FERIA">Feria / Evento</option>
+            <option value="OTRO">Sucursal / Almacén</option>
+          </select>
+        </div>
+        <div class="fila" v-if="tipoDestino === 'FERIA'">
+          <div class="campo">
+            <label>Evento:</label>
+            <select v-model="asignacion.id_evento" @change="eventoSeleccionado" required>
+              <option :value="null" disabled>Seleccione un evento</option>
+              <option v-for="e in eventos" :key="e.id_evento" :value="e.id_evento">{{ e.nombre }}</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Stand del evento:</label>
+            <select v-model="asignacion.id_ubicacion" @change="ubicacionSeleccionada" required :disabled="!asignacion.id_evento">
+              <option :value="null" disabled>Seleccione un stand</option>
+              <option v-for="u in ubicacionesFiltradas" :key="u.id_ubicacion" :value="u.id_ubicacion">{{ u.nombre }}</option>
+            </select>
+            <small>Solo se muestran stands del evento seleccionado. Las fechas se sugieren automáticamente y pueden editarse.</small>
+          </div>
+        </div>
+        <div class="campo" v-else>
+          <label>Ubicación:</label>
+          <select v-model="asignacion.id_ubicacion" @change="ubicacionSeleccionada" required>
+            <option :value="null" disabled>Seleccione sucursal o almacén</option>
+            <option v-for="u in ubicacionesFiltradas" :key="u.id_ubicacion" :value="u.id_ubicacion">{{ u.nombre }} - {{ u.tipo }}</option>
+          </select>
+          <small>Las sucursales y almacenes no se vinculan a eventos.</small>
+        </div>
+      </div>
+      <div class="seccion">
 
                 <h3>Remuneración</h3>
 
@@ -211,7 +193,7 @@
 
                 <button
                     type="submit"
-                    :disabled="guardando"
+                    :disabled="guardando || cargandoDatos || !!errorCarga"
                 >
                     {{ guardando ? 'Guardando...' : 'Guardar Asignación' }}
                 </button>
@@ -253,11 +235,14 @@ export default {
                 estado: true
             },
 
+            tipoDestino: 'OTRO',
             personal: [],
             ubicaciones: [],
             eventos: [],
 
-            guardando: false
+            guardando: false,
+            cargandoDatos: false,
+            errorCarga: ''
         };
     },
 
@@ -274,9 +259,14 @@ export default {
         },
 
         standSeleccionado() {
-            return this.ubicacionActual?.tipo === 'STAND';
+            return this.tipoDestino === 'FERIA';
         },
 
+    ubicacionesFiltradas() {
+      return this.ubicaciones.filter(u => this.tipoDestino === 'FERIA'
+        ? u.tipo === 'STAND' && Number(u.id_evento) === Number(this.asignacion.id_evento)
+        : ['SUCURSAL', 'ALMACEN'].includes(u.tipo));
+    },
         mostrarMontoFijo() {
 
             return [
@@ -304,102 +294,58 @@ export default {
     methods: {
 
         async cargarDatos() {
-
+            this.cargandoDatos = true;
+            this.errorCarga = '';
             try {
-
-                await Promise.all([
-                    this.personalGet(),
-                    this.ubicacionesGet(),
-                    this.eventosGet()
+                const [personal, ubicaciones, eventos] = await Promise.all([
+                    this.obtenerTodos('/api/personal', { estado: true }),
+                    this.obtenerTodos('/api/ubicaciones', { estado: true }),
+                    this.obtenerTodos('/api/eventos', { estado: true })
                 ]);
-
+                this.personal = personal;
+                this.ubicaciones = ubicaciones;
+                this.eventos = eventos;
             } catch (error) {
-
-                console.error(
-                    'Error al cargar datos:',
-                    error
-                );
-
+                console.error('Error al cargar datos de asignación:', error);
+                this.errorCarga = error.response?.data?.message ||
+                    'No se pudieron cargar los datos. Recargue la página para intentar nuevamente.';
+            } finally {
+                this.cargandoDatos = false;
             }
-
         },
 
-        personalGet() {
-
-            return api.get(
-                'http://localhost:8000/api/personal',
-                {
-                    params: {
-                        limit: 50,
-                        estado: true
-                    }
-                }
-            )
-            .then(response => {
-
-                this.personal = response.data.data;
-
-            });
-
+        async obtenerTodos(url, filtros = {}) {
+            const registros = [];
+            let pagina = 1;
+            let ultimaPagina = 1;
+            do {
+                const { data } = await api.get(url, {
+                    params: { ...filtros, page: pagina, limit: 50 }
+                });
+                registros.push(...(Array.isArray(data) ? data : (data.data || [])));
+                ultimaPagina = Array.isArray(data) ? 1 : Number(data.last_page || 1);
+                pagina++;
+            } while (pagina <= ultimaPagina);
+            return registros;
         },
 
-        ubicacionesGet() {
-
-            return api.get(
-                'http://localhost:8000/api/ubicaciones',
-                {
-                    params: {
-                        limit: 50,
-                        estado: true
-                    }
-                }
-            )
-            .then(response => {
-
-                this.ubicaciones = response.data.data;
-
-            });
-
-        },
-
-        eventosGet() {
-
-            return api.get(
-                'http://localhost:8000/api/eventos',
-                {
-                    params: {
-                        limit: 50,
-                        estado: true
-                    }
-                }
-            )
-            .then(response => {
-
-                this.eventos = response.data.data;
-
-            });
-
-        },
-
+    cambiarDestino() {
+      this.asignacion.id_ubicacion = null;
+      this.asignacion.id_evento = null;
+      this.asignacion.funcion_asignada = '';
+      this.asignacion.fecha_inicio = '';
+      this.asignacion.fecha_fin = '';
+    },
+    eventoSeleccionado() {
+      this.asignacion.id_ubicacion = null;
+      this.asignacion.funcion_asignada = '';
+      const evento = this.eventos.find(e => Number(e.id_evento) === Number(this.asignacion.id_evento));
+      this.asignacion.fecha_inicio = String(evento?.fecha_inicio || '').slice(0, 10);
+      this.asignacion.fecha_fin = String(evento?.fecha_fin || '').slice(0, 10);
+    },
         ubicacionSeleccionada() {
-
-            const ubicacion = this.ubicacionActual;
-
-            if (!ubicacion) {
-                return;
-            }
-
-            if (ubicacion.tipo === 'STAND') {
-
-                this.asignacion.id_evento =
-                    ubicacion.id_evento;
-
-            } else {
-
-                this.asignacion.id_evento = null;
-
-            }
-
+            if (this.tipoDestino === 'OTRO') this.asignacion.id_evento = null;
+            this.asignacion.funcion_asignada = '';
         },
 
         nombrePersonal(trabajador) {
@@ -420,8 +366,8 @@ export default {
         guardar() {
 
             if (
-                !this.asignacion.id_ubicacion &&
-                !this.asignacion.id_evento
+                !this.asignacion.id_ubicacion ||
+                (this.tipoDestino === 'FERIA' && !this.asignacion.id_evento)
             ) {
 
                 alert(
@@ -469,7 +415,7 @@ export default {
             };
 
             api.post(
-                'http://localhost:8000/api/asignaciones-personal',
+                '/api/asignaciones-personal',
                 datos
             )
             .then(response => {
@@ -519,6 +465,7 @@ export default {
 </script>
 
 <style scoped>
+.mensaje-error { color: #b91c1c; background: #fef2f2; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
 .formulario {
     max-width: 950px;
     margin: 0 auto;

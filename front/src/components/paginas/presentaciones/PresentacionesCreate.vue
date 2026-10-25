@@ -1,5 +1,5 @@
 <template>
-    <div class="contenedor">
+    <div class="contenedor exc-modern">
         <h1>Crear Presentación</h1>
         <p>Registrar una nueva presentación de producto</p>
 
@@ -14,12 +14,7 @@
                     </option>
                 </select>
             </div>
-
-            <div class="campo">
-                <label>Código SKU *</label>
-                <input v-model.trim="presentacion.codigo_sku" type="text"
-                       placeholder="Ej. GRA-100G" required>
-            </div>
+            <div class="sku-aviso"><strong>SKU automático:</strong> el sistema asignará un código único al guardar la presentación.</div>
 
             <div class="campo">
                 <label>Nombre de presentación *</label>
@@ -101,7 +96,6 @@ export default {
         return {
             presentacion: {
                 id_producto: '',
-                codigo_sku: '',
                 nombre_presentacion: '',
                 peso_neto: '',
                 unidad_medida: '',
@@ -129,7 +123,7 @@ export default {
         async productosGet() {
             try {
                 const { data } = await api.get(
-                    'http://localhost:8000/api/productos',
+                    '/productos',
                     { params: { limit: 100 } }
                 );
                 this.productos = data.data.filter(p => Boolean(p.estado));
@@ -180,7 +174,7 @@ export default {
                 }
 
                 await api.post(
-                    'http://localhost:8000/api/presentaciones',
+                    '/presentaciones',
                     formData
                 );
 
@@ -280,3 +274,5 @@ p { color: #6b7280; margin-bottom: 25px; }
     .formulario { grid-template-columns: 1fr; }
 }
 </style>
+
+<style src="../../../styles/excernat-formularios.css"></style>

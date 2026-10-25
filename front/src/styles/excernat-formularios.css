@@ -1,0 +1,38 @@
+/* EXCERNAT · Formularios administrativos, verde oscuro / naranja */
+.exc-modern{--ex-green:#124734;--ex-dark:#0b3025;--ex-orange:#f47b20;--ex-border:#d6e5db;--ex-text:#17372d;max-width:1120px!important;margin:16px auto 40px!important;padding:0 16px!important;color:var(--ex-text);font-family:inherit;box-sizing:border-box}
+.exc-modern *{box-sizing:border-box}
+.exc-modern>h1,.exc-modern>.encabezado h1{font-size:clamp(24px,2.6vw,31px);line-height:1.2;font-weight:800;color:var(--ex-dark);margin:0 0 7px}
+.exc-modern>p,.exc-modern>.encabezado p,.exc-modern>.descripcion{color:#647f73;font-size:14px;margin:0 0 23px}
+.exc-modern form{background:#fff;border:1px solid #dbe8df;border-radius:16px;padding:clamp(20px,3vw,32px);box-shadow:0 10px 30px rgba(12,48,37,.055)}
+.exc-modern .campo{display:flex;flex-direction:column;gap:7px;margin:0 0 18px;min-width:0}
+.exc-modern label{font-size:13px;font-weight:700;color:var(--ex-dark);margin:0 0 4px}
+.exc-modern input:not([type=checkbox]):not([type=radio]),.exc-modern select,.exc-modern textarea{width:100%;min-width:0;min-height:42px;padding:10px 13px;border:1px solid #c9ddcf;border-radius:9px;background:#fff;color:#17372d;font:inherit;font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s}
+.exc-modern textarea{min-height:100px;resize:vertical}
+.exc-modern input:focus,.exc-modern select:focus,.exc-modern textarea:focus{border-color:var(--ex-green)!important;box-shadow:0 0 0 3px rgba(18,71,52,.10)}
+.exc-modern input[disabled],.exc-modern input[readonly]{background:#f2f6f3;color:#587266}
+.exc-modern small,.exc-modern .nota{font-size:12px;color:#71877c;line-height:1.6}
+.exc-modern h3{color:var(--ex-dark);font-size:18px;font-weight:800;margin:12px 0 18px}
+.exc-modern .seccion{padding:18px 0;border-bottom:1px solid #e6eee8;margin-bottom:14px}
+.exc-modern .fila{display:flex;gap:18px;align-items:start}
+.exc-modern .fila>.campo{flex:1;min-width:0}
+.exc-modern .acciones,.exc-modern .botones{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end;margin-top:22px;padding-top:18px;border-top:1px solid #e6eee8}
+.exc-modern button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:39px;padding:9px 17px;border:1px solid transparent;border-radius:9px;background:var(--ex-orange);color:#fff;font-size:13px;font-weight:700;line-height:1.2;cursor:pointer;transition:filter .15s,transform .15s;white-space:normal}
+.exc-modern button:hover:not(:disabled){filter:brightness(.94)}
+.exc-modern button:disabled{opacity:.55;cursor:not-allowed}
+.exc-modern .btn-cancelar,.exc-modern .botones button[type=button],.exc-modern .acciones button[type=button]{background:#fff;color:var(--ex-green);border-color:#cbded1}
+.exc-modern .btn-eliminar{background:#fff!important;border:1px solid #f2c4c4!important;color:#a72828!important}
+.exc-modern .encabezado-detalles{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:22px 0 12px}
+.exc-modern .encabezado-detalles h3{margin:0}
+.exc-modern .tabla-contenedor{overflow-x:auto;border:1px solid #dbe8df;border-radius:12px}
+.exc-modern table{border-collapse:collapse;width:100%;min-width:640px}
+.exc-modern th{background:var(--ex-dark);color:#fff;font-weight:700;font-size:12px;text-align:left;padding:14px 12px}
+.exc-modern td{padding:12px;vertical-align:top;border-bottom:1px solid #e2ebe5}
+.exc-modern td input,.exc-modern td select{min-width:120px}
+.exc-modern .resumen,.exc-modern .persona-info,.exc-modern .informacion{background:#f1f7f3;border:1px solid #d8e9de;border-radius:11px;padding:16px;color:#244b39}
+.exc-modern .resultados{border-radius:10px;overflow:hidden;border:1px solid #d5e5d9}
+.exc-modern .resultados .resultado{background:#fff;color:var(--ex-dark);border:0;border-bottom:1px solid #e6eee8;border-radius:0;display:flex;align-items:flex-start;flex-direction:column;text-align:left;width:100%;padding:12px}
+.exc-modern .resultados .resultado:hover{background:#f2f8f3}
+.exc-modern .vista-previa{width:135px;height:135px;object-fit:contain;border-radius:12px;border:1px solid #dbe8df}
+.exc-modern .sku-aviso{background:#f1f7f3;border:1px solid #d8e9de;border-radius:10px;padding:12px 14px;font-size:13px;color:#365a47;grid-column:1/-1}
+.exc-modern .sku-aviso strong{color:var(--ex-green)}
+@media(max-width:720px){.exc-modern{padding:0 10px!important}.exc-modern form{padding:18px}.exc-modern .fila{flex-direction:column;gap:0}.exc-modern .fila>.campo{width:100%}.exc-modern .acciones,.exc-modern .botones{justify-content:stretch}.exc-modern .acciones button,.exc-modern .botones button{flex:1}}

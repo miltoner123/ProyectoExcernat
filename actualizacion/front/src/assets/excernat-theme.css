@@ -1,0 +1,40 @@
+/* EXCERNAT - Sistema de diseño unificado. Aplicado solo al área autenticada. */
+:root { --ex-green:#124734;--ex-green-dark:#0b3025;--ex-green-soft:#e8f3ed;--ex-orange:#f47b20;--ex-orange-hover:#dc6510;--ex-bg:#f3f6f4;--ex-text:#233b31;--ex-muted:#6c7e73;--ex-line:#dde8e0;--ex-shadow:0 5px 20px rgba(12,48,37,.07); }
+body { background:var(--ex-bg)!important;color:var(--ex-text);font-family:Inter,'Segoe UI',Arial,sans-serif!important; }
+.topbar {background:var(--ex-green-dark)!important;height:66px!important;padding:0 26px!important;box-shadow:0 3px 14px rgba(7,39,26,.19)!important;}
+.topbar .logo {font-weight:850!important;letter-spacing:1.2px!important;color:#fff!important;}
+.topbar-user {color:#e0eee6!important;}
+.sidebar {background:linear-gradient(180deg,#103d2e 0%,#0a2a21 100%)!important;top:66px!important;min-height:calc(100vh - 66px)!important;}
+.sidebar-title,.menu-section {color:#a7cdb5!important;letter-spacing:1.2px!important;}
+.sidebar .menu-item {color:#e3f0e8!important;border-radius:9px!important;transition:background .15s!important;}
+.sidebar .menu-item:hover {background:#ffffff19!important;color:#fff!important;}
+.sidebar .menu-item.router-link-active,.sidebar .menu-item.router-link-exact-active {background:var(--ex-orange)!important;color:#fff!important;font-weight:700!important;}
+.app-container {padding-top:66px!important;}
+.main-content {background:var(--ex-bg)!important;padding:26px!important;}
+.main-content h1,.main-content h2,.main-content h3,.main-content .page-title {color:var(--ex-green-dark)!important;letter-spacing:-.35px;}
+.main-content h1 {font-weight:800!important;}
+.main-content :is(.card,.panel,.tabla-contenedor,.table-container,.form-container,.formulario,.contenedor-formulario,.filtros-contenedor,.resumen-card,.stat-card) {border-radius:12px!important;box-shadow:var(--ex-shadow)!important;border:1px solid var(--ex-line)!important;}
+.main-content :is(.card,.panel,.form-container,.formulario,.contenedor-formulario) {background:#fff;}
+.main-content :is(input:not([type=checkbox]):not([type=radio]),select,textarea,.form-control) {border-radius:8px!important;border:1px solid #ceded3!important;background-color:#fff;color:var(--ex-text);min-height:38px;}
+.main-content :is(input,select,textarea):focus {outline:2px solid #f47b2059!important;outline-offset:1px;border-color:var(--ex-orange)!important;}
+.main-content label {color:var(--ex-green-dark);font-weight:650;}
+.main-content :is(button,.btn) {border-radius:8px!important;font-weight:650;transition:filter .15s,transform .15s;}
+.main-content :is(button,.btn):hover:not(:disabled) {filter:brightness(.96);}
+.main-content :is(.btn-primary,.btn-principal,.btn-crear,.btn-nuevo,.btn-guardar,.btn-success) {background:var(--ex-orange)!important;border-color:var(--ex-orange)!important;color:#fff!important;}
+.main-content :is(.btn-primary,.btn-principal,.btn-crear,.btn-nuevo,.btn-guardar,.btn-success):hover {background:var(--ex-orange-hover)!important;}
+.main-content :is(.btn-editar,.btn-warning) {background:#fff0df!important;color:#aa500b!important;border-color:#ffe2c0!important;}
+.main-content :is(.btn-stands) {background:var(--ex-green)!important;color:#fff!important;}
+.main-content :is(.btn-danger,.btn-eliminar) {background:#b83d32!important;color:#fff!important;}
+.main-content :is(.tabla-contenedor,.table-container) {overflow-x:auto;}
+.main-content table {border-collapse:collapse;width:100%;}
+.main-content table thead th {background:var(--ex-green-dark)!important;color:#fff!important;font-weight:750!important;font-size:12px!important;letter-spacing:.2px;}
+.main-content table td {border-bottom:1px solid var(--ex-line)!important;}
+.main-content table tbody tr:hover {background:#f1f8f3!important;}
+.main-content :is(.estado-activo,.badge-activo) {background:#e0f5e7!important;color:#176b40!important;}
+.main-content :is(.estado-inactivo,.badge-inactivo) {background:#fff0ed!important;color:#a7362a!important;}
+.main-content :is(.encabezado,.header,.page-header) {margin-bottom:22px;}
+.main-content :is(.filtros,.filters) {gap:12px;margin-bottom:18px;}
+.main-content :is(.paginacion,.pagination) {margin-top:18px;gap:12px;}
+.main-content .mensaje-error {background:#fff0ed;color:#a7362a;border-radius:8px;padding:12px;}
+.btn-salir {background:#b94a35!important;border-radius:8px!important;}
+@media(max-width:768px){.main-content{padding:15px!important}.topbar{padding:0 12px!important}.topbar-user{display:flex!important;align-items:center;font-size:11px}.sidebar{top:66px!important}.main-content :is(.encabezado,.page-header){flex-wrap:wrap}.main-content table{min-width:650px}}

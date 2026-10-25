@@ -8,6 +8,7 @@ use App\Models\Producto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class PresentacionController extends Controller
 {
@@ -44,7 +45,7 @@ class PresentacionController extends Controller
             'id_producto' => ['required', 'integer', 'exists:productos,id'],
 
             'codigo_sku' => [
-                'required',
+                ($id === null ? 'nullable' : 'required'),
                 'string',
                 'max:100',
                 Rule::unique('presentaciones', 'codigo_sku')
@@ -66,6 +67,8 @@ class PresentacionController extends Controller
     public function store(Request $request)
     {
         $datos = $this->validar($request);
+        // El SKU se genera en el servidor; nunca se confía en un código enviado por el cliente.
+        $datos['codigo_sku'] = 'EXC-' . (string) Str::ulid();
 
         $producto = Producto::find($datos['id_producto']);
 

@@ -34,7 +34,6 @@ async function cerrarSesion() {
             <RouterLink to="/" class="menu-item">🏠 Dashboard principal</RouterLink>
             <div class="menu-section">PRODUCTOS</div>
             <RouterLink to="/productos" class="menu-item">📦 Productos</RouterLink>
-            <RouterLink to="/categorias" class="menu-item">📂 Categorías</RouterLink>
             <RouterLink to="/presentaciones" class="menu-item">📋 Presentaciones</RouterLink>
             <RouterLink to="/lotes" class="menu-item">🏷️ Lotes</RouterLink>
             <div class="menu-section">INVENTARIO</div>

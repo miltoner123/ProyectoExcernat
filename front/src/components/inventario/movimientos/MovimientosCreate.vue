@@ -1,5 +1,5 @@
 <template>
-  <div class="formulario">
+  <div class="formulario exc-modern">
     <h1>Registrar Movimiento de Inventario</h1>
     <p class="descripcion">Registra entradas, salidas, transferencias, devoluciones y ajustes.</p>
     <form @submit.prevent="guardarMovimiento">
@@ -207,3 +207,5 @@ td select,td input{width:100%;padding:9px;box-sizing:border-box}.informacion{bac
 .informacion p{margin:6px 0}.informacion b{color:#176c3d}.informacion .error,.error{color:#b91c1c}
 .btn-eliminar{background:#b91c1c;color:white}.btn-cancelar{background:#6c757d;color:white}button:disabled{opacity:.5;cursor:not-allowed}
 </style>
+
+<style src="../../../styles/excernat-formularios.css"></style>

@@ -7,9 +7,6 @@
                 <h1>Productos</h1>
                 <p>Gestión y administración de productos y sus presentaciones</p>
             </div>
-            <button class="btn-categorias" @click="$router.push('/categorias')">
-                Categorías
-            </button>
             <button class="btn-crear" @click="crearProducto">
                 + Crear Producto
             </button>

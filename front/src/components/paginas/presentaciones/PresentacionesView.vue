@@ -18,7 +18,7 @@
             <span>Página {{ pagination.current_page }} de {{ pagination.last_page }}</span>
         </div>
 
-        <div class="tabla-contenedor">
+        <div ref="galeriaPresentaciones" class="tabla-contenedor">
             <table>
                 <thead>
                     <tr>
@@ -64,6 +64,10 @@
                                     :src="'http://localhost:8000/storage/' + presentacion.imagen"
                                     alt="Fotografía de la presentación"
                                     class="imagen-presentacion"
+                                    :data-original="'http://localhost:8000/storage/' + presentacion.imagen"
+                                    :alt="`Imagen de ${presentacion.nombre_presentacion}`"
+                                    title="Haz clic para ampliar la imagen"
+                                    @click.stop="ampliarImagen($event)"
                                 >
 
                                 <span v-else class="sin-imagen">
@@ -158,6 +162,8 @@
 
 <script>
 import api from '../../../services/api';
+import Viewer from 'viewerjs';
+import 'viewerjs/dist/viewer.css';
 
 export default {
 
@@ -165,6 +171,7 @@ export default {
         return {
             presentaciones: [],
             cargando: false,
+            visor: null,
 
             pagination: {
                 current_page: 1,
@@ -179,7 +186,44 @@ export default {
         this.presentacionesGet();
     },
 
+    beforeUnmount() {
+        this.visor?.destroy();
+        this.visor = null;
+    },
+
     methods: {
+        ampliarImagen(evento) {
+            const imagen = evento.currentTarget;
+            if (!imagen || !imagen.complete || imagen.naturalWidth === 0) {
+                alert('No se pudo cargar la imagen original.');
+                return;
+            }
+            this.visor?.destroy();
+            this.visor = new Viewer(imagen, {
+                url: 'data-original',
+                inline: false,
+                initialCoverage: 0.95,
+                zoomRatio: 0.25,
+                minZoomRatio: 0.05,
+                maxZoomRatio: 10,
+                toolbar: true,
+                navbar: false,
+                title: true,
+                tooltip: true,
+                movable: true,
+                zoomable: true,
+                rotatable: true,
+                scalable: true,
+                fullscreen: true,
+                backdrop: true,
+                keyboard: true,
+                hidden: () => {
+                    this.visor?.destroy();
+                    this.visor = null;
+                }
+            });
+            this.visor.show();
+        },
 
         presentacionesGet() {
 
@@ -308,6 +352,12 @@ export default {
     height: 65px;
     object-fit: contain;
     border-radius: 6px;
+    cursor: zoom-in;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.imagen-presentacion:hover {
+    transform: scale(1.06);
+    box-shadow: 0 2px 10px rgba(18,71,52,.22);
 }
 .encabezado {
     display: flex;

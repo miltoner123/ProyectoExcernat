@@ -1,5 +1,5 @@
 <template>
-  <div class="formulario">
+  <div class="formulario exc-modern">
     <h1>Registrar Inventario</h1>
     <p>Configura el stock mínimo. Las existencias se actualizan con los movimientos.</p>
 
@@ -165,3 +165,5 @@ small { color: #64748b; }
 button { padding: 9px 14px; cursor: pointer; }
 button:disabled { opacity: .6; cursor: not-allowed; }
 </style>
+
+<style src="../../../styles/excernat-formularios.css"></style>

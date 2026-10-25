@@ -1,148 +1,22 @@
 <template>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1>Productos</h1>
-
-    </div>
-    <p>Formulario para crear productos</p>
-
-    <form @submit.prevent="crearProducto">
-        <div>
-            <label for="nombre">Nombre:</label>
-            <input type="text" id="nombre" v-model="producto.nombre" required>
-        </div>
-        <div>
-            <label for="descripcion">Descripción:</label>
-            <textarea id="descripcion" v-model="producto.descripcion" required></textarea>
-        </div>
-
-        <!-- <div>
-            <label for="estado">Estado:</label>
-            <input type="checkbox" id="estado" v-model="producto.estado">
-        </div> -->
-        <div>
-            <label for="categoria_id">Categoría:</label>
-            <select id="categoria_id" v-model="producto.categoria_id" required>
-                <option value="" disabled>Seleccione una categoría</option>
-                <option v-for="categoria in categorias" :key="categoria.id" :value="categoria.id">
-                    {{ categoria.nombre }}
-                </option>
-            </select>
-        </div>
-        <button type="submit">Crear Producto</button>
-
-    </form>
-<h2>
-    Crear Categoria
-</h2>
-    <form @submit.prevent="crearCategoria">
-        <div>
-            <label for="nombre">Nombre de la categoria:</label>
-            <input type="text" id="nombre" v-model="categoria.nombre" required>
-        </div>
-        <div>
-            <label for="descripcion">Descripción:</label>
-            <textarea id="descripcion" v-model="categoria.descripcion" required></textarea>
-        </div>
-        <button type="submit">Crear Categoria</button>
-    </form>
-
+  <main class="product-page">
+    <div class="page-heading"><div><div class="eyebrow">CATÁLOGO / PRODUCTOS</div><h1>Registrar producto</h1><p>Registra los productos y crea una categoría sin salir del formulario.</p></div><router-link to="/productos" class="back">← Volver al listado</router-link></div>
+    <div class="content-grid"><section class="form-card">
+      <div class="tabs" role="tablist" aria-label="Formulario de producto y categoría"><button type="button" role="tab" :aria-selected="tab==='producto'" :class="{active:tab==='producto'}" @click="tab='producto'">▣ Nuevo producto</button><button type="button" role="tab" :aria-selected="tab==='categoria'" :class="{active:tab==='categoria'}" @click="tab='categoria'">＋ Crear categoría</button></div>
+      <div v-if="mensaje" class="notice success" role="status">{{ mensaje }}</div><div v-if="error" class="notice danger" role="alert">{{ error }}</div>
+      <form v-if="tab==='producto'" @submit.prevent="crearProducto"><div class="form-title"><h2>Información del producto</h2><p>Los campos marcados con * son obligatorios.</p></div><div class="fields"><label class="field">Nombre del producto *<input v-model.trim="producto.nombre" maxlength="255" required placeholder="Ej.: Miel natural" /></label><label class="field">Categoría *<select v-model="producto.categoria_id" required><option value="" disabled>Selecciona una categoría</option><option v-for="c in categorias" :key="c.id_categoria ?? c.id" :value="c.id_categoria ?? c.id">{{ c.nombre }}</option></select></label><label class="field wide">Descripción *<textarea v-model.trim="producto.descripcion" rows="5" required placeholder="Describe las características del producto..."></textarea></label></div><div class="actions"><router-link to="/productos" class="cancel">Cancelar</router-link><button class="primary" :disabled="guardando">{{ guardando ? 'Guardando...' : 'Guardar producto' }}</button></div></form>
+      <form v-else @submit.prevent="crearCategoria"><div class="form-title"><h2>Nueva categoría</h2><p>Al guardarla, quedará disponible para el registro del producto.</p></div><div class="fields"><label class="field wide">Nombre de la categoría *<input v-model.trim="categoria.nombre" maxlength="255" required placeholder="Ej.: Alimentos naturales" /></label><label class="field wide">Descripción<textarea v-model.trim="categoria.descripcion" rows="4" placeholder="Descripción de la categoría (opcional)"></textarea></label></div><div class="actions"><button type="button" class="cancel" @click="tab='producto'">Volver al producto</button><button class="primary" :disabled="guardando">{{ guardando ? 'Guardando...' : 'Crear categoría' }}</button></div></form>
+    </section><aside class="aside"><div class="aside-icon">▣</div><h3>Categorías registradas</h3><p>Consulta las categorías disponibles para clasificar el producto.</p><div class="aside-rule"></div><div class="category-summary"><span>Total de categorías</span><strong>{{ categorias.length }}</strong></div><div v-if="categorias.length" class="category-list"><div v-for="c in categorias" :key="c.id_categoria ?? c.id" class="category-item" :class="{'category-selected':String(producto.categoria_id)===String(c.id_categoria ?? c.id)}"><span class="category-dot"></span><div class="category-details"><b>{{ c.nombre }}</b><small v-if="c.descripcion">{{ c.descripcion }}</small></div></div></div><p v-else class="empty-categories">No hay categorías registradas.</p></aside></div>
+  </main>
 </template>
 <script>
 import api from '../../../services/api';
-export default {
-    name : 'Productoscreate',
-    data() {
-        return {
-            producto: {
-                nombre: '',
-                descripcion: '',
-                estado: true,
-                categoria_producto_id: ''
-        },
-        categorias: [],
-        categoria: {
-            nombre: '',
-            descripcion: ''
-        }   
-        };
-    },
-    mounted() {
-        this.categoriasGet();
-    },
-    methods:{
-        crearCategoria() {
-            api.post('http://localhost:8000/api/categorias', this.categoria)
-                .then(response => {
-                    console.log('Categoria creada:', response.data);
-                    this.categoria.nombre = '';
-                    this.categoria.descripcion = '';    
-                    this.categoriasGet(); // Actualizar la lista de categorías después de crear una nueva
-                })
-                .catch(error => {
-                    console.error('Error al crear la categoría:', error);
-                });
-        },
-        handleFileUpload(event) {
-            const file = event.target.files[0];
-            this.producto.imagen = file;
-        },
-        async categoriasGet() {
-            api.get('http://localhost:8000/api/categorias')
-                .then(response => {
-                    this.categorias = response.data;
-                })
-                .catch(error => {
-                    console.error(error);
-                });
-        },
-        crearProducto(){
-            const formData = new FormData();
-            for (const key in this.producto) {
-                formData.append(key, this.producto[key]);
-            }
-                api.post('http://localhost:8000/api/productos', formData)
-                .then(response => {
-                    console.log(response.data);
-                    this.$router.push('/productos');
-                })
-                .catch(error => {
-                    console.error(error);
-                });
-        }
-    }
-}
-
+export default { name:'Productoscreate', data(){return {tab:'producto',producto:{nombre:'',descripcion:'',categoria_id:''},categoria:{nombre:'',descripcion:''},categorias:[],guardando:false,error:'',mensaje:''}},mounted(){if(this.$route.query.tab==='categoria')this.tab='categoria';this.categoriasGet()},methods:{
+  async categoriasGet(){try{const {data}=await api.get('/api/categorias');this.categorias=Array.isArray(data)?data:(Array.isArray(data.data)?data.data:(data.data?.data||[]))}catch(e){this.error=e.response?.data?.message||'No se pudieron cargar las categorías.'}},
+  async crearCategoria(){if(this.guardando)return;this.guardando=true;this.error='';this.mensaje='';try{const {data}=await api.post('/api/categorias',this.categoria);await this.categoriasGet();const nuevaId=data?.id_categoria??data?.id??data?.categoria?.id_categoria??data?.categoria?.id;if(nuevaId)this.producto.categoria_id=nuevaId;this.categoria={nombre:'',descripcion:''};this.tab='producto';this.mensaje='Categoría creada correctamente. Ya puedes utilizarla en tu producto.'}catch(e){this.error=e.response?.data?.message||'No se pudo crear la categoría.'}finally{this.guardando=false}},
+  async crearProducto(){if(this.guardando)return;this.guardando=true;this.error='';try{await api.post('/api/productos',this.producto);this.$router.push('/productos')}catch(e){this.error=e.response?.data?.message||'No se pudo registrar el producto.'}finally{this.guardando=false}}
+}};
 </script>
 <style scoped>
-    form {
-        display: flex;
-        flex-direction: column;
-        max-width: 400px;
-    }
-
-    div {
-        margin-bottom: 10px;
-    }
-
-    label {
-        font-weight: bold;
-    }
-
-    input, textarea, select {
-        width: 100%;
-        padding: 8px;
-        box-sizing: border-box;
-    }
-
-    button {
-        padding: 10px;
-        background-color: #007BFF;
-        color: white;
-        border: none;
-        cursor: pointer;
-    }
-
-    button:hover {
-        background-color: #0056b3;
-    }
+.product-page{max-width:1260px;margin:0 auto;padding:12px 0 36px;color:#183b2d}.page-heading{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:24px;flex-wrap:wrap}.eyebrow{font-size:11px;font-weight:800;letter-spacing:1.6px;color:#e36e16;margin-bottom:8px}.page-heading h1{font-size:29px;color:#0b3025;margin:0 0 6px;font-weight:800}.page-heading p{color:#687e71;margin:0}.back,.cancel{text-decoration:none;border:1px solid #d6e3db;color:#124734;border-radius:9px;background:#fff;padding:11px 17px;font-weight:700;cursor:pointer}.content-grid{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:22px;align-items:start}.form-card,.aside{background:#fff;border:1px solid #dfe9e2;border-radius:16px;box-shadow:0 5px 20px #0b30250a;overflow:hidden}.tabs{display:flex;gap:6px;padding:18px 24px 0;border-bottom:1px solid #e5eee7}.tabs button{background:transparent;color:#66796d;border:0;border-bottom:3px solid transparent;padding:12px 18px 15px;font-weight:800;cursor:pointer}.tabs button.active{color:#124734;border-color:#f47b20}.form-card form{padding:26px}.form-title{margin-bottom:23px}.form-title h2{font-size:20px;margin:0 0 6px;color:#0b3025}.form-title p{font-size:13px;color:#7b8b80;margin:0}.fields{display:grid;grid-template-columns:1fr 1fr;gap:20px}.field{display:flex;flex-direction:column;gap:9px;font-weight:700;color:#264738;font-size:13px}.field.wide{grid-column:1/-1}.field input,.field select,.field textarea{box-sizing:border-box;width:100%;border:1px solid #cdded2;background:#fff;border-radius:9px;padding:12px 14px;font:inherit;font-weight:400;color:#1b3b2b;outline:none}.field textarea{resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#188357;box-shadow:0 0 0 3px #1883571a}.actions{border-top:1px solid #e8eee9;margin-top:28px;padding-top:20px;display:flex;justify-content:flex-end;gap:12px;align-items:center}.primary{background:#f47b20;border:0;color:white;padding:12px 22px;border-radius:9px;font-weight:800;cursor:pointer}.primary:disabled{opacity:.65;cursor:wait}.aside{padding:26px}.aside-icon{background:#e6f2e9;color:#124734;font-size:27px;width:54px;height:54px;display:grid;place-items:center;border-radius:13px}.aside h3{color:#0b3025;font-size:18px;margin:20px 0 10px}.aside p{font-size:13px;line-height:1.7;color:#6e8074}.aside-rule{height:1px;background:#e2ebe4;margin:22px 0}.aside span{display:block;font-size:12px;color:#76877a}.aside strong{display:block;font-size:30px;color:#124734;margin-top:6px}.category-summary{display:flex;align-items:center;justify-content:space-between}.category-list{margin-top:15px;max-height:380px;overflow:auto;display:grid;gap:8px}.category-item{display:flex;align-items:flex-start;gap:9px;border:1px solid #e2ebe4;border-radius:9px;padding:11px;background:#f9fbf9}.category-selected{border-color:#f47b20;background:#fff8f2}.category-dot{width:8px;height:8px;border-radius:50%;background:#f47b20;flex-shrink:0;margin-top:5px}.category-details{min-width:0;display:grid;gap:4px}.category-details b{font-size:13px;color:#124734;overflow-wrap:anywhere}.category-details small{font-size:11px;line-height:1.4;color:#748479}.empty-categories{font-style:italic}.notice{margin:18px 26px 0;padding:12px 16px;border-radius:9px;font-size:13px}.success{background:#e8f5ec;color:#155d35}.danger{background:#fff0ed;color:#a12c20}@media(max-width:920px){.content-grid{grid-template-columns:1fr}.aside{display:none}}@media(max-width:600px){.fields{grid-template-columns:1fr}.form-card form{padding:18px}.tabs{padding:12px 12px 0}.tabs button{padding:12px;font-size:12px}.page-heading h1{font-size:24px}.actions{flex-wrap:wrap}}
 </style>

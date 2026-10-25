@@ -1,3 +1,4 @@
+import './assets/excernat-theme.css';
 import { createApp } from "vue";
 //import './style.css';
 import App from "./App.vue";
@@ -19,7 +20,7 @@ const routes = [
   { path: "/productos", component: () => import("./components/paginas/productos/Productosview.vue") },
   { path: "/productos/crear", component: () => import("./components/paginas/productos/Productoscreate.vue") },
   { path: "/productos/editar/:id", component: () => import("./components/paginas/productos/ProductosEditar.vue")},
-  { path: "/categorias", component: () => import("./components/paginas/categorias/CategoriasView.vue") },
+  { path: "/categorias", redirect: "/productos/crear?tab=categoria" },
   { path: "/presentaciones", component: () => import("./components/paginas/presentaciones/PresentacionesView.vue") },
   { path: "/presentaciones/crear", component: () => import("./components/paginas/presentaciones/PresentacionesCreate.vue") },
   { path: "/presentaciones/editar/:id", component: () => import("./components/paginas/presentaciones/PresentacionesEditar.vue") },

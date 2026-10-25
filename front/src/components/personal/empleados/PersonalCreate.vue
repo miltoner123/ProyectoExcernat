@@ -1,6 +1,6 @@
 <template>
 
-    <div class="formulario">
+    <div class="formulario exc-modern">
 
         <div class="encabezado">
             <h1>Registrar Personal</h1>
@@ -531,3 +531,4 @@ export default {
 .resultado span { margin-top: 4px; font-size: 13px; color: #6b7280; }
 .error { color: #b91c1c; font-size: 13px; }
 </style>
+<style src="../../../styles/excernat-formularios.css"></style>

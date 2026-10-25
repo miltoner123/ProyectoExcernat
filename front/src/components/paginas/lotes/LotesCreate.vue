@@ -1,6 +1,7 @@
 <template>
-    <div>
+    <div class="exc-modern">
         <h1>Crear Lote</h1>
+        <p>Registra la producción, fechas y trazabilidad del lote.</p>
         <form @submit.prevent="crearLote">
             <div>
                 <label>Presentación:</label>
@@ -30,7 +31,7 @@
             <div>
                 <label>Vida útil del producto:</label>
 
-                <select v-model="tipoDuracion" @change="actualizarDuracion">
+                <select v-model="lote.tipoDuracion" @change="actualizarDuracion">
                     <option value="8">8 meses</option>
                     <option value="12">1 año</option>
                     <option value="18">1 año y medio</option>
@@ -38,7 +39,7 @@
                 </select>
             </div>
 
-            <div v-if="tipoDuracion === 'otro'">
+            <div v-if="lote.tipoDuracion === 'otro'">
                 <label>Duración personalizada (meses):</label>
 
                 <input
@@ -68,11 +69,9 @@
             </div>
             <div>
                 <label>Observación:</label>
-                <textarea   model="lote.observacion" ></textarea>
+                <textarea v-model="lote.observacion" ></textarea>
             </div>
-            <button type="submit">
-                Crear Lote
-            </button>
+            <div class="acciones"><button type="button" class="btn-cancelar" @click="$router.push('/lotes')">Cancelar</button><button type="submit">Crear lote</button></div>
 
         </form>
     </div>
@@ -133,7 +132,7 @@ export default {
     methods: {
         presentacionesGet() {
             api.get(
-                'http://localhost:8000/api/presentaciones',
+                '/presentaciones',
                 {
                     params: {
                         limit: 100
@@ -154,13 +153,13 @@ export default {
 
         },
         crearLote() {
-            const { fecha_vencimiento, ...datosLote } = this.lote;
+            const { fecha_vencimiento, tipoDuracion, ...datosLote } = this.lote;
             const datos = {
                 ...datosLote,
                 vida_util_meses: Number(this.lote.vida_util_meses)
             };
 
-            api.post('http://localhost:8000/api/lotes', datos)
+            api.post('/lotes', datos)
                 .then(response => {
                     alert('Lote registrado correctamente');
                     this.$router.push('/lotes');
@@ -172,8 +171,8 @@ export default {
         },
         actualizarDuracion() {
 
-            if (this.tipoDuracion !== 'otro') {
-                this.lote.vida_util_meses = Number(this.tipoDuracion);
+            if (this.lote.tipoDuracion !== 'otro') {
+                this.lote.vida_util_meses = Number(this.lote.tipoDuracion);
             } else {
                 this.lote.vida_util_meses = null;
             }
@@ -183,3 +182,4 @@ export default {
 };
 
 </script>
+<style src="../../../styles/excernat-formularios.css"></style>

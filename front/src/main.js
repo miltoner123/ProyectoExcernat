@@ -1,3 +1,5 @@
+import './styles/excernat-formularios.css';
+import './assets/excernat-uniformidad.css';
 import './assets/excernat-theme.css';
 import { createApp } from "vue";
 //import './style.css';

@@ -1,0 +1,32 @@
+/* EXCERNAT | Uniformidad visual transversal v1 | No modifica lógica de componentes */
+:root{--exu-green:#124734;--exu-dark:#0b3025;--exu-orange:#f47b20;--exu-orange-hover:#df6812;--exu-line:#d7e5db;--exu-text:#18382c;--exu-muted:#657d70}
+/* Ámbito restringido al área autenticada: el login mantiene sus estilos propios */
+.main-content{color:var(--exu-text)}
+.main-content :is(button,.btn,[role=button]){font-family:inherit;box-sizing:border-box;min-height:36px;padding:8px 14px;border:1px solid transparent;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;gap:6px;vertical-align:middle;line-height:1.3;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:background-color .15s,border-color .15s,box-shadow .15s,filter .15s}
+.main-content :is(button,.btn):focus-visible{outline:3px solid rgba(244,123,32,.3);outline-offset:2px}
+.main-content :is(button,.btn):disabled{opacity:.52;cursor:not-allowed;filter:none!important}
+/* Estilos por función: clases añadidas a botones que carecían de clase */
+.main-content :is(.ex-btn-primary,.btn-primary,.btn-crear,.btn-guardar,.btn-nuevo,.btn-principal){background:var(--exu-orange)!important;color:white!important;border-color:var(--exu-orange)!important}
+.main-content :is(.ex-btn-primary,.btn-primary,.btn-crear,.btn-guardar,.btn-nuevo,.btn-principal):hover:not(:disabled){background:var(--exu-orange-hover)!important}
+.main-content :is(.ex-btn-secondary,.btn-cancelar,.btn-volver){background:#fff!important;color:var(--exu-green)!important;border-color:var(--exu-line)!important}
+.main-content :is(.ex-btn-outline,.btn-editar,.btn-ver){background:#eaf3ed!important;color:var(--exu-green)!important;border-color:#c7ddcd!important}
+.main-content :is(.ex-btn-danger,.btn-eliminar,.btn-danger){background:#b93c36!important;color:#fff!important;border-color:#b93c36!important}
+.main-content :is(.ex-btn-danger,.btn-eliminar,.btn-danger):hover:not(:disabled){background:#a42f2b!important}
+/* Botones sin clase en vistas futuras: no dejarlos con aspecto nativo */
+.main-content button:not([class]){background:var(--exu-orange)!important;color:#fff!important;border-color:var(--exu-orange)!important}
+.main-content button:not([class])[type=button]{background:#fff!important;color:var(--exu-green)!important;border-color:var(--exu-line)!important}
+/* Campos, títulos y tablas */
+.main-content :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea){box-sizing:border-box;min-height:39px;border:1px solid #cbded0;border-radius:9px;padding:8px 11px;font:inherit;font-size:14px;max-width:100%}
+.main-content input[type=file]{max-width:100%;font:inherit;font-size:13px}
+.main-content textarea{min-height:85px;resize:vertical}
+.main-content :is(input,select,textarea):focus-visible{outline:2px solid rgba(244,123,32,.25);outline-offset:1px;border-color:var(--exu-orange)}
+.main-content label{font-weight:650;color:var(--exu-dark)}
+.main-content :is(h1,h2,h3){color:var(--exu-dark);line-height:1.25}
+.main-content :is(.card,.form-container,.formulario,.contenedor-formulario,.panel,.table-container,.tabla-contenedor){border-radius:12px}
+.main-content table{width:100%;border-collapse:collapse}
+.main-content table thead th{background:var(--exu-dark)!important;color:#fff!important;padding:12px 14px;font-weight:750}
+.main-content table td{padding:11px 13px;border-bottom:1px solid #e0eae2}
+.main-content table tbody tr:hover{background:#f0f7f2}
+.main-content :is(.table-container,.tabla-contenedor){overflow-x:auto}
+.main-content :is(.acciones,.botones,.form-actions){display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+@media(max-width:720px){.main-content :is(.acciones,.botones,.form-actions){gap:8px}.main-content :is(button,.btn){min-height:38px}.main-content table{min-width:580px}}

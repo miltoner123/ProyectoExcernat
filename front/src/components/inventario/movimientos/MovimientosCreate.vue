@@ -208,4 +208,4 @@ td select,td input{width:100%;padding:9px;box-sizing:border-box}.informacion{bac
 .btn-eliminar{background:#b91c1c;color:white}.btn-cancelar{background:#6c757d;color:white}button:disabled{opacity:.5;cursor:not-allowed}
 </style>
 
-<style src="../../../styles/excernat-formularios.css"></style>
+

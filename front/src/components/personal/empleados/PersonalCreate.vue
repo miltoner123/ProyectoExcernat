@@ -531,4 +531,4 @@ export default {
 .resultado span { margin-top: 4px; font-size: 13px; color: #6b7280; }
 .error { color: #b91c1c; font-size: 13px; }
 </style>
-<style src="../../../styles/excernat-formularios.css"></style>
+

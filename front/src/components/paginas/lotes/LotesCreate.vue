@@ -182,4 +182,4 @@ export default {
 };
 
 </script>
-<style src="../../../styles/excernat-formularios.css"></style>
+

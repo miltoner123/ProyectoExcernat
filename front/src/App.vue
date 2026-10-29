@@ -40,6 +40,7 @@ async function cerrarSesion() {
             <RouterLink to="/ubicaciones" class="menu-item">📍 Ubicaciones</RouterLink>
             <RouterLink to="/inventarios" class="menu-item">📦 Inventarios</RouterLink>
             <RouterLink to="/movimientos" class="menu-item">🔄 Movimientos de Inventario</RouterLink>
+            <RouterLink to="/pedidos" class="menu-item">📝 Pedidos de abastecimiento</RouterLink>
             <div class="menu-section">EVENTOS</div>
             <RouterLink to="/eventos" class="menu-item">📅 Eventos</RouterLink>
             <div class="menu-section">PERSONAL</div>

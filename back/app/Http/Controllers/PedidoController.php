@@ -87,7 +87,7 @@ class PedidoController extends Controller
                 'required|array|min:1',
 
             'detalles.*.id_presentacion' =>
-                'required|exists:presentaciones,id_presentacion',
+                'required|distinct|exists:presentaciones,id_presentacion',
 
             'detalles.*.cantidad_paquetes' =>
                 'required|integer|min:0',
@@ -95,6 +95,12 @@ class PedidoController extends Controller
             'detalles.*.cantidad_unidades' =>
                 'required|integer|min:0',
         ]);
+
+        foreach ($request->input('detalles', []) as $i => $detalle) {
+            if ((int) $detalle['cantidad_paquetes'] === 0 && (int) $detalle['cantidad_unidades'] === 0) {
+                return response()->json(['message' => 'Cada detalle debe tener al menos un paquete o una unidad.', 'errors' => ["detalles.$i" => ['Ingrese una cantidad mayor que cero.']]], 422);
+            }
+        }
 
         try {
 
@@ -255,7 +261,7 @@ class PedidoController extends Controller
                 'required|array|min:1',
 
             'detalles.*.id_presentacion' =>
-                'required|exists:presentaciones,id_presentacion',
+                'required|distinct|exists:presentaciones,id_presentacion',
 
             'detalles.*.cantidad_paquetes' =>
                 'required|integer|min:0',
@@ -264,6 +270,12 @@ class PedidoController extends Controller
                 'required|integer|min:0',
         ]);
 
+
+        foreach ($request->input('detalles', []) as $i => $detalle) {
+            if ((int) $detalle['cantidad_paquetes'] === 0 && (int) $detalle['cantidad_unidades'] === 0) {
+                return response()->json(['message' => 'Cada detalle debe tener al menos un paquete o una unidad.', 'errors' => ["detalles.$i" => ['Ingrese una cantidad mayor que cero.']]], 422);
+            }
+        }
 
         try {
 

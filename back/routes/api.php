@@ -84,11 +84,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/movimientos-inventario/{id}', [\App\Http\Controllers\MovimientoInventarioController::class, 'show'])->middleware('permission:movimientos.ver');
 
     // PEDIDOS (PERMISOS TEMPORALES)
-    Route::get('/pedidos', [\App\Http\Controllers\PedidoController::class, 'index'])->middleware('role:ADMIN');
-    Route::post('/pedidos', [\App\Http\Controllers\PedidoController::class, 'store'])->middleware('role:ADMIN');
-    Route::get('/pedidos/{id}', [\App\Http\Controllers\PedidoController::class, 'show'])->middleware('role:ADMIN');
-    Route::post('/pedidos/{id}', [\App\Http\Controllers\PedidoController::class, 'update'])->middleware('role:ADMIN');
-    Route::delete('/pedidos/{id}', [\App\Http\Controllers\PedidoController::class, 'destroy'])->middleware('role:ADMIN');
+    Route::get('/pedidos', [\App\Http\Controllers\PedidoController::class, 'index'])->middleware('permission:pedidos.ver');
+    Route::post('/pedidos', [\App\Http\Controllers\PedidoController::class, 'store'])->middleware('permission:pedidos.gestionar');
+    Route::get('/pedidos/{id}', [\App\Http\Controllers\PedidoController::class, 'show'])->middleware('permission:pedidos.ver');
+    Route::post('/pedidos/{id}', [\App\Http\Controllers\PedidoController::class, 'update'])->middleware('permission:pedidos.gestionar');
+    Route::delete('/pedidos/{id}', [\App\Http\Controllers\PedidoController::class, 'destroy'])->middleware('permission:pedidos.gestionar');
 
     // PERSONAS
     Route::get('/personas', [\App\Http\Controllers\PersonaController::class, 'index'])->middleware('permission:personas.ver');

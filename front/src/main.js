@@ -31,6 +31,10 @@ const routes = [
   { path: "/lotes/editar/:id", component: () => import("./components/paginas/lotes/LotesEditar.vue") },
   
 
+  { path: "/pedidos", component: () => import("./components/pedidos/PedidosView.vue") },
+  { path: "/pedidos/crear", component: () => import("./components/pedidos/PedidosFormulario.vue") },
+  { path: "/pedidos/editar/:id", component: () => import("./components/pedidos/PedidosFormulario.vue") },
+  { path: "/pedidos/:id", component: () => import("./components/pedidos/PedidosDetalle.vue") },
   { path: "/ubicaciones", component: () => import("./components/inventario/ubicaciones/UbicacionesView.vue")},
   { path: "/ubicaciones/editar/:id", component: () => import("./components/inventario/ubicaciones/UbicacionesEditar.vue")},
   { path: "/ubicaciones/crear", component: () => import("./components/inventario/ubicaciones/UbicacionesCreate.vue")},

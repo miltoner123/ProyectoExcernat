@@ -159,6 +159,10 @@ class DatabaseSeeder extends Seeder
                 'movimientos.ver',
                 'movimientos.registrar',
 
+                // PEDIDOS DE ABASTECIMIENTO
+                'pedidos.ver',
+                'pedidos.gestionar',
+
                 // VENTAS
                 'ventas.ver',
                 'ventas.registrar',
@@ -216,6 +220,7 @@ class DatabaseSeeder extends Seeder
                     'compras.ver',
                     'contabilidad.ver',
                     'reportes.ver',
+                    'pedidos.ver',
                 ],
 
                 // ADMINISTRACIÓN
@@ -228,6 +233,7 @@ class DatabaseSeeder extends Seeder
                     'asistencias.gestionar',
                     'contabilidad.ver',
                     'reportes.ver',
+                    'pedidos.ver',
                 ],
 
                 // CONTABILIDAD
@@ -254,6 +260,8 @@ class DatabaseSeeder extends Seeder
                     'compras.ver',
                     'compras.gestionar',
                     'reportes.ver',
+                    'pedidos.ver',
+                    'pedidos.gestionar',
                 ],
 
                 // ENCARGADO DE STAND O SUCURSAL
@@ -265,6 +273,8 @@ class DatabaseSeeder extends Seeder
                     'ventas.ver',
                     'ventas.registrar',
                     'eventos.ver',
+                    'pedidos.ver',
+                    'pedidos.gestionar',
                 ],
 
                 // ENCARGADO DE OPERACIONES
@@ -283,6 +293,8 @@ class DatabaseSeeder extends Seeder
                     'movimientos.ver',
                     'movimientos.registrar',
                     'reportes.ver',
+                    'pedidos.ver',
+                    'pedidos.gestionar',
                 ],
 
                 // SUBENCARGADO DE PRODUCCIÓN

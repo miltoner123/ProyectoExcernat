@@ -1,6 +1,7 @@
 <template>
   <div class="login-container">
     <form class="login-card" @submit.prevent="iniciarSesion">
+      <img class="exc-login-logo" src="/excernat-logo.webp" alt="Logotipo de Excelentes Cereales Naturales" />
       <h2>Iniciar sesión</h2>
       <p>Acceso al sistema EXCERNAT</p>
 

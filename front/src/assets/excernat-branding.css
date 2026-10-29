@@ -1,0 +1,26 @@
+/* EXCERNAT | Identidad visual y controles comunes | 2026-10 */
+/* Marca institucional, sin alterar lógica de negocio. */
+.topbar .exc-brand{display:flex;align-items:center;gap:11px;min-width:0;letter-spacing:0!important}
+.topbar .exc-brand-logo{width:44px;height:44px;object-fit:cover;object-position:center;border-radius:50%;background:#f7f4ca;border:2px solid #ffffffa6;flex-shrink:0}
+.topbar .exc-brand-text{display:flex;flex-direction:column;gap:2px;line-height:1.12}
+.topbar .exc-brand-text strong{color:#fff;font-size:19px;letter-spacing:1px}
+.topbar .exc-brand-text small{font-size:10px;letter-spacing:.25px;color:#d5e9dc;font-weight:500}
+.login-container .exc-login-logo{width:100px;height:100px;object-fit:cover;border-radius:50%;border:3px solid #e5ead5;align-self:center;box-shadow:0 5px 18px #123c2d1a}
+.login-container .login-card h2{color:#0b3025}
+.login-container .login-card input:focus{border-color:#f47b20;box-shadow:0 0 0 3px #f47b2024}
+.login-container .login-card button[type=submit]{background:#f47b20;border-radius:9px;font-weight:750}
+.login-container .login-card button[type=submit]:hover:not(:disabled){background:#db6812}
+.login-container .login-card{border:1px solid #dce8df}
+.inicio-banner{position:relative;overflow:hidden;padding-right:175px!important;min-height:165px}
+.inicio-banner .exc-home-logo{position:absolute;right:26px;top:50%;transform:translateY(-50%);width:115px;height:115px;object-fit:cover;border-radius:50%;border:4px solid #ffffffa6;box-shadow:0 5px 18px #0002}
+/* Controles sin clase específica: apariencia coherente sin cambiar eventos Vue. */
+.main-content button:not([class]),.main-content button[class=""]{background:#fff;color:#124734;border:1px solid #cbded0;border-radius:9px;padding:9px 15px;font-weight:700;cursor:pointer;min-height:37px}
+.main-content button:not([class]):hover:not(:disabled),.main-content button[class=""]:hover:not(:disabled){background:#eaf3ed}
+.main-content button:not([class]):disabled,.main-content button[class=""]:disabled{opacity:.5;cursor:not-allowed}
+.main-content :is(input[type=file],input[type=date],input[type=number],select,textarea){max-width:100%;font-family:inherit}
+.main-content :is(input,select,textarea):focus-visible{outline:2px solid #f47b2066;outline-offset:1px}
+.main-content :is(button,a,input,select,textarea):focus-visible{outline-color:#f47b20}
+.main-content :is(.btn,.ex-btn-primary,.ex-btn-secondary,.ex-btn-outline,.btn-primary,.btn-cancelar,.btn-editar,.btn-guardar){white-space:normal;text-align:center}
+.main-content :is(.tabla-contenedor,.table-container,.table-responsive){max-width:100%;overflow-x:auto}
+@media(max-width:900px){.inicio-banner{padding-right:28px!important}.inicio-banner .exc-home-logo{position:static;transform:none;float:right;width:72px;height:72px;margin:0 0 10px 15px}}
+@media(max-width:600px){.topbar .exc-brand-logo{width:36px;height:36px}.topbar .exc-brand-text strong{font-size:15px}.topbar .exc-brand-text small{display:none}.inicio-banner .exc-home-logo{width:64px;height:64px}}

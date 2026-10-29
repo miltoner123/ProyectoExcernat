@@ -21,7 +21,7 @@ async function cerrarSesion() {
   <div id="app">
     <template v-if="sesion.usuario">
       <header class="topbar">
-        <div class="logo">EXCERNAT</div>
+        <div class="logo exc-brand"><img src="/excernat-logo.webp" alt="Logotipo de Excelentes Cereales Naturales" class="exc-brand-logo" /><span class="exc-brand-text"><strong>EXCERNAT</strong><small>Excelentes Cereales Naturales</small></span></div>
         <div class="topbar-user">
           {{ sesion.usuario.name }}
           <button class="btn-salir" :disabled="saliendo" @click="cerrarSesion">Cerrar sesión</button>

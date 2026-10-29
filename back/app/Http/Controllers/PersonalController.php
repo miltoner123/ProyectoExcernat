@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Personal;
+use App\Models\Persona;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -60,17 +62,30 @@ class PersonalController extends Controller
         $request->validate([
             'id_persona' => 'required|exists:personas,id_persona|unique:personal,id_persona',
             'id_cargo' => 'required|exists:cargos,id_cargo',
-            'codigo_empleado' => 'required|string|max:50|unique:personal,codigo_empleado',
+
             'fecha_ingreso' => 'required|date',
             'tipo_contrato' => ['nullable', 'string', Rule::in(['INDEFINIDO', 'PLAZO_FIJO', 'EVENTUAL', 'SERVICIOS'])],
             'salario_base' => 'nullable|numeric|min:0',
             'estado' => 'nullable|boolean',
         ]);
 
+        $persona = Persona::findOrFail($request->id_persona);
+        $nombre = trim(($persona->nombres_razon_social ?? '') . ' ' . ($persona->apellidos ?? ''));
+        $palabras = preg_split('/\s+/u', Str::ascii($nombre), -1, PREG_SPLIT_NO_EMPTY);
+        $iniciales = implode('', array_map(fn ($palabra) => strtoupper(substr($palabra, 0, 1)), $palabras));
+        $ci = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) ($persona->numero_documento ?? '')));
+        if ($iniciales === '' || $ci === '') {
+            return response()->json(['message' => 'La persona debe tener nombre completo y documento para generar el código.'], 422);
+        }
+        $codigo = substr($iniciales . '-' . $ci, 0, 50);
+        if (Personal::where('codigo_empleado', $codigo)->exists()) {
+            return response()->json(['message' => 'El código generado ya está registrado. Revise los datos personales y el CI.'], 422);
+        }
+
         $personal = Personal::create([
             'id_persona' => $request->id_persona,
             'id_cargo' => $request->id_cargo,
-            'codigo_empleado' => $request->codigo_empleado,
+            'codigo_empleado' => $codigo,
             'fecha_ingreso' => $request->fecha_ingreso,
             'tipo_contrato' => $request->tipo_contrato,
             'salario_base' => $request->salario_base ?? 0,

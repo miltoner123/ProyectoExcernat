@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class PresentacionController extends Controller
 {
@@ -45,7 +46,7 @@ class PresentacionController extends Controller
             'id_producto' => ['required', 'integer', 'exists:productos,id'],
 
             'codigo_sku' => [
-                ($id === null ? 'nullable' : 'required'),
+                'nullable',
                 'string',
                 'max:100',
                 Rule::unique('presentaciones', 'codigo_sku')
@@ -68,9 +69,16 @@ class PresentacionController extends Controller
     {
         $datos = $this->validar($request);
         // El SKU se genera en el servidor; nunca se confía en un código enviado por el cliente.
-        $datos['codigo_sku'] = 'EXC-' . (string) Str::ulid();
-
-        $producto = Producto::find($datos['id_producto']);
+        $producto = Producto::findOrFail($datos['id_producto']);
+        $abreviar = static function (string $texto, int $maximo = 5): string {
+            $palabras = preg_split('/[^A-Z0-9]+/', Str::upper(Str::ascii(trim($texto))), -1, PREG_SPLIT_NO_EMPTY);
+            $palabras = $palabras ?: [];
+            if (count($palabras) === 1) {
+                return substr($palabras[0], 0, min($maximo, 2));
+            }
+            return substr(implode('', array_map(static fn ($p) => substr($p, 0, 1), $palabras)), 0, $maximo);
+        };
+        $prefijo = $abreviar($producto->nombre, 2) . '-' . $abreviar($datos['nombre_presentacion'], 5);
 
         if (!$producto->estado) {
             return response()->json([
@@ -84,17 +92,26 @@ class PresentacionController extends Controller
                 ->store('presentaciones', 'public');
         }
 
-        // Las nuevas presentaciones se registran activas.
         $datos['estado'] = true;
-
         try {
-            $presentacion = Presentacion::create($datos);
+            // Bloqueo transaccional por prefijo: evita correlativos duplicados en PostgreSQL.
+            $presentacion = DB::transaction(function () use ($datos, $prefijo) {
+                DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', ['SKU:' . $prefijo]);
+                $existentes = Presentacion::where('codigo_sku', 'like', $prefijo . '-%')
+                    ->pluck('codigo_sku');
+                $mayor = 0;
+                foreach ($existentes as $codigo) {
+                    if (preg_match('/^' . preg_quote($prefijo, '/') . '-(\d+)$/', $codigo, $m)) {
+                        $mayor = max($mayor, (int) $m[1]);
+                    }
+                }
+                $datos['codigo_sku'] = $prefijo . '-' . str_pad((string) ($mayor + 1), 2, '0', STR_PAD_LEFT);
+                return Presentacion::create($datos);
+            });
         } catch (\Throwable $e) {
-            // Evitar archivos huérfanos si falla el registro.
             if (!empty($datos['imagen'])) {
                 Storage::disk('public')->delete($datos['imagen']);
             }
-
             throw $e;
         }
 
@@ -116,6 +133,8 @@ class PresentacionController extends Controller
         }
 
         $datos = $this->validar($request, $id);
+        // El SKU es un identificador permanente; la edición no puede alterarlo.
+        unset($datos['codigo_sku']);
 
         // Evitar que una presentación activa quede asociada
         // a un producto inactivo.

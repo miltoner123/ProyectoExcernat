@@ -1,0 +1,8 @@
+/* Acabados de EXCERNAT: bordes y acciones coherentes */
+.exc-modern table,.exc-modern table thead,.exc-modern .table-container,.exc-modern .tabla-contenedor{border-radius:12px;overflow:hidden}
+.exc-modern table thead tr:first-child th:first-child{border-top-left-radius:12px}
+.exc-modern table thead tr:first-child th:last-child{border-top-right-radius:12px}
+.exc-modern input:not([type=checkbox]):not([type=radio]),.exc-modern select,.exc-modern textarea{border-radius:9px}
+.exc-modern button,.exc-modern .btn,.exc-modern a[class*="btn"]{border-radius:9px}
+.exc-modern button:disabled{opacity:.55;cursor:not-allowed}
+.exc-modern :focus-visible{outline:2px solid #f47b20;outline-offset:2px}

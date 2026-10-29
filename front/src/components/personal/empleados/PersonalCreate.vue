@@ -67,7 +67,8 @@
                         <input
                             type="text"
                             v-model="trabajador.codigo_empleado"
-                            placeholder="Ej. EMP-001"
+                            placeholder="Automático: iniciales y CI"
+                            readonly
                             required
                         >
 
@@ -337,10 +338,17 @@ export default {
         seleccionarPersona(persona) {
             this.trabajador.id_persona = persona.id_persona;
             this.personaElegida = persona;
+            this.trabajador.codigo_empleado = this.generarCodigo(persona);
             this.buscarPersona = '';
             this.personas = [];
         },
 
+        generarCodigo(persona) {
+            const nombres = [persona.nombres_razon_social,persona.apellidos].filter(Boolean).join(' ');
+            const iniciales = nombres.normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/\s+/).filter(Boolean).map(p=>p[0].toUpperCase()).join('');
+            const ci = String(persona.numero_documento || '').replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+            return `${iniciales}-${ci}`.slice(0,50);
+        },
         nombrePersona(persona) {
 
             return [

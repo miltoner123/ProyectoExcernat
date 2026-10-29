@@ -1,5 +1,5 @@
 <template>
-  <div class="formulario">
+  <div class="formulario exc-modern">
     <div class="encabezado"><h1>Editar Personal</h1><p>Actualice la información laboral del trabajador.</p></div>
     <p v-if="error" class="error">{{ error }}</p>
     <p v-if="cargando">Cargando información...</p>
@@ -16,7 +16,7 @@
       <div class="seccion">
         <h3>Información laboral</h3>
         <div class="fila">
-          <div class="campo"><label>Código de empleado:</label><input v-model.trim="trabajador.codigo_empleado" maxlength="50" required /></div>
+          <div class="campo"><label>Código de empleado:</label><input v-model.trim="trabajador.codigo_empleado" maxlength="50" readonly required /></div>
           <div class="campo"><label>Cargo:</label><select v-model="trabajador.id_cargo" required><option value="" disabled>Seleccione un cargo</option><option v-for="cargo in cargos" :key="cargo.id_cargo" :value="cargo.id_cargo">{{ cargo.nombre }}{{ cargo.estado ? '' : ' (Inactivo)' }}</option></select></div>
         </div>
         <div class="fila">

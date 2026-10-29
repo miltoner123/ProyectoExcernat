@@ -7,6 +7,7 @@ use App\Models\Presentacion;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class LoteController extends Controller
 {
@@ -79,7 +80,7 @@ class LoteController extends Controller
                 'exists:presentaciones,id_presentacion'
             ],
             'codigo_lote' => [
-                'required', 'string', 'max:100',
+                ($lote ? 'required' : 'nullable'), 'string', 'max:100',
                 Rule::unique('lotes', 'codigo_lote')
                     ->ignore($lote?->id_lote, 'id_lote')
             ],
@@ -121,7 +122,20 @@ class LoteController extends Controller
         $this->calcularVencimiento($datos);
         $datos['estado'] = true;
 
-        $lote = Lote::create($datos);
+        $lote = DB::transaction(function () use ($datos, $presentacion) {
+            $sku = $presentacion->codigo_sku;
+            DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', ['LOTE:' . $sku]);
+            $codigos = Lote::where('codigo_lote', 'like', $sku . '-L%')->pluck('codigo_lote');
+            $mayor = 0;
+            foreach ($codigos as $codigo) {
+                if (preg_match('/^' . preg_quote($sku, '/') . '-L(\d+)$/', $codigo, $m)) {
+                    $mayor = max($mayor, (int) $m[1]);
+                }
+            }
+            $datos['codigo_lote'] = $sku . '-L' . str_pad((string) ($mayor + 1), 3, '0', STR_PAD_LEFT);
+            return Lote::create($datos);
+        });
+
 
         return response()->json([
             'message' => 'Lote registrado correctamente.',

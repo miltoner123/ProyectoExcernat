@@ -3,6 +3,7 @@
     <div class="formulario">
 
         <h1>Editar Ubicación</h1>
+        <p class="subtitulo">Actualice la información de la ubicación registrada.</p>
 
         <form
             v-if="cargado"
@@ -119,6 +120,7 @@
 
                 <button
                     type="submit"
+                    class="btn-guardar"
                     :disabled="guardando"
                 >
                     {{ guardando ? 'Actualizando...' : 'Actualizar Ubicación' }}
@@ -184,12 +186,12 @@ export default {
 
         eventosDisponibles() {
 
-            return this.eventos.filter(evento => {
+            return (Array.isArray(this.eventos) ? this.eventos : []).filter(evento => {
 
                 return (
-                    ['PLANIFICADO', 'ACTIVO'].includes(evento.estado)
+                    ['PLANIFICADO', 'ACTIVO'].includes(String(evento.estado || '').toUpperCase())
                     ||
-                    evento.id_evento === this.ubicacion.id_evento
+                    String(evento.id_evento) === String(this.ubicacion.id_evento)
                 );
 
             });
@@ -218,7 +220,14 @@ export default {
 
             .then(response => {
 
-                this.eventos = response.data;
+                const payload = response.data;
+                this.eventos = Array.isArray(payload)
+                    ? payload
+                    : Array.isArray(payload?.data)
+                        ? payload.data
+                        : Array.isArray(payload?.data?.data)
+                            ? payload.data.data
+                            : [];
 
             })
 
@@ -244,7 +253,7 @@ export default {
 
             .then(response => {
 
-                this.ubicacion = response.data;
+                this.ubicacion = response.data?.data ?? response.data;
 
                 this.cargado = true;
 
@@ -336,50 +345,16 @@ export default {
 
 
 <style scoped>
-
-.formulario {
-    max-width: 700px;
-    margin: 0 auto;
-}
-
-.formulario h1 {
-    margin-bottom: 20px;
-}
-
-.campo {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 16px;
-    gap: 6px;
-}
-
-.campo label {
-    font-weight: 600;
-}
-
-.campo input,
-.campo select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    box-sizing: border-box;
-}
-
-.botones {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.btn-cancelar {
-    background: #6c757d;
-    color: white;
-}
-
-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
+.formulario{width:min(100%,900px);max-width:900px;margin:20px auto;background:#fff;border:1px solid #d8e7dd;border-radius:16px;padding:30px;box-shadow:0 10px 28px #0d352217;box-sizing:border-box;color:#0b3025}
+h1{font-size:27px;margin:0 0 6px;font-weight:800;color:#0b3025}.subtitulo{margin:0 0 25px;color:#668073;font-size:14px}
+.campo{display:flex;flex-direction:column;gap:8px;margin-bottom:19px}.campo label{font-weight:700;font-size:14px;color:#123d2f}
+.campo input,.campo select{display:block;width:100%;min-height:44px;padding:10px 13px;border:1px solid #cbded1;border-radius:10px;background:#fff;color:#163d30;font:inherit;box-sizing:border-box}
+.campo input:focus,.campo select:focus{outline:2px solid #f47b2066;border-color:#f47b20}
+.campo select:disabled{background:#eef4f0;color:#63796b}
+.botones{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:25px;padding-top:18px;border-top:1px solid #e4ede6}
+.botones button{padding:11px 19px;border-radius:10px;font-weight:700;font-size:14px;border:1px solid transparent;cursor:pointer}
+.btn-guardar{background:#f47b20;color:#fff}.btn-guardar:hover{background:#df6810}
+.btn-cancelar{background:#fff;color:#124734;border-color:#cbded1!important}.btn-cancelar:hover{background:#eff5f0}
+button:disabled{opacity:.6;cursor:not-allowed}
+@media(max-width:650px){.formulario{padding:18px;margin:8px auto}.botones button{flex:1}}
 </style>

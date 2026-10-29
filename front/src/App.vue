@@ -1,5 +1,8 @@
 <script setup>
 import { ref } from 'vue';
+import AppIcon from './components/AppIcon.vue';
+const menuVisible=ref(true);
+const abiertos=ref({productos:true,inventario:true,eventos:true,personal:true});
 import { useRouter } from 'vue-router';
 import api from './services/api';
 import { sesion, establecerUsuario } from './services/sesion';
@@ -21,38 +24,38 @@ async function cerrarSesion() {
   <div id="app">
     <template v-if="sesion.usuario">
       <header class="topbar">
-        <div class="logo exc-brand"><img src="/excernat-logo.webp" alt="Logotipo de Excelentes Cereales Naturales" class="exc-brand-logo" /><span class="exc-brand-text"><strong>EXCERNAT</strong><small>Excelentes Cereales Naturales</small></span></div>
+        <div class="logo"><button class="exc-toggle" type="button" @click="menuVisible=!menuVisible" aria-label="Mostrar u ocultar menú"><AppIcon name="menu"/></button><img src="/logo-excernat.jpg" alt="Logotipo de la empresa" class="exc-logo-img"/> EXCERNAT</div>
         <div class="topbar-user">
           {{ sesion.usuario.name }}
           <button class="btn-salir" :disabled="saliendo" @click="cerrarSesion">Cerrar sesión</button>
         </div>
       </header>
-      <div class="app-container">
-        <aside class="sidebar">
+      <div class="app-container" :class="{'exc-menu-hidden':!menuVisible}">
+        <aside v-if="menuVisible" class="sidebar">
           <div class="sidebar-title">MENÚ PRINCIPAL</div>
           <nav class="menu">
-            <RouterLink to="/" class="menu-item">🏠 Dashboard principal</RouterLink>
-            <div class="menu-section">PRODUCTOS</div>
-            <RouterLink to="/productos" class="menu-item">📦 Productos</RouterLink>
-            <RouterLink to="/presentaciones" class="menu-item">📋 Presentaciones</RouterLink>
-            <RouterLink to="/lotes" class="menu-item">🏷️ Lotes</RouterLink>
-            <div class="menu-section">INVENTARIO</div>
-            <RouterLink to="/ubicaciones" class="menu-item">📍 Ubicaciones</RouterLink>
-            <RouterLink to="/inventarios" class="menu-item">📦 Inventarios</RouterLink>
-            <RouterLink to="/movimientos" class="menu-item">🔄 Movimientos de Inventario</RouterLink>
-            <RouterLink to="/pedidos" class="menu-item">📝 Pedidos de abastecimiento</RouterLink>
-            <div class="menu-section">EVENTOS</div>
-            <RouterLink to="/eventos" class="menu-item">📅 Eventos</RouterLink>
-            <div class="menu-section">PERSONAL</div>
-            <RouterLink to="/personas" class="menu-item">👥 Personas</RouterLink>
-            <RouterLink to="/cargos" class="menu-item">💼 Cargos</RouterLink>
-            <RouterLink to="/personal" class="menu-item">👤 Personal</RouterLink>
-            <RouterLink to="/asignaciones" class="menu-item">📌 Asignaciones</RouterLink>
-            <RouterLink to="/usuarios" class="menu-item"> 💻 Gestión de Usuarios
+            <RouterLink to="/" class="menu-item"><AppIcon name="dashboard"/> Dashboard principal</RouterLink>
+            <button class="menu-section exc-group" @click="abiertos.productos=!abiertos.productos">PRODUCTOS <span>{{abiertos.productos?'⌃':'⌄'}}</span></button><div v-show="abiertos.productos" class="exc-group-links">
+            <RouterLink to="/productos" class="menu-item"><AppIcon name="package"/> Productos</RouterLink>
+            <RouterLink to="/presentaciones" class="menu-item"><AppIcon name="layers"/> Presentaciones</RouterLink>
+            <RouterLink to="/lotes" class="menu-item"><AppIcon name="tag"/> Lotes</RouterLink>
+            </div><button class="menu-section exc-group" @click="abiertos.inventario=!abiertos.inventario">INVENTARIO <span>{{abiertos.inventario?'⌃':'⌄'}}</span></button><div v-show="abiertos.inventario" class="exc-group-links">
+            <RouterLink to="/ubicaciones" class="menu-item"><AppIcon name="pin"/> Ubicaciones</RouterLink>
+            <RouterLink to="/inventarios" class="menu-item"><AppIcon name="package"/> Inventarios</RouterLink>
+            <RouterLink to="/movimientos" class="menu-item"><AppIcon name="arrows"/> Movimientos de Inventario</RouterLink>
+            <RouterLink to="/pedidos" class="menu-item"><AppIcon name="clipboard"/> Pedidos de abastecimiento</RouterLink>
+            </div><button class="menu-section exc-group" @click="abiertos.eventos=!abiertos.eventos">EVENTOS <span>{{abiertos.eventos?'⌃':'⌄'}}</span></button><div v-show="abiertos.eventos" class="exc-group-links">
+            <RouterLink to="/eventos" class="menu-item"><AppIcon name="calendar"/> Eventos</RouterLink>
+            </div><button class="menu-section exc-group" @click="abiertos.personal=!abiertos.personal">PERSONAL <span>{{abiertos.personal?'⌃':'⌄'}}</span></button><div v-show="abiertos.personal" class="exc-group-links">
+            <RouterLink to="/personas" class="menu-item"><AppIcon name="users"/> Personas</RouterLink>
+            <RouterLink to="/cargos" class="menu-item"><AppIcon name="briefcase"/> Cargos</RouterLink>
+            <RouterLink to="/personal" class="menu-item"><AppIcon name="users"/> Personal</RouterLink>
+            <RouterLink to="/asignaciones" class="menu-item"><AppIcon name="pin"/> Asignaciones</RouterLink>
+            <RouterLink to="/usuarios" class="menu-item"> <AppIcon name="shield"/> Gestión de Usuarios
             </RouterLink>
-          </nav>
+          </div></nav>
         </aside>
-        <main class="main-content"><RouterView /></main> 
+        <div class="exc-content-area"><main class="main-content"><RouterView /></main><footer class="exc-footer">EXCERNAT · Excelentes Cereales Naturales © {{new Date().getFullYear()}} <span>Sistema de gestión empresarial</span></footer></div> 
       </div>
     </template> 
     <RouterView v-else /> 
@@ -523,4 +526,9 @@ table tbody tr:hover {
 
 .btn-salir { margin-left: 16px; background: #ef4444; color: white; border: 0; border-radius: 6px; padding: 8px 12px; cursor: pointer; }
 .btn-salir:disabled { opacity: .6; cursor: wait; }
+
+/* EXCERNAT: menú plegable, iconos y pie institucional */
+.topbar{background:#0b3025}.logo{display:flex;align-items:center;gap:10px;color:white}.exc-logo-img{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #ffffff80}.exc-toggle{background:#ffffff20;border:1px solid #ffffff40;color:white;border-radius:8px;padding:7px;display:inline-flex;cursor:pointer}
+.sidebar{background:#0b3025;overflow-y:auto;max-height:calc(100vh - 60px);scrollbar-width:thin;scrollbar-color:#67947e #0b3025}.menu-item{display:flex;align-items:center;gap:10px;color:#e6f2eb}.menu-item svg{flex-shrink:0}.menu-item.router-link-active{background:#f47b20}.exc-group{display:flex;justify-content:space-between;width:100%;background:transparent;border:0;text-align:left;cursor:pointer;color:#b5d7c4;padding:12px 14px}.exc-group-links{display:flex;flex-direction:column}.exc-content-area{flex:1;min-width:0;display:flex;flex-direction:column;margin-left:240px}.exc-content-area .main-content{margin-left:0;width:100%;flex:1}.exc-menu-hidden .exc-content-area{margin-left:0}.exc-footer{background:white;border-top:1px solid #d8e5dc;color:#587567;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:16px 25px;font-size:12px}.exc-menu-hidden .main-content{width:100%}
+@media(max-width:750px){.sidebar{z-index:900;box-shadow:4px 0 20px #0003}.exc-content-area{margin-left:0}.main-content{padding:14px}.exc-footer{padding:12px}}
 </style>

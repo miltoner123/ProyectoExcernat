@@ -1,6 +1,6 @@
 <template>
   <div class="inicio-excernat">
-    <div class="inicio-banner"><img class="exc-home-logo" src="/excernat-logo.webp" alt="Logotipo de Excelentes Cereales Naturales" /><div class="eyebrow">PANEL DE CONTROL</div><h1>Bienvenido a EXCERNAT</h1><p>Acceso centralizado a los módulos de gestión de la empresa.</p></div>
+    <div class="inicio-banner"><div class="eyebrow">PANEL DE CONTROL</div><h1>Bienvenido a EXCERNAT</h1><p>Acceso centralizado a los módulos de gestión de la empresa.</p></div>
     <h2>Accesos rápidos</h2>
     <div class="inicio-grid">
       <RouterLink v-for="item in accesos" :key="item.to" :to="item.to" class="inicio-tarjeta"><span class="inicio-icono">{{ item.icono }}</span><strong>{{ item.titulo }}</strong><small>{{ item.descripcion }}</small><span class="inicio-enlace">Abrir módulo →</span></RouterLink>

@@ -1,4 +1,4 @@
-import './assets/excernat-branding.css';
+import './assets/excernat-acabados.css';
 import './styles/excernat-formularios.css';
 import './assets/excernat-uniformidad.css';
 import './assets/excernat-theme.css';

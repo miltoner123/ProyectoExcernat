@@ -130,28 +130,25 @@ export default {
         this.presentacionesGet();
     },
     methods: {
-        presentacionesGet() {
-            api.get(
-                '/presentaciones',
-                {
-                    params: {
-                        limit: 100
-                    }
-                }
-            )
-            .then(response => {
-                this.presentaciones =
-                    response.data.data;
-            })
-            .catch(error => {
-                console.error(
-                    'Error al cargar presentaciones:',
-                    error
-                );
-
-            });
-
+        async presentacionesGet() {
+            try {
+                const presentaciones = [];
+                let pagina = 1;
+                let ultimaPagina = 1;
+                do {
+                    const { data } = await api.get('/api/presentaciones', { params: { page: pagina, limit: 100 } });
+                    presentaciones.push(...(Array.isArray(data) ? data : (data.data ?? [])));
+                    ultimaPagina = Number(data.last_page ?? 1);
+                    pagina++;
+                } while (pagina <= ultimaPagina);
+                this.presentaciones = presentaciones;
+                if (!presentaciones.length) console.warn('No hay presentaciones disponibles.');
+            } catch (error) {
+                console.error('Error al cargar presentaciones:', error.response?.data ?? error);
+                alert('No se pudieron cargar las presentaciones. Revise la API y los permisos.');
+            }
         },
+
         crearLote() {
             const { fecha_vencimiento, tipoDuracion, ...datosLote } = this.lote;
             const datos = {
@@ -159,7 +156,7 @@ export default {
                 vida_util_meses: Number(this.lote.vida_util_meses)
             };
 
-            api.post('/lotes', datos)
+            api.post('/api/lotes', datos)
                 .then(response => {
                     alert('Lote registrado correctamente');
                     this.$router.push('/lotes');

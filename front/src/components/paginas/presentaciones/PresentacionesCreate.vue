@@ -122,14 +122,20 @@ export default {
     methods: {
         async productosGet() {
             try {
-                const { data } = await api.get(
-                    '/productos',
-                    { params: { limit: 100 } }
-                );
-                this.productos = data.data.filter(p => Boolean(p.estado));
+                const productos = [];
+                let pagina = 1;
+                let ultimaPagina = 1;
+                do {
+                    const { data } = await api.get('/api/productos', { params: { page: pagina, limit: 100 } });
+                    productos.push(...(Array.isArray(data) ? data : (data.data ?? [])));
+                    ultimaPagina = Number(data.last_page ?? 1);
+                    pagina++;
+                } while (pagina <= ultimaPagina);
+                this.productos = productos.filter(p => p.estado === undefined || !['INACTIVO', '0', 'false'].includes(String(p.estado).toUpperCase()));
+                if (!this.productos.length) console.warn('No hay productos disponibles para seleccionar.');
             } catch (error) {
-                console.error('Error al cargar productos:', error);
-                alert('No se pudieron cargar los productos.');
+                console.error('Error al cargar productos:', error.response?.data ?? error);
+                alert('No se pudieron cargar los productos. Revise la API y los permisos.');
             }
         },
 
@@ -174,7 +180,7 @@ export default {
                 }
 
                 await api.post(
-                    '/presentaciones',
+                    '/api/presentaciones',
                     formData
                 );
 

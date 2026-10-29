@@ -1,6 +1,6 @@
 <template>
 
-    <div>
+    <div class="exc-modern">
 
         <h1>Editar Lote</h1>
 

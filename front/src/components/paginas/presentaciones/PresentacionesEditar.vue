@@ -1,5 +1,5 @@
 <template>
-    <div class="contenedor">
+    <div class="contenedor exc-modern">
         <h1>Editar Presentación</h1>
         <p>Actualizar información y fotografía de la presentación</p>
 

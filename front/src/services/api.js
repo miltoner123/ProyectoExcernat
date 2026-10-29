@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 const api = axios.create({
@@ -6,10 +5,8 @@ const api = axios.create({
     withCredentials: true,
     withXSRFToken: true,
     headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json'
+        Accept: 'application/json'
     }
 });
 
 export default api;
-

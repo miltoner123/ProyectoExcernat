@@ -38,6 +38,10 @@ class VentaController extends Controller {
     }
     public function index(Request $request) {
         $q=Venta::with(['ubicacion.evento','usuario','detalles.lote.presentacion.producto'])->orderByDesc('id_venta');
+        $request->validate(['fecha_desde'=>'nullable|date','fecha_hasta'=>'nullable|date|after_or_equal:fecha_desde','estado'=>'nullable|in:CONFIRMADA,ANULADA']);
+        if($request->filled('fecha_desde')) $q->whereDate('fecha_venta','>=',$request->query('fecha_desde'));
+        if($request->filled('fecha_hasta')) $q->whereDate('fecha_venta','<=',$request->query('fecha_hasta'));
+        if($request->filled('estado')) $q->where('estado',$request->query('estado'));
         if($request->filled('id_ubicacion')) { $id=(int)$request->query('id_ubicacion');$this->autorizarStand($request,$id);$q->where('id_ubicacion',$id); }
         elseif(!$request->user()->hasAnyRole(['ADMIN','GERENTE_GENERAL']) && !$request->user()->can('ventas.supervisar')) {
             $ids=Personal::where('id_persona',$request->user()->id_persona)->where('estado',true)->pluck('id_personal');
@@ -46,6 +50,31 @@ class VentaController extends Controller {
             $q->whereIn('id_ubicacion',$loc);
         }
         return response()->json($q->paginate(15));
+    }
+    public function show(Request $request, int $id) {
+        $venta=Venta::with(['ubicacion.evento','usuario','detalles.lote.presentacion.producto','usuarioAnulacion'])->findOrFail($id);
+        if (!$request->user()->hasAnyRole(['ADMIN','GERENTE_GENERAL']) && !$request->user()->can('ventas.supervisar')) {
+            $this->autorizarStand($request,(int)$venta->id_ubicacion);
+        }
+        return response()->json($venta);
+    }
+    public function anular(Request $request, int $id) {
+        if (!$request->user()->hasAnyRole(['ADMIN','GERENTE_GENERAL']) && !$request->user()->can('ventas.supervisar')) abort(403,'No tiene permiso para anular ventas.');
+        $data=$request->validate(['motivo_anulacion'=>'required|string|min:10|max:1000']);
+        $venta=DB::transaction(function() use($id,$request,$data) {
+            $venta=Venta::whereKey($id)->lockForUpdate()->firstOrFail();
+            if($venta->estado!=='CONFIRMADA') throw ValidationException::withMessages(['estado'=>'Esta venta ya fue anulada o no esta confirmada.']);
+            $detalles=$venta->detalles()->orderBy('id_lote')->get();
+            foreach($detalles as $detalle) {
+                $inventario=Inventario::where('id_ubicacion',$venta->id_ubicacion)->where('id_lote',$detalle->id_lote)->lockForUpdate()->first();
+                if(!$inventario) throw ValidationException::withMessages(['inventario'=>'No se encontro el inventario original para devolver el lote '.$detalle->id_lote.'.']);
+                $inventario->increment('stock_actual',$detalle->cantidad);
+            }
+            $venta->update(['estado'=>'ANULADA','motivo_anulacion'=>$data['motivo_anulacion'],
+                'id_usuario_anulacion'=>$request->user()->id,'fecha_anulacion'=>now()]);
+            return $venta;
+        },3);
+        return response()->json(['message'=>'Venta anulada y existencias restituidas.','venta'=>$venta->load(['detalles','usuarioAnulacion'])]);
     }
     public function store(Request $request) {
         $data=$request->validate([

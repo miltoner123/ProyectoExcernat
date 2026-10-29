@@ -95,6 +95,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/ventas-stand/existencias', [\App\Http\Controllers\VentaController::class, 'existencias'])->middleware('permission:ventas.ver');
     Route::get('/ventas-stand', [\App\Http\Controllers\VentaController::class, 'index'])->middleware('permission:ventas.ver');
     Route::post('/ventas-stand', [\App\Http\Controllers\VentaController::class, 'store'])->middleware('permission:ventas.registrar');
+    Route::get('/ventas-stand/{id}', [\App\Http\Controllers\VentaController::class, 'show'])->middleware('permission:ventas.ver');
+    Route::post('/ventas-stand/{id}/anular', [\App\Http\Controllers\VentaController::class, 'anular'])->middleware('permission:ventas.supervisar');
 
     // PEDIDOS (PERMISOS TEMPORALES)
     Route::get('/pedidos', [\App\Http\Controllers\PedidoController::class, 'index'])->middleware('permission:pedidos.ver');

@@ -73,6 +73,17 @@ class MovimientoInventarioController extends Controller
             'detalles.*.cantidad' => 'required|integer|not_in:0'
         ]);
 
+        // La entrada de producción solo puede confirmarla Almacén Central.
+        if ($datos['tipo'] === 'ENTRADA' && !$request->user()?->can('recepciones.confirmar')) {
+            abort(403, 'Solo el encargado de almacén puede confirmar entradas de producción.');
+        }
+
+        if ($datos['tipo'] === 'ENTRADA') {
+            throw ValidationException::withMessages([
+                'tipo' => 'La producción se recibe únicamente desde Recepciones pendientes del Almacén Central.'
+            ]);
+        }
+
         $tipo = $datos['tipo'];
         $origen = $datos['id_ubicacion_origen'] ?? null;
         $destino = $datos['id_ubicacion_destino'] ?? null;
@@ -136,7 +147,7 @@ class MovimientoInventarioController extends Controller
                 'id_ubicacion_origen' => $origen,
                 'id_ubicacion_destino' => $destino,
                 'fecha_movimiento' => now(),
-                'referencia' => null,
+                'referencia' => $tipo === 'ENTRADA' ? 'RECEPCION-USUARIO-' . auth()->id() : null,
                 'observacion' => $datos['observacion'] ?? null
             ]);
 
@@ -193,10 +204,10 @@ class MovimientoInventarioController extends Controller
             // La producción ingresa primero al almacén.
             $ubicacion = Ubicacion::find($destino);
 
-            if (!$ubicacion || $ubicacion->tipo !== 'ALMACEN') {
+            if (!$ubicacion || $ubicacion->tipo !== 'ALMACEN' || mb_strtoupper(trim($ubicacion->nombre)) !== 'ALMACÉN CENTRAL' && mb_strtoupper(trim($ubicacion->nombre)) !== 'ALMACEN CENTRAL') {
                 throw ValidationException::withMessages([
                     'id_ubicacion_destino' =>
-                        'La producción debe ingresar a una ubicación de tipo ALMACEN.'
+                        'La producción debe ingresar exclusivamente al ALMACÉN CENTRAL.'
                 ]);
             }
         }

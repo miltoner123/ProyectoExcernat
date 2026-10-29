@@ -146,6 +146,8 @@ class DatabaseSeeder extends Seeder
                 'producciones.registrar',
                 'producciones.aprobar',
                 'producciones.rechazar',
+                'recepciones.ver',
+                'recepciones.confirmar',
 
                 // UBICACIONES
                 'ubicaciones.ver',
@@ -158,6 +160,8 @@ class DatabaseSeeder extends Seeder
                 // MOVIMIENTOS
                 'movimientos.ver',
                 'movimientos.registrar',
+                'recepciones.ver',
+                'recepciones.confirmar',
 
                 // PEDIDOS DE ABASTECIMIENTO
                 'pedidos.ver',
@@ -215,6 +219,7 @@ class DatabaseSeeder extends Seeder
                     'ubicaciones.ver',
                     'inventarios.ver',
                     'movimientos.ver',
+                    'recepciones.ver',
                     'ventas.ver',
                     'eventos.ver',
                     'compras.ver',
@@ -278,6 +283,13 @@ class DatabaseSeeder extends Seeder
                 ],
 
                 // ENCARGADO DE OPERACIONES
+                'ENCARGADO_ALMACEN' => [
+                    'productos.ver', 'presentaciones.ver', 'lotes.ver',
+                    'ubicaciones.ver', 'inventarios.ver', 'movimientos.ver',
+                    'movimientos.registrar', 'recepciones.ver', 'recepciones.confirmar',
+                    'pedidos.ver',
+                ],
+
                 'ENCARGADO_OPERACIONES' => [
                     'productos.ver',
                     'presentaciones.ver',
@@ -292,9 +304,26 @@ class DatabaseSeeder extends Seeder
                     'inventarios.gestionar',
                     'movimientos.ver',
                     'movimientos.registrar',
+                    'recepciones.ver',
+                    'recepciones.confirmar',
                     'reportes.ver',
                     'pedidos.ver',
                     'pedidos.gestionar',
+                ],
+
+                // RESPONSABLE DE RECEPCIÓN EN ALMACÉN CENTRAL
+                'ENCARGADO_ALMACEN' => [
+                    'productos.ver', 'presentaciones.ver', 'lotes.ver',
+                    'ubicaciones.ver', 'inventarios.ver', 'inventarios.gestionar',
+                    'movimientos.ver', 'movimientos.registrar',
+                    'recepciones.ver', 'recepciones.confirmar',
+                    'pedidos.ver',
+                ],
+
+                // PERSONAL DE PRODUCCIÓN (SIN PERMISO DE CONFIRMAR RECEPCIONES)
+                'OPERARIO_PRODUCCION' => [
+                    'productos.ver', 'presentaciones.ver', 'lotes.ver',
+                    'lotes.gestionar', 'producciones.ver', 'producciones.registrar',
                 ],
 
                 // SUBENCARGADO DE PRODUCCIÓN

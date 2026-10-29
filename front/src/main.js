@@ -39,6 +39,8 @@ const routes = [
   { path: "/ubicaciones", component: () => import("./components/inventario/ubicaciones/UbicacionesView.vue")},
   { path: "/ubicaciones/editar/:id", component: () => import("./components/inventario/ubicaciones/UbicacionesEditar.vue")},
   { path: "/ubicaciones/crear", component: () => import("./components/inventario/ubicaciones/UbicacionesCreate.vue")},
+  
+  { path: "/recepciones-produccion", component: () => import("./components/inventario/recepciones/RecepcionesView.vue")},
   { path: "/inventarios", component: () => import("./components/inventario/inventarios/InventariosView.vue")},
   { path: "/inventarios/crear", component: () => import("./components/inventario/inventarios/InventariosCreate.vue")},
   { path: "/inventarios/editar/:id", component: () => import("./components/inventario/inventarios/InventariosEditar.vue")},

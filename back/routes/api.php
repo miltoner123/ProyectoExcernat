@@ -78,6 +78,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/inventarios/{id}', [\App\Http\Controllers\InventarioController::class, 'update'])->middleware('permission:inventarios.gestionar');
     Route::delete('/inventarios/{id}', [\App\Http\Controllers\InventarioController::class, 'destroy'])->middleware('permission:inventarios.gestionar');
 
+    // RECEPCIÓN DE PRODUCCIÓN (ALMACÉN CENTRAL)
+    Route::get('/recepciones-produccion', [\App\Http\Controllers\RecepcionProduccionController::class, 'index'])->middleware('permission:recepciones.ver');
+    Route::post('/recepciones-produccion/{id}/confirmar', [\App\Http\Controllers\RecepcionProduccionController::class, 'confirmar'])->middleware('permission:recepciones.confirmar');
+
     // MOVIMIENTOS DE INVENTARIO
     Route::get('/movimientos-inventario', [\App\Http\Controllers\MovimientoInventarioController::class, 'index'])->middleware('permission:movimientos.ver');
     Route::post('/movimientos-inventario', [\App\Http\Controllers\MovimientoInventarioController::class, 'store'])->middleware('permission:movimientos.registrar');

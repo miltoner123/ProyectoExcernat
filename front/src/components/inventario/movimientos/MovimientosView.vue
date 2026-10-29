@@ -4,6 +4,25 @@
       <div><h1>Movimientos de Inventario</h1><p>Historial de entradas, salidas y transferencias.</p></div>
       <button @click="$router.push('/movimientos/crear')">+ Nuevo Movimiento</button>
     </div>
+    <section class="recepciones-panel" aria-label="Producción pendiente de recepción">
+      <div class="recepciones-head">
+        <div><span class="recepciones-eyebrow">CONTROL DE PRODUCCIÓN</span><h2>Recepciones pendientes en Almacén Central</h2><p>Lotes producidos que todavía requieren confirmación del encargado de almacén.</p></div>
+        <button type="button" class="btn-revisar" @click="$router.push('/recepciones-produccion')">Revisar recepciones</button>
+      </div>
+      <p v-if="cargandoPendientes" class="recepciones-aviso">Consultando producción pendiente...</p>
+      <p v-else-if="errorPendientes" class="recepciones-aviso">{{ errorPendientes }}</p>
+      <template v-else>
+        <div class="recepciones-resumen"><span><strong>{{ pendientes.length }}</strong> lotes pendientes</span><span><strong>{{ unidadesPendientes }}</strong> unidades por recibir</span></div>
+        <div v-if="pendientes.length" class="recepciones-lista">
+          <div v-for="l in pendientes.slice(0, 5)" :key="l.id_lote" class="recepcion-item">
+            <div><strong>{{ l.codigo_lote }} · {{ l.producto || 'Producto' }}</strong><small>{{ l.presentacion || 'Sin presentación' }}</small></div>
+            <div class="recepcion-cantidades"><span>Producidas: {{ l.cantidad_producida }}</span><b>Pendientes: {{ l.cantidad_pendiente }}</b></div>
+          </div>
+          <p v-if="pendientes.length > 5" class="recepciones-aviso">Y {{ pendientes.length - 5 }} lotes adicionales. Consulta la bandeja para verlos todos.</p>
+        </div>
+        <p v-else class="recepciones-aviso">No hay producción pendiente de recepción.</p>
+      </template>
+    </section>
     <div class="filtros">
       <input v-model="buscar" @input="buscarMovimientos" placeholder="Buscar lote, ubicación u observación...">
       <select v-model="tipo" @change="filtrar">
@@ -72,12 +91,26 @@ export default {
     return {
       movimientos: [], tipos: ['ENTRADA','SALIDA','TRANSFERENCIA','DEVOLUCION','AJUSTE'],
       buscar: '', tipo: '', limite: 10, pagina: 1, ultimaPagina: 1,
-      total: 0, cargando: false, expandido: null, temporizador: null, numeroPeticion: 0
+      total: 0, cargando: false, expandido: null, temporizador: null, numeroPeticion: 0, pendientes: [], cargandoPendientes: false, errorPendientes: ''
     };
   },
-  mounted() { this.obtenerMovimientos(); },
+  computed: { unidadesPendientes() { return this.pendientes.reduce((n, l) => n + Number(l.cantidad_pendiente || 0), 0); } },
+  mounted() { this.obtenerMovimientos(); this.cargarPendientes(); },
   beforeUnmount() { clearTimeout(this.temporizador); this.numeroPeticion++; },
   methods: {
+    async cargarPendientes() {
+      this.cargandoPendientes = true;
+      this.errorPendientes = '';
+      try {
+        const { data } = await api.get('/api/recepciones-produccion');
+        this.pendientes = Array.isArray(data.data) ? data.data : [];
+      } catch (error) {
+        this.pendientes = [];
+        this.errorPendientes = error.response?.status === 403
+          ? 'No tienes permiso para consultar las recepciones pendientes.'
+          : 'No se pudieron consultar las recepciones pendientes. Verifica la conexión y el Almacén Central.';
+      } finally { this.cargandoPendientes = false; }
+    },
     async obtenerMovimientos() {
       const peticion = ++this.numeroPeticion;
       this.cargando = true;
@@ -112,6 +145,9 @@ export default {
 </script>
 
 <style scoped>
+.recepciones-panel{background:#fff;border:1px solid #d9e7de;border-left:5px solid #f47b20;border-radius:15px;padding:20px;margin:0 0 22px;box-shadow:0 6px 20px rgba(12,48,37,.05)}
+.recepciones-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.recepciones-head h2{font-size:19px;color:#103a2d;margin:5px 0}.recepciones-head p{color:#607b6c;margin:0}.recepciones-eyebrow{color:#df6e0c;font-size:11px;font-weight:800;letter-spacing:1.2px}.btn-revisar{border:0;border-radius:9px;background:#f47b20;color:white;padding:11px 15px;font-weight:700;cursor:pointer}.btn-revisar:hover{background:#d9600b}.recepciones-resumen{display:flex;gap:20px;flex-wrap:wrap;margin:15px 0;color:#355a47}.recepciones-resumen strong{color:#0c3025;font-size:19px}.recepciones-lista{display:grid;gap:8px}.recepcion-item{border:1px solid #dce9df;background:#f7fbf8;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}.recepcion-item>div:first-child{display:flex;flex-direction:column;gap:4px}.recepcion-item strong{color:#123e2e}.recepcion-item small{color:#688073}.recepcion-cantidades{display:flex;gap:14px;align-items:center;flex-wrap:wrap;color:#5b7264;font-size:13px}.recepcion-cantidades b{color:#b45a0c}.recepciones-aviso{color:#607b6c;font-size:13px;margin:10px 0 0}
+
 .encabezado,.paginacion,.controles{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .encabezado{margin-bottom:20px}.encabezado p{color:#777}
 .filtros{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}

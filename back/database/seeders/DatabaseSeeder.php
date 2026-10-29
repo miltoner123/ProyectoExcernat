@@ -160,6 +160,7 @@ class DatabaseSeeder extends Seeder
                 // MOVIMIENTOS
                 'movimientos.ver',
                 'movimientos.registrar',
+                'transferencias.recibir',
                 'recepciones.ver',
                 'recepciones.confirmar',
 
@@ -280,6 +281,7 @@ class DatabaseSeeder extends Seeder
                     'eventos.ver',
                     'pedidos.ver',
                     'pedidos.gestionar',
+                    'transferencias.recibir',
                 ],
 
                 // ENCARGADO DE OPERACIONES
@@ -288,6 +290,7 @@ class DatabaseSeeder extends Seeder
                     'ubicaciones.ver', 'inventarios.ver', 'movimientos.ver',
                     'movimientos.registrar', 'recepciones.ver', 'recepciones.confirmar',
                     'pedidos.ver',
+                    'transferencias.recibir',
                 ],
 
                 'ENCARGADO_OPERACIONES' => [
@@ -309,6 +312,7 @@ class DatabaseSeeder extends Seeder
                     'reportes.ver',
                     'pedidos.ver',
                     'pedidos.gestionar',
+                    'transferencias.recibir',
                 ],
 
                 // RESPONSABLE DE RECEPCIÓN EN ALMACÉN CENTRAL
@@ -318,6 +322,7 @@ class DatabaseSeeder extends Seeder
                     'movimientos.ver', 'movimientos.registrar',
                     'recepciones.ver', 'recepciones.confirmar',
                     'pedidos.ver',
+                    'transferencias.recibir',
                 ],
 
                 // PERSONAL DE PRODUCCIÓN (SIN PERMISO DE CONFIRMAR RECEPCIONES)

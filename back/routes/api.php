@@ -83,6 +83,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/recepciones-produccion/{id}/confirmar', [\App\Http\Controllers\RecepcionProduccionController::class, 'confirmar'])->middleware('permission:recepciones.confirmar');
 
     // MOVIMIENTOS DE INVENTARIO
+    Route::get('/recepciones-transferencias', [\App\Http\Controllers\RecepcionTransferenciaController::class, 'index'])->middleware('permission:transferencias.recibir');
+    Route::post('/recepciones-transferencias/{id}/confirmar', [\App\Http\Controllers\RecepcionTransferenciaController::class, 'confirmar'])->middleware('permission:transferencias.recibir');
+
     Route::get('/movimientos-inventario', [\App\Http\Controllers\MovimientoInventarioController::class, 'index'])->middleware('permission:movimientos.ver');
     Route::post('/movimientos-inventario', [\App\Http\Controllers\MovimientoInventarioController::class, 'store'])->middleware('permission:movimientos.registrar');
     Route::get('/movimientos-inventario/{id}', [\App\Http\Controllers\MovimientoInventarioController::class, 'show'])->middleware('permission:movimientos.ver');

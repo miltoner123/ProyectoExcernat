@@ -15,7 +15,8 @@ class MovimientoInventarioController extends Controller
     private const RELACIONES = [
         'origen',
         'destino',
-        'detalles.lote.presentacion.producto'
+        'detalles.lote.presentacion.producto',
+        'receptor'
     ];
 
     // LISTAR Y BUSCAR MOVIMIENTOS
@@ -148,7 +149,8 @@ class MovimientoInventarioController extends Controller
                 'id_ubicacion_destino' => $destino,
                 'fecha_movimiento' => now(),
                 'referencia' => $tipo === 'ENTRADA' ? 'RECEPCION-USUARIO-' . auth()->id() : null,
-                'observacion' => $datos['observacion'] ?? null
+                'observacion' => $datos['observacion'] ?? null,
+                'estado_recepcion' => $tipo === 'TRANSFERENCIA' ? 'PENDIENTE' : null
             ]);
 
             // Aplicar movimientos y registrar detalles.
@@ -166,6 +168,10 @@ class MovimientoInventarioController extends Controller
                         break;
 
                     case 'TRANSFERENCIA':
+                        // El origen se descuenta; destino solo al confirmar recepción.
+                        $this->modificarStock($origen, $idLote, -$cantidad);
+                        break;
+
                     case 'DEVOLUCION':
                         $this->modificarStock($origen, $idLote, -$cantidad);
                         $this->modificarStock($destino, $idLote, $cantidad);
@@ -186,7 +192,7 @@ class MovimientoInventarioController extends Controller
         }, 3);
 
         return response()->json([
-            'message' => 'Movimiento registrado correctamente.',
+            'message' => $tipo === 'TRANSFERENCIA' ? 'Despacho registrado. Pendiente de recepción en destino.' : 'Movimiento registrado correctamente.',
             'movimiento' => $movimiento
         ], 201);
     }

@@ -18,7 +18,14 @@ class MovimientoInventario extends Model
         'fecha_movimiento',
         'referencia',
         'observacion',
+        'estado_recepcion',
+        'id_usuario_receptor',
+        'fecha_recepcion',
     ];
+
+    protected $casts = ['fecha_recepcion' => 'datetime'];
+
+    public function receptor() { return $this->belongsTo(\App\Models\User::class, 'id_usuario_receptor'); }
 
     public function origen()
     {

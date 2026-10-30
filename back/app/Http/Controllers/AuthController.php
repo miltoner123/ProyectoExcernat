@@ -76,7 +76,7 @@ class AuthController extends Controller
         }
 
         return response()->json(
-            $usuario->load('persona', 'roles'),
+            array_merge($usuario->load('persona', 'roles')->toArray(), ['permisos' => $usuario->getAllPermissions()->pluck('name')->values()->all()]),
             200
         );
     }

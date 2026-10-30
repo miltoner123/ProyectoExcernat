@@ -88,6 +88,18 @@ router.beforeEach(async (to) => {
   }
   if (to.meta.publica) return sesion.usuario ? '/' : true;
   if (!sesion.usuario) return { path: '/login', query: { redirect: to.fullPath } };
+  const reglas = [
+    [/^\/usuarios(?:\/|$)/, 'usuarios.ver'],
+    [/^\/ventas-stand(?:\/|$)/, 'ventas.ver'],
+    [/^\/(?:cobros-ventas|cajas-punto-venta)(?:\/|$)/, 'cobros.ver'],
+    [/^\/asignaciones(?:\/|$)/, 'asignaciones.ver'],
+    [/^\/personal(?:\/|$)/, 'personal.ver'],
+    [/^\/eventos(?:\/|$)/, 'eventos.ver'],
+    [/^\/movimientos(?:\/|$)/, 'movimientos.ver'],
+  ];
+  const requerida = reglas.find(([patron]) => patron.test(to.path))?.[1];
+  const admin = sesion.usuario.roles?.some(r => r.name === 'ADMIN');
+  if (requerida && !admin && !(sesion.usuario.permisos || []).includes(requerida)) return '/';
   return true;
 });
 

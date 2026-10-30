@@ -364,6 +364,22 @@ class DatabaseSeeder extends Seeder
                 ],
             ];
 
+            // Tres niveles de acceso para nuevas cuentas. Los roles históricos se
+            // conservan para no modificar usuarios ni permisos existentes.
+            $roles['ENCARGADO'] = [
+                'personas.ver', 'personal.ver', 'productos.ver', 'presentaciones.ver',
+                'lotes.ver', 'ubicaciones.ver', 'inventarios.ver',
+                'movimientos.ver', 'movimientos.registrar',
+                'recepciones.ver', 'recepciones.confirmar', 'transferencias.recibir',
+                'pedidos.ver', 'pedidos.gestionar', 'ventas.ver', 'ventas.registrar',
+                'cobros.ver', 'cobros.registrar', 'eventos.ver',
+            ];
+            $roles['CONSULTA'] = [
+                'productos.ver', 'presentaciones.ver', 'ubicaciones.ver',
+                'inventarios.ver', 'pedidos.ver', 'ventas.ver',
+                'cobros.ver', 'eventos.ver',
+            ];
+
             foreach ($roles as $nombre => $permisosRol) {
                 $rol = Role::findOrCreate(
                     $nombre,

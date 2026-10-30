@@ -39,11 +39,8 @@ class UsuarioController extends Controller
     public function roles(Request $request)
     {
         $query = Role::where('guard_name', 'web')
+            ->whereIn('name', ['ADMIN', 'ENCARGADO', 'CONSULTA'])
             ->orderBy('name');
-
-        if (!$request->user()->hasRole('ADMIN')) {
-            $query->where('name', '!=', 'ADMIN');
-        }
 
         return response()->json(
             $query->get(['id', 'name'])
@@ -191,6 +188,10 @@ class UsuarioController extends Controller
 
     private function validarRol(Request $request, string $rol): void
     {
+        if (!in_array($rol, ['ADMIN', 'ENCARGADO', 'CONSULTA'], true)) {
+            throw ValidationException::withMessages(['rol' => 'Seleccione uno de los tres niveles vigentes.']);
+        }
+
         if (
             $rol === 'ADMIN' &&
             !$request->user()->hasRole('ADMIN')

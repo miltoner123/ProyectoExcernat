@@ -22,6 +22,9 @@ class Evento extends Model
         'id_responsable',
         'presupuesto_estimado',
         'estado',
+        'estado_operativo',
+        'fecha_finalizacion',
+        'fecha_cierre',
         'observacion',
     ];
 
@@ -30,6 +33,8 @@ class Evento extends Model
         'fecha_fin' => 'date',
         'presupuesto_estimado' => 'decimal:2',
         'estado' => 'boolean',
+        'fecha_finalizacion' => 'datetime',
+        'fecha_cierre' => 'datetime',
     ];
 
     public function responsable()

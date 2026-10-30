@@ -22,7 +22,10 @@ class VentaController extends Controller {
     private function autorizarConsulta(Request $request, int $id): void {
         if ($request->user()->hasRole('ADMIN')) return;
         $personal=Personal::where('id_persona',$request->user()->id_persona)->where('estado',true)->pluck('id_personal');
-        if (!AsignacionPersonal::whereIn('id_personal',$personal)->where('id_ubicacion',$id)->exists()) abort(403,'No tiene acceso al historial de esta ubicación.');
+        if (!AsignacionPersonal::whereIn('id_personal',$personal)->where('id_ubicacion',$id)
+            ->where('estado',true)->whereDate('fecha_inicio','<=',now()->toDateString())
+            ->where(fn($q)=>$q->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',now()->toDateString()))
+            ->exists()) abort(403,'No tiene asignación vigente a esta ubicación.');
     }
     public function stands(Request $request) {
         $query=Ubicacion::with('evento')->whereIn('tipo',['STAND','SUCURSAL','ALMACEN','ALMACEN_CENTRAL','CENTRAL'])->where('estado',true);
@@ -38,7 +41,7 @@ class VentaController extends Controller {
     }
     public function existencias(Request $request) {
         $data=$request->validate(['id_ubicacion'=>'required|integer|exists:ubicaciones,id_ubicacion']);
-        $id=(int)$data['id_ubicacion']; $this->autorizarStand($request,$id);
+        $id=(int)$data['id_ubicacion']; $this->autorizarConsulta($request,$id);
         return response()->json(Inventario::with('lote.presentacion.producto')
             ->where('id_ubicacion',$id)->where('stock_actual','>',0)->orderBy('id_lote')->get());
     }

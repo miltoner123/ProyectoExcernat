@@ -8,7 +8,7 @@ class CajaPuntoVentaController extends Controller {
  public static function validarEvento(Ubicacion $u): void {
   $u->loadMissing('evento');
   if (!$u->estado) abort(422,'Punto de venta inactivo.');
-  if ($u->id_evento && (!$u->evento || !$u->evento->estado || ($u->evento->fecha_fin && $u->evento->fecha_fin->lt(today())))) abort(422,'Evento finalizado: operaciones comerciales bloqueadas.');
+  if ($u->id_evento && (!$u->evento || !$u->evento->estado || in_array($u->evento->estado_operativo, ['FINALIZADO','CERRADO'], true) || ($u->evento->fecha_fin && $u->evento->fecha_fin->lt(today())))) abort(422,'Evento finalizado: operaciones comerciales bloqueadas.');
  }
  public static function autorizar(Request $r, Ubicacion $u): void {
   self::validarEvento($u);
@@ -18,7 +18,7 @@ class CajaPuntoVentaController extends Controller {
  }
  public function ubicaciones(Request $r){
   $q=Ubicacion::with('evento')->where('estado',true);
-  if(!$r->user()->hasRole('ADMIN')===false){
+  if(!$r->user()->hasRole('ADMIN')){
    $ids=Personal::where('id_persona',$r->user()->id_persona)->where('estado',true)->pluck('id_personal');
    $q->whereIn('id_ubicacion',AsignacionPersonal::whereIn('id_personal',$ids)->where('estado',true)->whereDate('fecha_inicio','<=',today())->where(fn($w)=>$w->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',today()))->pluck('id_ubicacion'));
   }
@@ -28,7 +28,7 @@ class CajaPuntoVentaController extends Controller {
   $data=$r->validate(['id_ubicacion'=>'required|integer|exists:ubicaciones,id_ubicacion']);
   $u=Ubicacion::with('evento')->findOrFail($data['id_ubicacion']);
   // Consultar el historial debe ser posible aunque el evento haya finalizado.
-  if(!$r->user()->hasRole('ADMIN')===false){
+  if(!$r->user()->hasRole('ADMIN')){
    $ids=Personal::where('id_persona',$r->user()->id_persona)->where('estado',true)->pluck('id_personal');
    if(!AsignacionPersonal::whereIn('id_personal',$ids)->where('id_ubicacion',$u->id_ubicacion)->exists())abort(403);
   }
@@ -52,7 +52,7 @@ class CajaPuntoVentaController extends Controller {
    $c=CajaPuntoVenta::whereKey($id)->lockForUpdate()->firstOrFail();
    // Se permite cerrar una caja de evento finalizado, pero se valida la asignación.
    $u=Ubicacion::findOrFail($c->id_ubicacion);
-   if(!$r->user()->hasRole('ADMIN')===false){
+   if(!$r->user()->hasRole('ADMIN')){
     $ids=Personal::where('id_persona',$r->user()->id_persona)->where('estado',true)->pluck('id_personal');
     if(!AsignacionPersonal::whereIn('id_personal',$ids)->where('id_ubicacion',$u->id_ubicacion)->exists())abort(403);
    }

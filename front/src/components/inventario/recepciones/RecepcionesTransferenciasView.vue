@@ -5,7 +5,7 @@
     <p v-if="cargando">Cargando transferencias...</p>
     <div v-else-if="!movimientos.length" class="rt-empty">No tienes transferencias pendientes de recepción.</div>
     <article v-for="m in movimientos" :key="m.id_movimiento" class="rt-card">
-      <div class="rt-title"><strong>Transferencia #{{ m.id_movimiento }}</strong><span>PENDIENTE</span></div>
+      <div class="rt-title"><strong>{{ m.tipo === 'DEVOLUCION' ? 'Devolución' : 'Transferencia' }} #{{ m.id_movimiento }}</strong><span>PENDIENTE</span></div>
       <p><b>Origen:</b> {{ m.origen?.nombre || '—' }} · <b>Destino:</b> {{ m.destino?.nombre || '—' }}</p>
       <p v-if="m.destino?.evento"><b>Evento:</b> {{ m.destino.evento.nombre }}</p>
       <p><b>Despacho:</b> {{ fecha(m.fecha_movimiento) }}</p>

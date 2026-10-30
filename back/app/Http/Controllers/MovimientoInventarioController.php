@@ -90,6 +90,23 @@ class MovimientoInventarioController extends Controller
         $destino = $datos['id_ubicacion_destino'] ?? null;
 
         $this->validarOperacion($datos, $tipo, $origen, $destino);
+        if ($tipo === 'DEVOLUCION') {
+            $uOrigen=Ubicacion::with('evento')->findOrFail($origen);
+            $uDestino=Ubicacion::findOrFail($destino);
+            if ($uOrigen->tipo !== 'STAND' || !$uOrigen->id_evento || $uDestino->tipo !== 'ALMACEN' || !in_array(mb_strtoupper(trim($uDestino->nombre)), ['ALMACÉN CENTRAL','ALMACEN CENTRAL'], true)) {
+                throw ValidationException::withMessages(['tipo'=>'La devolución de evento debe salir de un stand hacia ALMACÉN CENTRAL.']);
+            }
+            if ($uOrigen->evento?->estado_operativo === 'CERRADO') {
+                throw ValidationException::withMessages(['tipo'=>'El evento ya fue cerrado.']);
+            }
+        }
+        foreach (array_filter([$origen,$destino]) as $idUbicacion) {
+            $u=Ubicacion::with('evento')->findOrFail($idUbicacion);
+            if ($u->id_evento && in_array($u->evento?->estado_operativo, ['FINALIZADO','CERRADO'], true) && $tipo !== 'DEVOLUCION') {
+                throw ValidationException::withMessages(['tipo'=>'Evento finalizado: solo se permiten devoluciones de sobrantes.']);
+            }
+        }
+
 
         $movimiento = DB::transaction(function () use (
             $datos, $tipo, $origen, $destino
@@ -150,7 +167,7 @@ class MovimientoInventarioController extends Controller
                 'fecha_movimiento' => now(),
                 'referencia' => $tipo === 'ENTRADA' ? 'RECEPCION-USUARIO-' . auth()->id() : null,
                 'observacion' => $datos['observacion'] ?? null,
-                'estado_recepcion' => $tipo === 'TRANSFERENCIA' ? 'PENDIENTE' : null
+                'estado_recepcion' => in_array($tipo, ['TRANSFERENCIA','DEVOLUCION'], true) ? 'PENDIENTE' : null
             ]);
 
             // Aplicar movimientos y registrar detalles.
@@ -173,8 +190,8 @@ class MovimientoInventarioController extends Controller
                         break;
 
                     case 'DEVOLUCION':
+                        // Retirar del stand; el almacén recibe después de verificar físicamente.
                         $this->modificarStock($origen, $idLote, -$cantidad);
-                        $this->modificarStock($destino, $idLote, $cantidad);
                         break;
 
                     case 'AJUSTE':
@@ -192,7 +209,7 @@ class MovimientoInventarioController extends Controller
         }, 3);
 
         return response()->json([
-            'message' => $tipo === 'TRANSFERENCIA' ? 'Despacho registrado. Pendiente de recepción en destino.' : 'Movimiento registrado correctamente.',
+            'message' => in_array($tipo, ['TRANSFERENCIA','DEVOLUCION'], true) ? 'Movimiento en tránsito. Pendiente de recepción en destino.' : 'Movimiento registrado correctamente.',
             'movimiento' => $movimiento
         ], 201);
     }

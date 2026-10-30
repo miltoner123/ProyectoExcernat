@@ -30,7 +30,7 @@ class RecepcionTransferenciaController extends Controller
     public function index(Request $request)
     {
         $query = MovimientoInventario::with(['origen', 'destino.evento', 'detalles.lote.presentacion.producto'])
-            ->where('tipo', 'TRANSFERENCIA')->where('estado_recepcion', 'PENDIENTE');
+            ->whereIn('tipo', ['TRANSFERENCIA','DEVOLUCION'])->where('estado_recepcion', 'PENDIENTE');
         if (!$request->user()->hasRole('ADMIN')) {
             $ids = Personal::where('id_persona', $request->user()->id_persona)->where('estado', true)->pluck('id_personal');
             $ubicaciones = AsignacionPersonal::whereIn('id_personal', $ids)->where('estado', true)
@@ -52,7 +52,7 @@ class RecepcionTransferenciaController extends Controller
         ]);
         $movimiento = DB::transaction(function () use ($request, $id, $datos) {
             $mov = MovimientoInventario::whereKey($id)->lockForUpdate()->firstOrFail();
-            if ($mov->tipo !== 'TRANSFERENCIA' || $mov->estado_recepcion !== 'PENDIENTE') {
+            if (!in_array($mov->tipo, ['TRANSFERENCIA','DEVOLUCION'], true) || $mov->estado_recepcion !== 'PENDIENTE') {
                 throw ValidationException::withMessages(['recepcion' => 'Esta transferencia ya fue procesada.']);
             }
             if (!$this->puedeRecibir($request, $mov)) abort(403, 'Solo el encargado vigente del destino puede confirmar.');

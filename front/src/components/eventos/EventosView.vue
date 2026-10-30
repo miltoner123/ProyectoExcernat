@@ -69,13 +69,16 @@
                 <td>{{ formatearFecha(evento.fecha_inicio) }}</td>
                 <td>{{ formatearFecha(evento.fecha_fin) }}</td>
                 <td>{{ nombreResponsable(evento) }}</td>
-                <td><span :class="evento.estado ? 'estado-activo' : 'estado-inactivo'">{{ evento.estado ? '● Activo' : '● Inactivo' }}</span></td>
+                <td><span :class="evento.estado ? 'estado-activo' : 'estado-inactivo'">{{ evento.estado_operativo || (evento.estado ? 'EN CURSO' : 'INACTIVO') }}</span></td>
                 <td>
                   <div class="acciones">
                     <button class="btn btn-stands" :aria-expanded="eventoAbierto === evento.id_evento"
                       @click="alternarStands(evento.id_evento)">
                       {{ eventoAbierto === evento.id_evento ? '▴ Ocultar' : '▾ Stands' }}
                     </button>
+                    <button class="btn btn-editar" @click="verPendientes(evento)">Pendientes</button>
+                    <button v-if="evento.estado_operativo === 'EN_CURSO' && evento.estado" class="btn btn-editar" @click="finalizarEvento(evento)">Finalizar</button>
+                    <button v-if="evento.estado_operativo === 'FINALIZADO'" class="btn btn-editar" @click="cerrarEvento(evento)">Cerrar</button>
                     <button class="btn btn-editar" @click="$router.push(`/eventos/editar/${evento.id_evento}`)">Editar</button>
                     <button class="btn btn-eliminar" :disabled="eliminando === evento.id_evento" @click="eliminarEvento(evento)">Eliminar</button>
                   </div>
@@ -142,6 +145,22 @@ export default {
   mounted() { this.eventosGet(); },
   beforeUnmount() { clearTimeout(this.temporizadorBusqueda); this.numeroPeticion++; this.numeroPeticionStands++; },
   methods: {
+    async verPendientes(evento) {
+      try { const {data}=await api.get(`/api/eventos/${evento.id_evento}/pendientes`);
+        const p=data.pendientes;
+        window.alert(`Pendientes de ${evento.nombre}:\nStock sobrante: ${p.stock_sobrante}\nTransferencias pendientes: ${p.transferencias_pendientes}\nRecepciones observadas: ${p.recepciones_observadas}\nCajas abiertas: ${p.cajas_abiertas}`);
+      } catch(e) { this.error=e.response?.data?.message || 'No se pudo consultar pendientes.'; }
+    },
+    async finalizarEvento(evento) {
+      if (!window.confirm(`¿Finalizar ${evento.nombre}? Se bloquearán las ventas y nuevas aperturas de caja.`)) return;
+      try { await api.post(`/api/eventos/${evento.id_evento}/finalizar`); await this.eventosGet(); }
+      catch(e) { this.error=e.response?.data?.message || 'No se pudo finalizar.'; }
+    },
+    async cerrarEvento(evento) {
+      if (!window.confirm(`¿Cerrar definitivamente ${evento.nombre}? Deben estar conciliados todos los pendientes.`)) return;
+      try { await api.post(`/api/eventos/${evento.id_evento}/cerrar`); await this.eventosGet(); }
+      catch(e) { this.error=Object.values(e.response?.data?.errors || {}).flat().join(' ') || e.response?.data?.message || 'No se pudo cerrar.'; }
+    },
     async alternarStands(idEvento) {
       if (this.eventoAbierto === idEvento) {
         this.eventoAbierto = null;

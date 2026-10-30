@@ -142,8 +142,14 @@ public function index(Request $request)
 
         $datos = $this->validar($request);
         $nuevoEstado = $datos['estado'] ?? $evento->estado;
+        if (in_array($evento->estado_operativo, ['FINALIZADO','CERRADO'], true) && $nuevoEstado) {
+            return response()->json(['message'=>'No se puede reactivar un evento finalizado o cerrado desde edición.'],422);
+        }
 
         // No permitir cerrar el evento con mercadería pendiente.
+        if (!$nuevoEstado && $evento->estado_operativo !== 'CERRADO') {
+            return response()->json(['message'=>'Utilice Finalizar y Cerrar evento para validar cajas, transferencias y sobrantes.'],422);
+        }
         if (!$nuevoEstado && $this->tieneStockPendiente($evento)) {
             return response()->json([
                 'message' => 'No se puede cerrar el evento: uno o más stands todavía tienen existencias. Registre las ventas, devoluciones o ajustes correspondientes.'

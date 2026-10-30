@@ -3,10 +3,23 @@
     <h1>Registrar Movimiento de Inventario</h1>
     <p class="descripcion">Registra salidas, transferencias, devoluciones y ajustes. Las entradas de producción requieren confirmación del Almacén Central.</p>
     <form @submit.prevent="guardarMovimiento">
-      <div class="aviso-recepcion"><strong>¿Tienes producción pendiente?</strong><span>Las entradas de producción se confirman exclusivamente desde Recepciones pendientes, con autorización del encargado de almacén.</span><button type="button" class="btn-ir-recepciones" @click="$router.push('/recepciones-produccion')">Ver recepciones pendientes</button></div>
+      <div v-if="movimiento.tipo === 'TRANSFERENCIA'" class="panel-pedido">
+        <label><strong>¿Tienes un pedido pendiente por despachar? (opcional)</strong></label>
+        <select v-model="idPedido" @change="seleccionarPedido">
+          <option :value="null">Movimiento independiente (sin pedido)</option>
+          <option v-for="p in pedidosPendientes" :key="p.id_pedido" :value="p.id_pedido">Pedido #{{ p.id_pedido }} · {{ p.ubicacion_solicitante?.nombre }} · {{ p.unidades_pendientes }} unidades pendientes</option>
+        </select>
+        <p v-if="idPedido" class="nota">El destino se establece según el pedido. El despacho se vinculará al pedido y quedará pendiente de recepción.</p>
+        <p v-if="errorPedidos" class="error">{{ errorPedidos }}</p>
+        <div v-if="pedidoSeleccionado" class="pedido-detalles">
+          <div v-for="d in pedidoSeleccionado.detalles.filter(x => x.pendiente > 0)" :key="d.id_presentacion">
+            {{ d.presentacion?.producto?.nombre }} · {{ d.presentacion?.nombre_presentacion }}: <b>{{ d.pendiente }} unidades pendientes</b>
+          </div>
+        </div>
+      </div>
       <div class="campo">
         <label>Tipo de movimiento:</label>
-        <select v-model="movimiento.tipo" @change="cambiarTipo" required>
+        <select v-model="movimiento.tipo" @change="cambiarTipo" :disabled="!!idPedido" required>
           <option value="" disabled>Seleccione una opción</option>
           <option v-for="t in tipos" :key="t" :value="t">{{ t }}</option>
         </select>
@@ -70,20 +83,6 @@
           <small>El inventario se asignará únicamente a este stand, no a todos los stands del evento.</small>
         </div>
       </div>
-      <div v-if="movimiento.tipo === 'TRANSFERENCIA'" class="panel-pedido">
-        <label><strong>¿Tienes un pedido pendiente por despachar? (opcional)</strong></label>
-        <select v-model="idPedido" @change="seleccionarPedido">
-          <option :value="null">Movimiento independiente (sin pedido)</option>
-          <option v-for="p in pedidosPendientes" :key="p.id_pedido" :value="p.id_pedido">Pedido #{{ p.id_pedido }} · {{ p.ubicacion_solicitante?.nombre }} · {{ p.unidades_pendientes }} unidades pendientes</option>
-        </select>
-        <p v-if="idPedido" class="nota">El destino se establece según el pedido. El despacho se vinculará al pedido y quedará pendiente de recepción.</p>
-        <p v-if="errorPedidos" class="error">{{ errorPedidos }}</p>
-        <div v-if="pedidoSeleccionado" class="pedido-detalles">
-          <div v-for="d in pedidoSeleccionado.detalles.filter(x => x.pendiente > 0)" :key="d.id_presentacion">
-            {{ d.presentacion?.producto?.nombre }} · {{ d.presentacion?.nombre_presentacion }}: <b>{{ d.pendiente }} unidades pendientes</b>
-          </div>
-        </div>
-      </div>
       <div class="campo">
         <label>Observación:</label>
         <textarea v-model="movimiento.observacion" rows="3" placeholder="Describa el motivo del movimiento..."></textarea>
@@ -100,10 +99,15 @@
           <tbody>
             <tr v-for="(d,i) in movimiento.detalles" :key="i">
               <td>
+                <div v-if="pedidoSeleccionado && d.id_presentacion && !lotesConStockPresentacion(d.id_presentacion).length" class="aviso-sin-stock" role="alert">
+                  <strong>Producto solicitado sin existencias disponibles</strong>
+                  <span>Se solicitó {{ nombrePresentacionPedido(d.id_presentacion) }} ({{ pendientePresentacion(d.id_presentacion) }} unidades pendientes), pero no hay lotes con stock en el almacén de origen.</span>
+                  <small>Este producto no se puede despachar hasta que se repongan las existencias. Puedes retirarlo del despacho parcial y conservarlo pendiente en el pedido.</small>
+                </div>
                 <label class="etiqueta-detalle">1. Producto / presentación</label>
                 <select v-model="d.id_presentacion" @change="d.id_lote = null" required>
                   <option :value="null" disabled>Seleccione la presentación</option>
-                  <option v-for="p in presentacionesDisponibles" :key="p.id_presentacion" :value="p.id_presentacion">{{ p.producto?.nombre }} · {{ p.nombre_presentacion }}</option>
+                  <option v-for="p in opcionesPresentacion(d.id_presentacion)" :key="p.id_presentacion" :value="p.id_presentacion">{{ p.producto?.nombre || p.nombre_producto || 'Producto' }} · {{ p.nombre_presentacion }}</option>
                 </select>
                 <label class="etiqueta-detalle">2. Lote con existencias</label>
                 <select v-model="d.id_lote" :disabled="!d.id_presentacion" required>
@@ -219,6 +223,8 @@ export default {
         this.movimiento.detalles = [{id_presentacion:null,id_lote:null,cantidad:1}];
         return;
       }
+      // El pedido seleccionado siempre se despacha como TRANSFERENCIA.
+      this.movimiento.tipo = 'TRANSFERENCIA';
       // Los productos y cantidades se cargan desde el pedido; solo falta elegir lote.
       // Si no hay existencias suficientes, la cantidad puede ajustarse para despacho parcial.
       this.movimiento.detalles = p.detalles
@@ -254,6 +260,27 @@ export default {
       }
     },
 
+    lotesConStockPresentacion(id) {
+      return this.lotes.filter(l => Number(l.id_presentacion) === Number(id) && this.stockOrigen(l.id_lote) > 0);
+    },
+    lineaPedido(id) {
+      return this.pedidoSeleccionado?.detalles?.find(d => Number(d.id_presentacion) === Number(id));
+    },
+    pendientePresentacion(id) {
+      return Number(this.lineaPedido(id)?.pendiente || 0);
+    },
+    nombrePresentacionPedido(id) {
+      const p = this.lineaPedido(id)?.presentacion;
+      return [p?.producto?.nombre, p?.nombre_presentacion].filter(Boolean).join(' · ') || `presentación #${id}`;
+    },
+    opcionesPresentacion(idActual) {
+      const opciones = [...this.presentacionesDisponibles];
+      const linea = this.lineaPedido(idActual);
+      if (linea?.presentacion && !opciones.some(p => Number(p.id_presentacion) === Number(idActual))) {
+        opciones.push({ ...linea.presentacion, id_presentacion: Number(idActual) });
+      }
+      return opciones;
+    },
     nombreResponsable(asignacion) {
       const persona = asignacion.personal?.persona || {};
       const nombre = [persona.nombres_razon_social, persona.apellidos].filter(Boolean).join(' ').trim();
@@ -385,6 +412,9 @@ export default {
       if (this.mostrarOrigen && this.mostrarDestino && Number(m.id_ubicacion_origen) === Number(m.id_ubicacion_destino))
         return alert('El origen y destino deben ser diferentes.');
       if (m.tipo === 'AJUSTE' && !m.observacion.trim()) return alert('Justifique el ajuste en Observación.');
+      if (this.pedidoSeleccionado && m.detalles.some(d => d.id_presentacion && !this.lotesConStockPresentacion(d.id_presentacion).length)) {
+        return alert('El pedido contiene productos sin existencias. Quita del movimiento las filas sin stock para realizar un despacho parcial; seguirán pendientes en el pedido.');
+      }
       const ids = m.detalles.map(d => d.id_lote);
       if (ids.some(id => !id)) return alert('Seleccione un lote en cada detalle.');
       if (new Set(ids).size !== ids.length) return alert('No puede repetir un mismo lote.');
@@ -464,4 +494,8 @@ td select,td input{width:100%;padding:9px;box-sizing:border-box}.informacion{bac
 .panel-pedido{border:1px solid #d2e5d7;border-left:4px solid #f47b20;background:#f7fbf8;padding:16px;border-radius:12px;margin:16px 0}
 .panel-pedido select{width:100%;padding:11px;border:1px solid #c9dacf;border-radius:9px;margin:9px 0}
 .pedido-detalles{display:grid;gap:7px;background:white;padding:12px;border-radius:9px;font-size:13px;color:#124734}
+</style>
+
+<style scoped>
+.aviso-sin-stock{display:flex;flex-direction:column;gap:5px;padding:12px;margin:0 0 12px;border:1px solid #f2ca9a;border-left:4px solid #f47b20;border-radius:9px;background:#fff8ee;color:#824411;font-size:13px}.aviso-sin-stock strong{color:#92400e}.aviso-sin-stock small{color:#855b38;line-height:1.45}
 </style>

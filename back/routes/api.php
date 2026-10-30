@@ -91,6 +91,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/movimientos-inventario/{id}', [\App\Http\Controllers\MovimientoInventarioController::class, 'show'])->middleware('permission:movimientos.ver');
 
     // VENTAS POR STAND
+    Route::get('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'index'])->middleware('permission:cobros.ver');
+    Route::post('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'store'])->middleware('permission:cobros.registrar');
     Route::get('/ventas-stand/stands', [\App\Http\Controllers\VentaController::class, 'stands'])->middleware('permission:ventas.ver');
     Route::get('/ventas-stand/existencias', [\App\Http\Controllers\VentaController::class, 'existencias'])->middleware('permission:ventas.ver');
     Route::get('/ventas-stand', [\App\Http\Controllers\VentaController::class, 'index'])->middleware('permission:ventas.ver');

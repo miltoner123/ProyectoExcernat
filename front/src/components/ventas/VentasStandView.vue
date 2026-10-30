@@ -1,6 +1,7 @@
 <template>
 <section class="ventas"><header class="encabezado"><div><h1>Ventas por Stand</h1><p>Registra ventas únicamente sobre existencias recibidas y disponibles.</p></div></header>
 <div v-if="error" class="alerta">{{error}}</div><div v-if="exito" class="correcto">{{exito}}</div>
+<div class="panel"><router-link to="/cobros-ventas" class="btn">Ir a Caja y Cobros</router-link></div>
 <div class="panel"><h2>Nueva venta</h2><label>Stand asignado</label><select v-model="stand" @change="cargarStock"><option value="">Seleccione un stand</option><option v-for="s in stands" :key="s.id_ubicacion" :value="s.id_ubicacion">{{s.evento?.nombre || 'Evento'}} · {{s.nombre}}</option></select>
 <div v-if="stand"><div class="cabecera-lineas"><h3>Productos disponibles</h3><button class="btn" @click="cargarStock">Actualizar existencias</button></div>
 <div class="tabla"><table><thead><tr><th>Producto / presentación</th><th>Lote</th><th>Disponible</th><th>Precio (Bs)</th><th>Cantidad a vender</th></tr></thead><tbody>

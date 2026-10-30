@@ -64,6 +64,7 @@ class VentaController extends Controller {
         $venta=DB::transaction(function() use($id,$request,$data) {
             $venta=Venta::whereKey($id)->lockForUpdate()->firstOrFail();
             if($venta->estado!=='CONFIRMADA') throw ValidationException::withMessages(['estado'=>'Esta venta ya fue anulada o no esta confirmada.']);
+            if (\App\Models\CobroVenta::where('id_venta',$venta->id_venta)->exists()) throw ValidationException::withMessages(['cobros'=>'La venta tiene cobros registrados. Debe realizarse la conciliación antes de anularla.']);
             $detalles=$venta->detalles()->orderBy('id_lote')->get();
             foreach($detalles as $detalle) {
                 $inventario=Inventario::where('id_ubicacion',$venta->id_ubicacion)->where('id_lote',$detalle->id_lote)->lockForUpdate()->first();

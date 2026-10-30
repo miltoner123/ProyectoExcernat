@@ -172,6 +172,9 @@ class DatabaseSeeder extends Seeder
                 'ventas.ver',
                 'ventas.registrar',
                 'ventas.supervisar',
+                'cobros.ver',
+                'cobros.registrar',
+                'cobros.supervisar',
 
                 // EVENTOS
                 'eventos.ver',
@@ -227,7 +230,9 @@ class DatabaseSeeder extends Seeder
                     'contabilidad.ver',
                     'reportes.ver',
                     'pedidos.ver',
-                ],
+                                    'cobros.ver',
+                    'cobros.supervisar',
+],
 
                 // ADMINISTRACIÓN
                 'ADMINISTRADOR' => [
@@ -249,7 +254,9 @@ class DatabaseSeeder extends Seeder
                     'contabilidad.ver',
                     'contabilidad.gestionar',
                     'reportes.ver',
-                ],
+                                    'cobros.ver',
+                    'cobros.supervisar',
+],
 
                 // ENCARGADO COMERCIAL
                 'ENCARGADO_COMERCIAL' => [
@@ -268,7 +275,9 @@ class DatabaseSeeder extends Seeder
                     'reportes.ver',
                     'pedidos.ver',
                     'pedidos.gestionar',
-                ],
+                                    'cobros.ver',
+                    'cobros.supervisar',
+],
 
                 // ENCARGADO DE STAND O SUCURSAL
                 'ENCARGADO_VENTAS' => [
@@ -282,7 +291,9 @@ class DatabaseSeeder extends Seeder
                     'pedidos.ver',
                     'pedidos.gestionar',
                     'transferencias.recibir',
-                ],
+                                    'cobros.ver',
+                    'cobros.registrar',
+],
 
                 // ENCARGADO DE OPERACIONES
                 'ENCARGADO_ALMACEN' => [

@@ -178,89 +178,16 @@ export default {
 </script>
 
 <style scoped>
-.mensaje-error { padding: 12px; margin-bottom: 20px; background: #fee2e2; color: #991b1b; border-radius: 6px; white-space: pre-line; }
-.formulario {
-    max-width: 950px;
-    margin: 0 auto;
-}
-
-.encabezado {
-    margin-bottom: 25px;
-}
-
-.encabezado h1 {
-    margin: 0 0 5px;
-    color: #1f2937;
-}
-
-.encabezado p {
-    margin: 0;
-    color: #6b7280;
-}
-
-.seccion {
-    background: white;
-    padding: 25px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.seccion h3 {
-    margin-top: 0;
-    color: #1f2937;
-}
-
-.fila {
-    display: flex;
-    gap: 20px;
-}
-
-.campo {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    margin-bottom: 18px;
-}
-
-.campo label {
-    margin-bottom: 7px;
-    font-weight: 600;
-}
-
-.campo input,
-.campo select {
-    padding: 10px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-}
-
-.campo small {
-    margin-top: 5px;
-    color: #6b7280;
-}
-
-.botones {
-    display: flex;
-    gap: 10px;
-}
-
-.botones button {
-    padding: 11px 18px;
-    border: none;
-    border-radius: 6px;
-    background: #2563eb;
-    color: white;
-    cursor: pointer;
-}
-
-.botones .btn-cancelar {
-    background: #6b7280;
-}
-
-@media (max-width: 700px) {
-    .fila {
-        flex-direction: column;
-        gap: 0;
-    }
-}
+.formulario{max-width:1050px;margin:24px auto;padding:26px;background:#fff;border:1px solid #d9e7de;border-radius:18px;box-shadow:0 10px 32px rgba(12,48,37,.07);color:#143b2c}
+.encabezado{border-left:5px solid #f47b20;padding:4px 0 14px 16px;margin-bottom:24px;border-bottom:1px solid #e4ece6}
+.encabezado h1{font-size:26px;color:#0c3025;margin:0 0 6px}.encabezado p{color:#627b6c;margin:0;font-size:14px}
+.seccion{background:#f8fbf9;border:1px solid #dce8df;border-radius:14px;padding:20px;margin-bottom:20px}
+.seccion h3{color:#124734;font-size:17px;margin:0 0 18px;padding-bottom:10px;border-bottom:1px solid #dce8df}
+.fila{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.campo{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;min-width:0;flex:1}
+.campo label{font-weight:700;color:#173d2d;font-size:13px}.campo input:not([type=checkbox]),.campo select{width:100%;box-sizing:border-box;min-height:43px;padding:10px 12px;border:1px solid #cbded2;border-radius:9px;background:#fff;color:#173d2d;font:inherit}
+.campo input:focus,.campo select:focus{outline:none;border-color:#f47b20;box-shadow:0 0 0 3px rgba(244,123,32,.13)}
+.campo label:has(input[type=checkbox]){display:flex;align-items:center;gap:9px;flex-direction:row;cursor:pointer}.campo input[type=checkbox]{accent-color:#124734;width:17px;height:17px}
+.campo small{color:#62796c;font-size:12px}.mensaje-error{padding:13px 16px;margin-bottom:18px;background:#fff0ee;border-left:4px solid #b53c30;color:#912b22;border-radius:8px;white-space:pre-line}
+.botones{display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;margin-top:22px}.botones button{padding:12px 20px;border:0;border-radius:9px;background:#f47b20;color:#fff;font-weight:800;cursor:pointer}.botones button:disabled{opacity:.55;cursor:not-allowed}.botones .btn-cancelar{background:#eaf2ed;color:#124734}
+@media(max-width:700px){.formulario{padding:14px;margin:10px}.fila{grid-template-columns:1fr}.seccion{padding:14px}.encabezado h1{font-size:22px}}
 </style>

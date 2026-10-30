@@ -2,9 +2,9 @@
 
     <div class="exc-modern">
 
-        <h1>Editar Lote</h1>
+        <header class="lote-head"><div><h1>Editar lote</h1><p>Actualiza los datos del lote y revisa su fecha de vencimiento.</p></div><router-link to="/lotes" class="volver-lotes">Volver a lotes</router-link></header>
 
-        <form @submit.prevent="actualizarLote">
+        <form class="lote-form" @submit.prevent="actualizarLote">
 
 
             <div>
@@ -136,9 +136,7 @@
             </div>
 
 
-            <button type="submit">
-                Actualizar Lote
-            </button>
+            <div class="lote-actions"><router-link to="/lotes" class="volver-lotes">Cancelar</router-link><button type="submit" class="guardar-lote">Actualizar lote</button></div>
 
         </form>
 
@@ -320,3 +318,19 @@ export default {
 };
 
 </script>
+<style scoped>
+.exc-modern{max-width:1080px;margin:22px auto;padding:26px;background:#fff;border:1px solid #dbe8df;border-radius:17px;box-shadow:0 10px 26px rgba(12,48,37,.06);color:#123d2d}
+.lote-head{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;padding:0 0 20px;margin-bottom:22px;border-bottom:1px solid #dce8df}
+.lote-head h1{font-size:26px;color:#0c3025;margin:0 0 5px}.lote-head p{margin:0;color:#62796c;font-size:14px}
+.lote-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.lote-form>div:not(.lote-actions){display:flex;flex-direction:column;gap:7px;min-width:0}
+.lote-form label{font-weight:700;color:#124734;font-size:13px}
+.lote-form input,.lote-form select,.lote-form textarea{width:100%;min-height:44px;box-sizing:border-box;padding:10px 12px;border:1px solid #cbded2;border-radius:9px;background:#fff;color:#183d2e;font:inherit}
+.lote-form textarea{min-height:95px;resize:vertical}
+.lote-form input:focus,.lote-form select:focus,.lote-form textarea:focus{outline:none;border-color:#f47b20;box-shadow:0 0 0 3px rgba(244,123,32,.14)}
+.lote-form input[readonly]{background:#edf4ef;color:#496e59}
+.lote-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:12px;padding-top:18px;border-top:1px solid #dce8df}
+.volver-lotes,.guardar-lote{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border-radius:9px;padding:11px 18px;font-weight:700;font-size:13px;cursor:pointer}
+.volver-lotes{background:#edf4ef;border:1px solid #cbded2;color:#124734}.guardar-lote{background:#f47b20;color:#fff;border:1px solid #f47b20}
+@media(max-width:700px){.exc-modern{padding:15px;margin:10px}.lote-form{grid-template-columns:1fr}.lote-head h1{font-size:22px}}
+</style>

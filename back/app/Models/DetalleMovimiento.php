@@ -15,6 +15,8 @@ class DetalleMovimiento extends Model
         'id_movimiento',
         'id_lote',
         'cantidad',
+        'cantidad_recibida',
+        'observacion_recepcion',
     ];
 
     public function movimiento()

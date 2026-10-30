@@ -92,6 +92,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/movimientos-inventario/{id}', [\App\Http\Controllers\MovimientoInventarioController::class, 'show'])->middleware('permission:movimientos.ver');
 
     // VENTAS POR STAND
+    Route::get('/cajas-punto-venta/ubicaciones', [\App\Http\Controllers\CajaPuntoVentaController::class, 'ubicaciones'])->middleware('permission:cobros.ver');
+    Route::get('/cajas-punto-venta', [\App\Http\Controllers\CajaPuntoVentaController::class, 'index'])->middleware('permission:cobros.ver');
+    Route::post('/cajas-punto-venta/abrir', [\App\Http\Controllers\CajaPuntoVentaController::class, 'abrir'])->middleware('permission:cobros.registrar');
+    Route::post('/cajas-punto-venta/{id}/cerrar', [\App\Http\Controllers\CajaPuntoVentaController::class, 'cerrar'])->middleware('permission:cobros.registrar');
     Route::get('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'index'])->middleware('permission:cobros.ver');
     Route::post('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'store'])->middleware('permission:cobros.registrar');
     Route::get('/ventas-stand/stands', [\App\Http\Controllers\VentaController::class, 'stands'])->middleware('permission:ventas.ver');

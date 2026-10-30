@@ -51,8 +51,12 @@ class CobroVentaController extends Controller {
             $total=(int)round((float)$venta->total*100);
             $pagado=(int)round((float)CobroVenta::where('id_venta',$venta->id_venta)->sum('monto')*100);
             if($monto<=0 || $monto>$total-$pagado) throw ValidationException::withMessages(['monto'=>'El importe supera el saldo pendiente.']);
+            $ubicacion=\App\Models\Ubicacion::with('evento')->findOrFail($venta->id_ubicacion);
+            CajaPuntoVentaController::autorizar($request,$ubicacion);
+            $caja=\App\Models\CajaPuntoVenta::where('id_ubicacion',$venta->id_ubicacion)->where('estado','ABIERTA')->lockForUpdate()->first();
+            if(!$caja) throw ValidationException::withMessages(['caja'=>'Debe abrir una caja para registrar cobros nuevos.']);
             return CobroVenta::create([
-                'id_venta'=>$venta->id_venta,'id_usuario'=>$request->user()->id,
+                'id_caja'=>$caja->id_caja,'id_venta'=>$venta->id_venta,'id_usuario'=>$request->user()->id,
                 'monto'=>number_format($monto/100,2,'.',''),'metodo_pago'=>$data['metodo_pago'],
                 'referencia'=>$data['referencia']??null,'clave_operacion'=>$data['clave_operacion'],
                 'observacion'=>$data['observacion']??null,'fecha_cobro'=>now()

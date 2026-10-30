@@ -32,6 +32,7 @@ const routes = [
   { path: "/lotes/editar/:id", component: () => import("./components/paginas/lotes/LotesEditar.vue") },
   
 
+  { path: "/cajas-punto-venta", component: () => import("./components/ventas/CajasPuntoVentaView.vue") },
   { path: "/cobros-ventas", component: () => import("./components/ventas/CobrosVentasView.vue") },
   { path: "/ventas-stand", component: () => import("./components/ventas/VentasStandView.vue") },
   { path: "/pedidos", component: () => import("./components/pedidos/PedidosView.vue") },

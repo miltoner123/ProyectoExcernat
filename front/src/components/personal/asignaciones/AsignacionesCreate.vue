@@ -119,6 +119,10 @@
                     >
                 </div>
 
+                <div v-if="esEncargadoStand" class="campo">
+                    <label><input type="checkbox" v-model="comisionOpcional" /> Asignar comisión adicional al encargado</label>
+                    <small>Opcional. Si no se activa, no se registrarán comisiones.</small>
+                </div>
                 <div
                     v-if="mostrarComisiones"
                     class="fila"
@@ -240,6 +244,7 @@ export default {
             ubicaciones: [],
             eventos: [],
 
+            comisionOpcional: false,
             guardando: false,
             cargandoDatos: false,
             errorCarga: ''
@@ -276,12 +281,12 @@ export default {
 
         },
 
+        esEncargadoStand() {
+            return this.tipoDestino === 'FERIA' && String(this.asignacion.funcion_asignada).toUpperCase() === 'ENCARGADO';
+        },
         mostrarComisiones() {
 
-            return [
-                'COMISION',
-                'MIXTO'
-            ].includes(this.asignacion.tipo_remuneracion);
+            return (this.esEncargadoStand && this.comisionOpcional) || ['COMISION', 'MIXTO'].includes(this.asignacion.tipo_remuneracion);
 
         }
 
@@ -550,4 +555,22 @@ export default {
         gap: 0;
     }
 }
+</style>
+<style scoped>
+.formulario{max-width:1050px;margin:24px auto;padding:28px;background:#fff;border:1px solid #d9e7de;border-radius:18px;box-shadow:0 10px 32px rgba(12,48,37,.07)}
+.encabezado{border-left:5px solid #f47b20;padding:4px 0 12px 16px;margin-bottom:24px}
+.encabezado h1{font-size:25px;color:#0c3025;margin:0 0 6px}
+.encabezado p{color:#637b6d;margin:0}
+.seccion{background:#f8fbf9;border:1px solid #e0eae3;border-radius:14px;padding:20px;margin:16px 0 20px}
+.seccion h3{color:#124734;font-size:17px;margin:0 0 18px;padding-bottom:10px;border-bottom:1px solid #dce8df}
+.fila{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.campo{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;min-width:0}
+.campo label{color:#173d2d;font-weight:700;font-size:13px}
+.campo select,.campo input{width:100%;min-height:42px;box-sizing:border-box;background:#fff;border:1px solid #cbdcd0;border-radius:9px;padding:10px 12px;color:#163d2c;outline:none}
+.campo select:focus,.campo input:focus{border-color:#f47b20;box-shadow:0 0 0 3px rgba(244,123,32,.12)}
+.campo small{color:#678071;font-size:12px}
+.botones{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:22px}
+.botones button[type="submit"]{background:#f47b20;color:white;border:0;border-radius:9px;padding:12px 20px;font-weight:800}
+.botones .btn-cancelar{background:#e9f1ec;color:#124734;border:0;border-radius:9px;padding:12px 20px;font-weight:700}
+@media(max-width:720px){.formulario{padding:14px;margin:10px}.fila{grid-template-columns:1fr}.seccion{padding:14px}}
 </style>

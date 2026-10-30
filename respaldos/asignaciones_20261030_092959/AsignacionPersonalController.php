@@ -1,0 +1,325 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\AsignacionPersonal;
+use App\Models\Ubicacion;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+class AsignacionPersonalController extends Controller
+{
+    // LISTAR ASIGNACIONES
+    public function index(Request $request)
+    {
+        $limit = (int) $request->query('limit', 10);
+
+        if (!in_array($limit, [10, 25, 50])) {
+            $limit = 10;
+        }
+
+        $query = AsignacionPersonal::with([
+            'personal.persona',
+            'personal.cargo',
+            'ubicacion',
+            'evento'
+        ]);
+
+        // Buscar por personal
+        if ($request->filled('buscar')) {
+            $buscar = $request->buscar;
+
+            $query->whereHas('personal.persona', function ($q) use ($buscar) {
+                $q->where('nombres_razon_social', 'ilike', "%{$buscar}%")
+                    ->orWhere('apellidos', 'ilike', "%{$buscar}%")
+                    ->orWhere('numero_documento', 'ilike', "%{$buscar}%");
+            });
+        }
+
+        // Filtrar por personal
+        if ($request->filled('id_personal')) {
+            $query->where('id_personal', $request->id_personal);
+        }
+
+        // Filtrar por ubicación
+        if ($request->filled('id_ubicacion')) {
+            $query->where('id_ubicacion', $request->id_ubicacion);
+        }
+
+        // Filtrar por evento
+        if ($request->filled('id_evento')) {
+            $query->where('id_evento', $request->id_evento);
+        }
+        if ($request->filled('tipo_remuneracion')) {
+            $query->where('tipo_remuneracion', $request->tipo_remuneracion);
+        }
+
+        // Filtrar por estado
+        if ($request->filled('estado')) {
+            $query->where('estado', filter_var($request->estado, FILTER_VALIDATE_BOOLEAN));
+        }
+
+        $asignaciones = $query
+            ->orderBy('fecha_inicio', 'desc')
+            ->paginate($limit);
+
+        return response()->json($asignaciones);
+    }
+
+
+    // REGISTRAR ASIGNACIÓN
+    public function store(Request $request)
+    {
+        $request->validate([
+            'id_personal' => 'required|exists:personal,id_personal',
+            'id_ubicacion' => 'nullable|exists:ubicaciones,id_ubicacion',
+            'id_evento' => 'nullable|exists:eventos,id_evento',
+            'funcion_asignada' => 'required|string|max:100',
+            'tipo_remuneracion' => ['required', Rule::in(['SALARIO', 'MONTO_FIJO', 'COMISION', 'MIXTO'])],
+            'monto_fijo' => 'nullable|numeric|min:0',
+            'comision_polvo' => 'nullable|numeric|min:0',
+            'comision_granola' => 'nullable|numeric|min:0',
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            'estado' => 'nullable|boolean',
+        ]);
+
+        // Debe existir al menos una ubicación o un evento
+        if (!$request->filled('id_ubicacion') && !$request->filled('id_evento')) {
+            return response()->json([
+                'message' => 'La asignación debe estar relacionada con una ubicación o un evento.'
+            ], 422);
+        }
+
+        // Validar relación STAND - EVENTO
+        $validacion = $this->validarUbicacionEvento($request);
+
+        if ($validacion) {
+            return $validacion;
+        }
+
+        $asignacion = DB::transaction(function () use ($request) {
+            if ($request->filled('id_ubicacion')) Ubicacion::whereKey($request->id_ubicacion)->lockForUpdate()->first();
+            $this->validarReglasStand($request);
+            return AsignacionPersonal::create([
+            'id_personal' => $request->id_personal,
+            'id_ubicacion' => $request->id_ubicacion,
+            'id_evento' => $request->id_evento,
+            'funcion_asignada' => ($request->filled('id_ubicacion') && Ubicacion::find($request->id_ubicacion)?->tipo === 'STAND') ? mb_strtoupper(trim($request->funcion_asignada)) : $request->funcion_asignada,
+            'tipo_remuneracion' => $request->tipo_remuneracion,
+            'monto_fijo' => $request->monto_fijo,
+            'comision_polvo' => $request->comision_polvo,
+            'comision_granola' => $request->comision_granola,
+            'fecha_inicio' => $request->fecha_inicio,
+            'fecha_fin' => $request->fecha_fin,
+            'estado' => $request->estado ?? true,
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Asignación registrada correctamente.',
+            'asignacion' => $asignacion->load([
+                'personal.persona',
+                'personal.cargo',
+                'ubicacion',
+                'evento'
+            ])
+        ], 201);
+    }
+
+
+    // MOSTRAR ASIGNACIÓN
+    public function show($id)
+    {
+        $asignacion = AsignacionPersonal::with([
+            'personal.persona',
+            'personal.cargo',
+            'ubicacion',
+            'evento'
+        ])->find($id);
+
+        if (!$asignacion) {
+            return response()->json([
+                'message' => 'Asignación no encontrada.'
+            ], 404);
+        }
+
+        return response()->json($asignacion);
+    }
+
+
+    // ACTUALIZAR ASIGNACIÓN
+    public function update(Request $request, $id)
+    {
+        $asignacion = AsignacionPersonal::find($id);
+
+        if (!$asignacion) {
+            return response()->json([
+                'message' => 'Asignación no encontrada.'
+            ], 404);
+        }
+
+        $request->validate([
+            'id_personal' => 'required|exists:personal,id_personal',
+            'id_ubicacion' => 'nullable|exists:ubicaciones,id_ubicacion',
+            'id_evento' => 'nullable|exists:eventos,id_evento',
+            'funcion_asignada' => 'required|string|max:100',
+            'tipo_remuneracion' => ['required', Rule::in(['SALARIO', 'MONTO_FIJO', 'COMISION', 'MIXTO'])],
+            'monto_fijo' => 'nullable|numeric|min:0',
+            'comision_polvo' => 'nullable|numeric|min:0',
+            'comision_granola' => 'nullable|numeric|min:0',
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            'estado' => 'required|boolean',
+        ]);
+
+        if (!$request->filled('id_ubicacion') && !$request->filled('id_evento')) {
+            return response()->json([
+                'message' => 'La asignación debe estar relacionada con una ubicación o un evento.'
+            ], 422);
+        }
+
+        $validacion = $this->validarUbicacionEvento($request);
+
+        if ($validacion) {
+            return $validacion;
+        }
+
+        DB::transaction(function () use ($request, $asignacion) {
+            if ($request->filled('id_ubicacion')) Ubicacion::whereKey($request->id_ubicacion)->lockForUpdate()->first();
+            $this->validarReglasStand($request, $asignacion->id_asignacion);
+            $asignacion->update([
+            'id_personal' => $request->id_personal,
+            'id_ubicacion' => $request->id_ubicacion,
+            'id_evento' => $request->id_evento,
+            'funcion_asignada' => ($request->filled('id_ubicacion') && Ubicacion::find($request->id_ubicacion)?->tipo === 'STAND') ? mb_strtoupper(trim($request->funcion_asignada)) : $request->funcion_asignada,
+            'tipo_remuneracion' => $request->tipo_remuneracion,
+            'monto_fijo' => $request->monto_fijo,
+            'comision_polvo' => $request->comision_polvo,
+            'comision_granola' => $request->comision_granola,
+            'fecha_inicio' => $request->fecha_inicio,
+            'fecha_fin' => $request->fecha_fin,
+            'estado' => $request->estado,
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Asignación actualizada correctamente.',
+            'asignacion' => $asignacion->load([
+                'personal.persona',
+                'personal.cargo',
+                'ubicacion',
+                'evento'
+            ])
+        ]);
+    }
+
+
+    // ELIMINAR ASIGNACIÓN
+    public function destroy($id)
+    {
+        $asignacion = AsignacionPersonal::find($id);
+
+        if (!$asignacion) {
+            return response()->json([
+                'message' => 'Asignación no encontrada.'
+            ], 404);
+        }
+
+        $asignacion->delete();
+
+        return response()->json([
+            'message' => 'Asignación eliminada correctamente.'
+        ]);
+    }
+
+
+    // VALIDAR RELACIÓN ENTRE UBICACIÓN Y EVENTO
+    private function validarUbicacionEvento(Request $request)
+    {
+        if (!$request->filled('id_ubicacion')) {
+            return response()->json([
+                'message' => 'Seleccione un stand del evento o una sucursal/almacén.'
+            ], 422);
+        }
+
+        $ubicacion = Ubicacion::find($request->id_ubicacion);
+
+        if (!$ubicacion) {
+            return response()->json([
+                'message' => 'La ubicación seleccionada no existe.'
+            ], 422);
+        }
+
+        // Si es STAND debe tener evento
+        if ($ubicacion->tipo === 'STAND') {
+
+            if (!$request->filled('id_evento')) {
+                return response()->json([
+                    'message' => 'Una asignación a un STAND debe indicar el evento.'
+                ], 422);
+            }
+
+            if ((int) $ubicacion->id_evento !== (int) $request->id_evento) {
+                return response()->json([
+                    'message' => 'El stand seleccionado no pertenece al evento indicado.'
+                ], 422);
+            }
+        }
+
+        // ALMACÉN o SUCURSAL no deben pertenecer a un evento
+        if (
+            in_array($ubicacion->tipo, ['ALMACEN', 'SUCURSAL']) &&
+            $request->filled('id_evento')
+        ) {
+            return response()->json([
+                'message' => 'Una asignación a almacén o sucursal no debe estar relacionada con un evento.'
+            ], 422);
+        }
+
+        return null;
+    }
+    // REGLAS: EN STAND SOLO ENCARGADO O VENDEDOR; UN ENCARGADO POR PERIODO.
+    private function validarReglasStand(Request $request, ?int $excluirId = null): void
+    {
+        if (!$request->filled('id_ubicacion')) return;
+
+        $ubicacion = Ubicacion::find($request->id_ubicacion);
+        if (!$ubicacion || $ubicacion->tipo !== 'STAND') return;
+
+        $funcion = mb_strtoupper(trim($request->input('funcion_asignada', '')));
+        if (!in_array($funcion, ['ENCARGADO', 'VENDEDOR'], true)) {
+            throw ValidationException::withMessages([
+                'funcion_asignada' => 'Para un stand solo puede asignar ENCARGADO o VENDEDOR.'
+            ]);
+        }
+
+        // Solo las asignaciones activas bloquean el periodo.
+        if ($funcion !== 'ENCARGADO' || !$request->boolean('estado', true)) return;
+
+        $inicio = $request->input('fecha_inicio');
+        $fin = $request->input('fecha_fin');
+
+        $ocupado = AsignacionPersonal::query()
+            ->where('id_ubicacion', $ubicacion->id_ubicacion)
+            ->where('estado', true)
+            ->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['ENCARGADO'])
+            ->when($excluirId, fn ($q) => $q->where('id_asignacion', '!=', $excluirId))
+            ->where(function ($q) use ($fin) {
+                if ($fin) $q->whereDate('fecha_inicio', '<=', $fin);
+            })
+            ->where(function ($q) use ($inicio) {
+                $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', $inicio);
+            })
+            ->exists();
+
+        if ($ocupado) {
+            throw ValidationException::withMessages([
+                'funcion_asignada' => 'Este stand ya tiene un encargado activo en las fechas seleccionadas. Finalice o ajuste la asignación anterior.'
+            ]);
+        }
+    }
+
+}

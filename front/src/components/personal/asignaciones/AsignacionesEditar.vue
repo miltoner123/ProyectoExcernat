@@ -55,6 +55,7 @@
           <option value="" disabled>Seleccione</option><option value="SALARIO">Salario</option><option value="MONTO_FIJO">Monto fijo</option><option value="COMISION">Comisión</option><option value="MIXTO">Mixto</option>
         </select></div>
         <div v-if="mostrarMontoFijo" class="campo"><label>Monto fijo (Bs):</label><input v-model.number="asignacion.monto_fijo" type="number" min="0" step="0.01" /></div>
+        <div v-if="esEncargadoStand" class="campo"><label><input type="checkbox" v-model="comisionOpcional" /> Asignar comisión adicional al encargado</label><small>La comisión es opcional.</small></div>
         <div v-if="mostrarComisiones" class="fila">
           <div class="campo"><label>Comisión productos en polvo (Bs/unidad):</label><input v-model.number="asignacion.comision_polvo" type="number" min="0" step="0.01" /></div>
           <div class="campo"><label>Comisión granola (Bs/unidad):</label><input v-model.number="asignacion.comision_granola" type="number" min="0" step="0.01" /></div>
@@ -80,6 +81,7 @@ export default {
   name: 'AsignacionesEditar',
   data() {
     return {
+      comisionOpcional: false,
       asignacion: { id_personal: '', id_ubicacion: null, id_evento: null, funcion_asignada: '', tipo_remuneracion: '', monto_fijo: null, comision_polvo: null, comision_granola: null, fecha_inicio: '', fecha_fin: '', estado: true },
       personal: [], ubicaciones: [], eventos: [], tipoDestino: 'OTRO', cargando: true, encontrado: false, guardando: false, error: ''
     };
@@ -93,7 +95,8 @@ export default {
         : ['SUCURSAL', 'ALMACEN'].includes(u.tipo));
     },
     mostrarMontoFijo() { return ['MONTO_FIJO', 'MIXTO'].includes(this.asignacion.tipo_remuneracion); },
-    mostrarComisiones() { return ['COMISION', 'MIXTO'].includes(this.asignacion.tipo_remuneracion); }
+    esEncargadoStand() { return this.tipoDestino === 'FERIA' && String(this.asignacion.funcion_asignada).toUpperCase() === 'ENCARGADO'; },
+    mostrarComisiones() { return (this.esEncargadoStand && this.comisionOpcional) || ['COMISION', 'MIXTO'].includes(this.asignacion.tipo_remuneracion); }
   },
   mounted() { this.cargarDatos(); },
   methods: {
@@ -111,6 +114,7 @@ export default {
       this.cargando = true; this.error = '';
       try {
         const { data } = await api.get(`/api/asignaciones-personal/${this.$route.params.id}`);
+        this.comisionOpcional = data.comision_polvo !== null || data.comision_granola !== null;
         this.asignacion = {
           id_personal: data.id_personal, id_ubicacion: data.id_ubicacion, id_evento: data.id_evento,
           funcion_asignada: data.funcion_asignada || '', tipo_remuneracion: data.tipo_remuneracion || '',

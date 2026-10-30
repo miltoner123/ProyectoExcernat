@@ -14,6 +14,12 @@
         <small>Para cambiar los datos personales, utilice Gestión de Personas.</small>
       </div>
       <div class="seccion">
+        <h3>Fotografía del trabajador</h3>
+        <img v-if="fotoVista || fotoActual" :src="fotoVista || fotoActual" class="foto-personal" alt="Fotografía" />
+        <input type="file" accept="image/jpeg,image/png,image/webp" @change="seleccionarFoto" />
+        <label><input type="checkbox" v-model="eliminarFoto" /> Eliminar fotografía actual</label>
+      </div>
+      <div class="seccion">
         <h3>Información laboral</h3>
         <div class="fila">
           <div class="campo"><label>Código de empleado:</label><input v-model.trim="trabajador.codigo_empleado" maxlength="50" readonly required /></div>
@@ -41,16 +47,26 @@ export default {
   data() {
     return {
       trabajador: { id_persona: null, id_cargo: '', codigo_empleado: '', fecha_ingreso: '', tipo_contrato: '', salario_base: 0, estado: true },
-      persona: {}, cargos: [], cargando: true, encontrado: false, guardando: false, error: ''
+      persona: {}, fotoActual: null, fotoVista: null, fotoArchivo: null, eliminarFoto: false, cargos: [], cargando: true, encontrado: false, guardando: false, error: ''
     };
   },
   mounted() { this.cargarDatos(); },
   methods: {
+    seleccionarFoto(event) {
+      const f = event.target.files?.[0] || null;
+      if (f && (!['image/jpeg','image/png','image/webp'].includes(f.type) || f.size > 2*1024*1024)) {
+        alert('Imagen JPG, PNG o WEBP de máximo 2 MB.'); event.target.value = ''; return;
+      }
+      this.fotoArchivo = f;
+      this.fotoVista = f ? URL.createObjectURL(f) : null;
+      if (f) this.eliminarFoto = false;
+    },
     async cargarDatos() {
       this.cargando = true;
       try {
         const { data: p } = await api.get(`/api/personal/${this.$route.params.id}`);
         this.persona = p.persona || {};
+        this.fotoActual = p.foto_url || null;
         this.trabajador = {
           id_persona: p.id_persona,
           id_cargo: p.id_cargo,
@@ -80,7 +96,14 @@ export default {
       this.error = '';
       try {
         const datos = { ...this.trabajador, tipo_contrato: this.trabajador.tipo_contrato || null };
-        await api.put(`/api/personal/${this.$route.params.id}`, datos);
+        const formulario = new FormData();
+        Object.entries(datos).forEach(([clave, valor]) => {
+          if (valor !== null && valor !== undefined && valor !== '') formulario.append(clave, typeof valor === 'boolean' ? (valor ? '1' : '0') : valor);
+        });
+        if (this.fotoArchivo) formulario.append('foto', this.fotoArchivo);
+        formulario.append('eliminar_foto', this.eliminarFoto ? '1' : '0');
+        formulario.append('_method', 'PUT');
+        await api.post(`/api/personal/${this.$route.params.id}`, formulario);
         alert('Personal actualizado correctamente.');
         this.$router.push('/personal');
       } catch (e) {
@@ -110,4 +133,8 @@ export default {
 .botones button:disabled { opacity: .6; cursor: not-allowed; }
 .error { color: #991b1b; background: #fee2e2; padding: 12px; border-radius: 6px; white-space: pre-line; }
 @media (max-width: 700px) { .fila { flex-direction: column; gap: 0; } }
+</style>
+
+<style scoped>
+.foto-personal{display:block;width:120px;height:120px;object-fit:cover;border-radius:12px;margin:10px 0;border:2px solid #124734;}
 </style>

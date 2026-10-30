@@ -23,6 +23,35 @@
         <p v-else class="recepciones-aviso">No hay producción pendiente de recepción.</p>
       </template>
     </section>
+    <section class="pedidos-panel" aria-label="Pedidos pendientes">
+      <div class="recepciones-head">
+        <div><span class="recepciones-eyebrow">SOLICITUDES DE ABASTECIMIENTO</span><h2>Pedidos pendientes de despacho</h2><p>Pedidos registrados que requieren preparación por el almacén.</p></div>
+        <button type="button" class="btn-revisar" @click="$router.push('/pedidos')">Ver pedidos</button>
+      </div>
+      <p v-if="cargandoPedidos" class="recepciones-aviso">Consultando pedidos pendientes...</p>
+      <p v-else-if="errorPedidos" class="recepciones-aviso">{{ errorPedidos }}</p>
+      <template v-else>
+        <div class="recepciones-resumen"><span><strong>{{ pedidosPendientes.length }}</strong> pedidos pendientes</span></div>
+        <div v-if="pedidosPendientes.length" class="recepciones-lista">
+          <div v-for="p in pedidosPendientes.slice(0, 6)" :key="p.id_pedido" class="recepcion-item">
+            <div><strong>Pedido #{{ p.id_pedido }} · {{ p.ubicacion_solicitante?.nombre || 'Ubicación solicitante' }}</strong>
+              <small>{{ p.detalles?.length || 0 }} presentaciones · {{ p.unidades_pendientes }} unidades pendientes · {{ fecha(p.fecha_pedido) }}</small>
+              <small v-for="d in (p.detalles || []).slice(0,4)" :key="d.id_detalle_pedido">
+                {{ d.presentacion?.producto?.nombre || 'Producto' }} / {{ d.presentacion?.nombre_presentacion || 'Presentación' }}:
+                {{ d.pendiente || 0 }} unidades pendientes
+              </small>
+            </div>
+            <div class="recepcion-cantidades">
+              <b>PENDIENTE</b>
+              <button type="button" class="btn-revisar" @click="$router.push('/movimientos/crear?pedido=' + p.id_pedido)">Preparar movimiento</button>
+            </div>
+          </div>
+          <p v-if="pedidosPendientes.length > 6" class="recepciones-aviso">Hay más pedidos. Consulta la sección Pedidos.</p>
+        </div>
+        <p v-else class="recepciones-aviso">No hay pedidos pendientes.</p>
+      </template>
+      <p class="recepciones-aviso"><strong>Nota:</strong> Los despachos se vinculan al pedido. El inventario del destino aumenta únicamente cuando se confirma la recepción.</p>
+    </section>
     <div class="filtros">
       <input v-model="buscar" @input="buscarMovimientos" placeholder="Buscar lote, ubicación u observación...">
       <select v-model="tipo" @change="filtrar">
@@ -91,13 +120,36 @@ export default {
     return {
       movimientos: [], tipos: ['ENTRADA','SALIDA','TRANSFERENCIA','DEVOLUCION','AJUSTE'],
       buscar: '', tipo: '', limite: 10, pagina: 1, ultimaPagina: 1,
-      total: 0, cargando: false, expandido: null, temporizador: null, numeroPeticion: 0, pendientes: [], cargandoPendientes: false, errorPendientes: ''
+      total: 0, cargando: false, expandido: null, temporizador: null, numeroPeticion: 0, pendientes: [], cargandoPendientes: false, errorPendientes: '', pedidosPendientes: [], cargandoPedidos: false, errorPedidos: ''
     };
   },
   computed: { unidadesPendientes() { return this.pendientes.reduce((n, l) => n + Number(l.cantidad_pendiente || 0), 0); } },
-  mounted() { this.obtenerMovimientos(); this.cargarPendientes(); },
+  mounted() { this.obtenerMovimientos(); this.cargarPendientes(); this.cargarPedidosPendientes(); },
   beforeUnmount() { clearTimeout(this.temporizador); this.numeroPeticion++; },
   methods: {
+    async cargarPedidosPendientes() {
+      this.cargandoPedidos = true;
+      this.errorPedidos = '';
+      try {
+        const registros = [];
+        let pagina = 1, ultima = 1;
+        do {
+          const { data } = await api.get('/api/pedidos-pendientes-despacho');
+          registros.push(...(data.data || []));
+          ultima = 1;
+          pagina++;
+        } while (pagina <= ultima);
+        this.pedidosPendientes = registros.filter(p => p.unidades_pendientes > 0);
+      } catch (error) {
+        this.pedidosPendientes = [];
+        this.errorPedidos = error.response?.status === 403
+          ? 'Tu usuario no tiene permiso para consultar pedidos pendientes.'
+          : 'No se pudieron consultar los pedidos. Verifica la conexión.';
+      } finally {
+        this.cargandoPedidos = false;
+      }
+    },
+
     async cargarPendientes() {
       this.cargandoPendientes = true;
       this.errorPendientes = '';
@@ -158,4 +210,10 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .detalle-fila{background:#f4f6fa}.detalle-fila p{margin:10px 0}.tabla-detalle{margin-top:10px;background:white}
 .tabla-detalle th,.tabla-detalle td{padding:9px}.mensaje{text-align:center;color:#777}
 .paginacion{margin-top:18px}button:disabled{opacity:.5;cursor:not-allowed}
+</style>
+
+<style scoped>
+.pedidos-panel{background:#fff;border:1px solid #d9e7de;border-left:5px solid #124734;border-radius:15px;padding:20px;margin:0 0 22px;box-shadow:0 6px 20px rgba(12,48,37,.05)}
+.pedidos-panel .btn-revisar{background:#124734;color:#fff}
+.pedidos-panel .btn-revisar:hover{background:#0c3025}
 </style>

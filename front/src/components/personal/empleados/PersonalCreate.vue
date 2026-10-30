@@ -8,6 +8,13 @@
         </div>
 
         <form @submit.prevent="crearPersonal">
+            <div class="seccion">
+                <h3>Fotografía del trabajador (opcional)</h3>
+                <input type="file" accept="image/jpeg,image/png,image/webp" @change="seleccionarFoto" />
+                <small>JPG, PNG o WEBP; máximo 2 MB.</small>
+                <img v-if="fotoVista" :src="fotoVista" alt="Vista previa" class="foto-personal" />
+            </div>
+            
 
             <div class="seccion">
                 <h3>Trabajador</h3>
@@ -235,6 +242,8 @@ export default {
             personaElegida: null,
             cargos: [],
 
+            fotoArchivo: null,
+            fotoVista: null,
             guardando: false
 
         };
@@ -266,6 +275,17 @@ export default {
     },
 
     methods: {
+        seleccionarFoto(event) {
+            const f = event.target.files?.[0] || null;
+            if (f && (!['image/jpeg','image/png','image/webp'].includes(f.type) || f.size > 2*1024*1024)) {
+                alert('Seleccione una imagen JPG, PNG o WEBP de máximo 2 MB.');
+                event.target.value = '';
+                return;
+            }
+            this.fotoArchivo = f;
+            this.fotoVista = f ? URL.createObjectURL(f) : null;
+        },
+
 
         async cargarDatos() {
 
@@ -376,10 +396,15 @@ export default {
                     this.trabajador.tipo_contrato || null
             };
 
-            api.post(
-                '/api/personal',
-                datos
-            )
+            const formulario = new FormData();
+            Object.entries(datos).forEach(([clave, valor]) => {
+                if (valor !== null && valor !== undefined && valor !== '') {
+                    formulario.append(clave, typeof valor === 'boolean' ? (valor ? '1' : '0') : valor);
+                }
+            });
+            if (this.fotoArchivo) formulario.append('foto', this.fotoArchivo);
+
+            api.post('/api/personal', formulario)
             .then(response => {
 
                 alert(response.data.message);
@@ -540,3 +565,7 @@ export default {
 .error { color: #b91c1c; font-size: 13px; }
 </style>
 
+
+<style scoped>
+.foto-personal {display:block;width:120px;height:120px;object-fit:cover;border-radius:12px;margin-top:12px;border:2px solid #124734;}
+</style>

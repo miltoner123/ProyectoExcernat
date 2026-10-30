@@ -19,6 +19,7 @@ class Personal extends Model
         'fecha_ingreso',
         'tipo_contrato',
         'salario_base',
+        'foto',
         'estado'
     ];
 
@@ -27,6 +28,13 @@ class Personal extends Model
         'salario_base' => 'decimal:2',
         'estado' => 'boolean'
     ];
+
+    protected $appends = ['foto_url'];
+
+    public function getFotoUrlAttribute(): ?string
+    {
+        return $this->foto ? asset('storage/' . $this->foto) : null;
+    }
 
     public function persona()
     {

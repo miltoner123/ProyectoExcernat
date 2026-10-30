@@ -70,24 +70,45 @@
           <small>El inventario se asignará únicamente a este stand, no a todos los stands del evento.</small>
         </div>
       </div>
+      <div v-if="movimiento.tipo === 'TRANSFERENCIA'" class="panel-pedido">
+        <label><strong>¿Tienes un pedido pendiente por despachar? (opcional)</strong></label>
+        <select v-model="idPedido" @change="seleccionarPedido">
+          <option :value="null">Movimiento independiente (sin pedido)</option>
+          <option v-for="p in pedidosPendientes" :key="p.id_pedido" :value="p.id_pedido">Pedido #{{ p.id_pedido }} · {{ p.ubicacion_solicitante?.nombre }} · {{ p.unidades_pendientes }} unidades pendientes</option>
+        </select>
+        <p v-if="idPedido" class="nota">El destino se establece según el pedido. El despacho se vinculará al pedido y quedará pendiente de recepción.</p>
+        <p v-if="errorPedidos" class="error">{{ errorPedidos }}</p>
+        <div v-if="pedidoSeleccionado" class="pedido-detalles">
+          <div v-for="d in pedidoSeleccionado.detalles.filter(x => x.pendiente > 0)" :key="d.id_presentacion">
+            {{ d.presentacion?.producto?.nombre }} · {{ d.presentacion?.nombre_presentacion }}: <b>{{ d.pendiente }} unidades pendientes</b>
+          </div>
+        </div>
+      </div>
       <div class="campo">
         <label>Observación:</label>
         <textarea v-model="movimiento.observacion" rows="3" placeholder="Describa el motivo del movimiento..."></textarea>
       </div>
       <div class="encabezado-detalles">
-        <h3>Detalle de productos</h3>
-        <button type="button" @click="agregarDetalle">+ Agregar lote</button>
+        <h3>Detalle de productos <small class="contador-productos">({{ movimiento.detalles.length }} lotes)</small></h3>
+        <button type="button" @click="agregarDetalle">+ Agregar producto / lote</button>
       </div>
+      <p class="nota">{{ pedidoSeleccionado ? 'Productos y cantidades cargados desde el pedido. Puedes modificar las cantidades o elegir otro lote con stock para realizar un despacho parcial.' : 'Puedes incluir Multicereal, Granola y Tricereal en un mismo movimiento. Cada fila corresponde a un lote y cantidad; todo se guarda como una sola operación.' }}</p>
       <p v-if="cargandoCatalogos" class="nota">Cargando lotes y existencias...</p>
       <div class="tabla-contenedor">
         <table>
-          <thead><tr><th>Lote / Producto / Presentación</th><th>Cantidad</th><th>Opciones</th></tr></thead>
+          <thead><tr><th>Presentación y lote disponible</th><th>Cantidad</th><th>Opciones</th></tr></thead>
           <tbody>
             <tr v-for="(d,i) in movimiento.detalles" :key="i">
               <td>
-                <select v-model="d.id_lote" required>
-                  <option :value="null" disabled>Seleccione un lote</option>
-                  <option v-for="l in lotes" :key="l.id_lote" :value="l.id_lote">{{ nombreLote(l) }}</option>
+                <label class="etiqueta-detalle">1. Producto / presentación</label>
+                <select v-model="d.id_presentacion" @change="d.id_lote = null" required>
+                  <option :value="null" disabled>Seleccione la presentación</option>
+                  <option v-for="p in presentacionesDisponibles" :key="p.id_presentacion" :value="p.id_presentacion">{{ p.producto?.nombre }} · {{ p.nombre_presentacion }}</option>
+                </select>
+                <label class="etiqueta-detalle">2. Lote con existencias</label>
+                <select v-model="d.id_lote" :disabled="!d.id_presentacion" required>
+                  <option :value="null" disabled>Seleccione un lote con stock</option>
+                  <option v-for="l in lotesDisponibles(d.id_lote).filter(l => Number(l.id_presentacion) === Number(d.id_presentacion))" :key="l.id_lote" :value="l.id_lote">{{ l.codigo_lote }} · {{ stockOrigen(l.id_lote) }} unidades</option>
                 </select>
                 <div v-if="d.id_lote" class="informacion">
                   <strong>{{ nombreLote(loteSeleccionado(d.id_lote)) }}</strong>
@@ -128,13 +149,24 @@ export default {
   data() {
     return {
       tipos: ['SALIDA','TRANSFERENCIA','DEVOLUCION','AJUSTE'],
-      movimiento: { tipo:'', id_ubicacion_origen:null, id_ubicacion_destino:null, observacion:'', detalles:[{id_lote:null,cantidad:1}] },
+      movimiento: { tipo:'', id_ubicacion_origen:null, id_ubicacion_destino:null, observacion:'', detalles:[{id_presentacion:null,id_lote:null,cantidad:1}] },
       ubicaciones: [], eventos: [], tipoDestino: '', idEventoDestino: null, lotes: [], inventarios: [], ingresos: {},
+      idPedido: null, pedidosPendientes: [], errorPedidos: '',
       guardando: false, cargandoCatalogos: true,
       asignacionesStand: [], cargandoResponsables: false, errorResponsables: '', solicitudResponsables: 0
     };
   },
   computed: {
+    pedidoSeleccionado() { return this.pedidosPendientes.find(p => Number(p.id_pedido) === Number(this.idPedido)) || null; },
+    presentacionesDisponibles() {
+      const ids = new Set(this.lotes.filter(l => this.stockOrigen(l.id_lote) > 0 &&
+        (!this.pedidoSeleccionado || this.pedidoSeleccionado.detalles.some(d => Number(d.id_presentacion) === Number(l.id_presentacion) && d.pendiente > 0)))
+        .map(l => Number(l.id_presentacion)));
+      const vistos = new Set();
+      return this.lotes.filter(l => ids.has(Number(l.id_presentacion)) && !vistos.has(Number(l.id_presentacion)) && vistos.add(Number(l.id_presentacion)))
+        .map(l => ({...l.presentacion, id_presentacion: l.id_presentacion}));
+    },
+
     mostrarOrigen() { return ['SALIDA','TRANSFERENCIA','DEVOLUCION','AJUSTE'].includes(this.movimiento.tipo); },
     mostrarDestino() { return ['ENTRADA','TRANSFERENCIA','DEVOLUCION'].includes(this.movimiento.tipo); },
     destinos() {
@@ -173,6 +205,55 @@ export default {
   },
   mounted() { this.cargarCatalogos(); },
   methods: {
+    async cargarPedidosPendientes() {
+      try {
+        const {data} = await api.get(`${API}/pedidos-pendientes-despacho`);
+        this.pedidosPendientes = data.data || [];
+      } catch(e) {
+        this.errorPedidos = 'No fue posible consultar los pedidos pendientes.';
+      }
+    },
+    seleccionarPedido() {
+      const p = this.pedidoSeleccionado;
+      if (!p) {
+        this.movimiento.detalles = [{id_presentacion:null,id_lote:null,cantidad:1}];
+        return;
+      }
+      // Los productos y cantidades se cargan desde el pedido; solo falta elegir lote.
+      // Si no hay existencias suficientes, la cantidad puede ajustarse para despacho parcial.
+      this.movimiento.detalles = p.detalles
+        .filter(d => Number(d.pendiente) > 0)
+        .map(d => ({
+          id_presentacion: Number(d.id_presentacion),
+          id_lote: null,
+          cantidad: Number(d.pendiente)
+        }));
+      if (!this.movimiento.detalles.length) {
+        this.movimiento.detalles = [{id_presentacion:null,id_lote:null,cantidad:1}];
+      }
+      const destino = this.ubicaciones.find(u => Number(u.id_ubicacion) === Number(p.ubicacion_solicitante?.id_ubicacion));
+      if (destino) {
+        this.tipoDestino = destino.tipo;
+        this.idEventoDestino = destino.tipo === 'STAND' ? destino.id_evento : null;
+        this.movimiento.id_ubicacion_destino = destino.id_ubicacion;
+      }
+      const central = this.ubicaciones.find(u => u.tipo === 'ALMACEN' && ['ALMACÉN CENTRAL','ALMACEN CENTRAL'].includes(String(u.nombre).trim().toUpperCase()));
+      if (central) this.movimiento.id_ubicacion_origen = central.id_ubicacion;
+      // Seleccionar automáticamente un lote solo cuando el origen tiene stock.
+      // La selección sigue siendo editable por el encargado.
+      for (const d of this.movimiento.detalles) {
+        const disponibles = this.lotes.filter(l =>
+          Number(l.id_presentacion) === Number(d.id_presentacion) &&
+          this.stockOrigen(l.id_lote) > 0
+        ).sort((a,b) => Number(a.id_lote) - Number(b.id_lote));
+        const lote = disponibles.find(l => !this.movimiento.detalles.some(x => Number(x.id_lote) === Number(l.id_lote)));
+        if (lote) {
+          d.id_lote = lote.id_lote;
+          d.cantidad = Math.min(Number(d.cantidad), this.stockOrigen(lote.id_lote));
+        }
+      }
+    },
+
     nombreResponsable(asignacion) {
       const persona = asignacion.personal?.persona || {};
       const nombre = [persona.nombres_razon_social, persona.apellidos].filter(Boolean).join(' ').trim();
@@ -232,6 +313,13 @@ export default {
           ingresos[d.id_lote] = (ingresos[d.id_lote] || 0) + Number(d.cantidad);
         }
         this.ingresos = ingresos;
+        await this.cargarPedidosPendientes();
+        const pedidoURL = Number(this.$route.query.pedido);
+        if (pedidoURL && this.pedidosPendientes.some(p => Number(p.id_pedido) === pedidoURL)) {
+          this.movimiento.tipo = 'TRANSFERENCIA';
+          this.idPedido = pedidoURL;
+          this.seleccionarPedido();
+        }
       } catch (error) {
         console.error('Error al cargar catálogos:', error);
         alert('No se pudieron cargar las ubicaciones, lotes, inventarios o ingresos.');
@@ -242,7 +330,8 @@ export default {
       this.movimiento.id_ubicacion_destino = null;
       this.tipoDestino = '';
       this.idEventoDestino = null;
-      this.movimiento.detalles = [{id_lote:null,cantidad:1}];
+      this.movimiento.detalles = [{id_presentacion:null,id_lote:null,cantidad:1}];
+      this.idPedido = null;
     },
     cambiarDestino() {
       this.idEventoDestino = null;
@@ -255,7 +344,11 @@ export default {
       if (this.movimiento.id_ubicacion_origen === this.movimiento.id_ubicacion_destino)
         this.movimiento.id_ubicacion_destino = null;
     },
-    agregarDetalle() { this.movimiento.detalles.push({id_lote:null,cantidad:1}); },
+    agregarDetalle() { this.movimiento.detalles.push({id_presentacion:null,id_lote:null,cantidad:1}); },
+    lotesDisponibles(actual) {
+      const usados = new Set(this.movimiento.detalles.map(d => Number(d.id_lote)).filter(Boolean));
+      return this.lotes.filter(l => (Number(l.id_lote) === Number(actual) || !usados.has(Number(l.id_lote))) && this.stockOrigen(l.id_lote) > 0);
+    },
     loteSeleccionado(id) { return this.lotes.find(l => Number(l.id_lote) === Number(id)); },
     nombreLote(l) {
       if (!l) return 'Lote no encontrado';
@@ -298,10 +391,20 @@ export default {
       if (m.detalles.some(d => !Number.isInteger(d.cantidad) || d.cantidad === 0 || (m.tipo !== 'AJUSTE' && d.cantidad < 0)))
         return alert('Revise las cantidades: deben ser enteros y no pueden ser cero.');
       if (m.detalles.some(d => this.excedeStock(d))) return alert('Una cantidad supera las existencias o producción pendiente.');
+      if (this.pedidoSeleccionado) {
+        if (m.tipo !== 'TRANSFERENCIA') return alert('El pedido solo puede despacharse mediante transferencia.');
+        const sumas = {};
+        for (const d of m.detalles) sumas[d.id_presentacion] = (sumas[d.id_presentacion] || 0) + d.cantidad;
+        for (const [id, cantidad] of Object.entries(sumas)) {
+          const linea = this.pedidoSeleccionado.detalles.find(d => Number(d.id_presentacion) === Number(id));
+          if (!linea || cantidad > linea.pendiente) return alert('La cantidad excede lo solicitado o la presentación no corresponde al pedido.');
+        }
+      }
       if (!confirm('¿Confirmar el movimiento? No podrá editarse ni eliminarse.')) return;
       this.guardando = true;
       try {
-        const { data } = await api.post(`${API}/movimientos-inventario`, m);
+        const ruta = this.idPedido ? `${API}/pedidos/${this.idPedido}/despachar` : `${API}/movimientos-inventario`;
+        const { data } = await api.post(ruta, m);
         alert(data.message || 'Movimiento registrado.');
         this.$router.push('/movimientos');
       } catch (error) {
@@ -346,3 +449,19 @@ td select,td input{width:100%;padding:9px;box-sizing:border-box}.informacion{bac
 </style>
 
 
+
+<style scoped>
+.contador-productos{font-size:13px;color:#658071;font-weight:500}
+.encabezado-detalles button{background:#f47b20;color:#fff;border:0;border-radius:9px;padding:10px 14px;font-weight:700}
+.tabla-contenedor{border:1px solid #dce8df;border-radius:12px}
+.tabla-contenedor thead{background:#0c3025;color:#fff}
+.tabla-contenedor tbody tr:nth-child(even){background:#f7faf8}
+.tabla-contenedor select,.tabla-contenedor input{border:1px solid #cbded2;border-radius:8px}
+</style>
+
+<style scoped>
+.etiqueta-detalle{display:block;font-size:12px;color:#124734;font-weight:700;margin:8px 0 5px}
+.panel-pedido{border:1px solid #d2e5d7;border-left:4px solid #f47b20;background:#f7fbf8;padding:16px;border-radius:12px;margin:16px 0}
+.panel-pedido select{width:100%;padding:11px;border:1px solid #c9dacf;border-radius:9px;margin:9px 0}
+.pedido-detalles{display:grid;gap:7px;background:white;padding:12px;border-radius:9px;font-size:13px;color:#124734}
+</style>

@@ -102,6 +102,9 @@ class AsignacionPersonalController extends Controller
 
         $asignacion = DB::transaction(function () use ($request) {
             if ($request->filled('id_ubicacion')) Ubicacion::whereKey($request->id_ubicacion)->lockForUpdate()->first();
+            // Serializar asignaciones del mismo trabajador para evitar solapamientos concurrentes.
+            DB::table('personal')->where('id_personal', $request->id_personal)->lockForUpdate()->first();
+            $this->validarSolapamientoPersonal($request);
             $this->validarReglasStand($request);
             return AsignacionPersonal::create([
             'id_personal' => $request->id_personal,
@@ -189,6 +192,8 @@ class AsignacionPersonalController extends Controller
 
         DB::transaction(function () use ($request, $asignacion) {
             if ($request->filled('id_ubicacion')) Ubicacion::whereKey($request->id_ubicacion)->lockForUpdate()->first();
+            DB::table('personal')->where('id_personal', $request->id_personal)->lockForUpdate()->first();
+            $this->validarSolapamientoPersonal($request, $asignacion->id_asignacion);
             $this->validarReglasStand($request, $asignacion->id_asignacion);
             $asignacion->update([
             'id_personal' => $request->id_personal,
@@ -235,6 +240,35 @@ class AsignacionPersonalController extends Controller
         ]);
     }
 
+
+    /**
+     * Impide que un trabajador tenga dos asignaciones activas con fechas cruzadas,
+     * incluso en eventos o stands distintos. Fechas inclusivas; fin NULL = indefinido.
+     */
+    private function validarSolapamientoPersonal(Request $request, ?int $excluirId = null): void
+    {
+        if (!$request->boolean('estado', true)) return;
+
+        $inicio = $request->input('fecha_inicio');
+        $fin = $request->input('fecha_fin');
+
+        $consulta = AsignacionPersonal::query()
+            ->where('id_personal', $request->input('id_personal'))
+            ->where('estado', true)
+            ->when($excluirId, fn ($q) => $q->where('id_asignacion', '!=', $excluirId))
+            ->where(function ($q) use ($fin) {
+                if ($fin !== null && $fin !== '') $q->whereDate('fecha_inicio', '<=', $fin);
+            })
+            ->where(function ($q) use ($inicio) {
+                $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', $inicio);
+            });
+
+        if ($consulta->exists()) {
+            throw ValidationException::withMessages([
+                'fecha_inicio' => 'Este trabajador ya tiene una asignación activa que se cruza con las fechas seleccionadas. Revise sus asignaciones antes de continuar.'
+            ]);
+        }
+    }
 
     // VALIDAR RELACIÓN ENTRE UBICACIÓN Y EVENTO
     private function validarUbicacionEvento(Request $request)

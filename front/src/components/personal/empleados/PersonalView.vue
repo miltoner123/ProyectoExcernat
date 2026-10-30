@@ -66,6 +66,7 @@
 
                 <thead>
                     <tr>
+                        <th>Foto</th>
                         <th>Código</th>
                         <th>Nombre</th>
                         <th>Documento</th>
@@ -84,6 +85,7 @@
                         v-for="trabajador in personal"
                         :key="trabajador.id_personal"
                     >
+                        <td><img v-if="trabajador.foto_url" :src="trabajador.foto_url" alt="Personal" class="foto-mini" /><span v-else>—</span></td>
                         <td>
                             <strong>
                                 {{ trabajador.codigo_empleado }}
@@ -618,4 +620,7 @@ th {
 }
 
 .mensaje-error { color: #991b1b; background: #fee2e2; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
+</style>
+<style scoped>
+.foto-mini{width:44px;height:44px;object-fit:cover;border-radius:50%;border:2px solid #124734;}
 </style>

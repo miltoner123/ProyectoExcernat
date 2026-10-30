@@ -13,6 +13,7 @@ class MovimientoInventario extends Model
 
     protected $fillable = [
         'tipo',
+        'id_pedido',
         'id_ubicacion_origen',
         'id_ubicacion_destino',
         'fecha_movimiento',

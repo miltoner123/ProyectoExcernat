@@ -7,6 +7,7 @@ use App\Models\Persona;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 class PersonalController extends Controller
 {
@@ -67,6 +68,7 @@ class PersonalController extends Controller
             'tipo_contrato' => ['nullable', 'string', Rule::in(['INDEFINIDO', 'PLAZO_FIJO', 'EVENTUAL', 'SERVICIOS'])],
             'salario_base' => 'nullable|numeric|min:0',
             'estado' => 'nullable|boolean',
+            'foto' => 'nullable|image|mimes:jpeg,png,webp|max:2048',
         ]);
 
         $persona = Persona::findOrFail($request->id_persona);
@@ -90,6 +92,7 @@ class PersonalController extends Controller
             'tipo_contrato' => $request->tipo_contrato,
             'salario_base' => $request->salario_base ?? 0,
             'estado' => $request->estado ?? true,
+            'foto' => $request->hasFile('foto') ? $request->file('foto')->store('personal', 'public') : null,
         ]);
 
         return response()->json([
@@ -142,7 +145,15 @@ class PersonalController extends Controller
             'tipo_contrato' => ['nullable', 'string', Rule::in(['INDEFINIDO', 'PLAZO_FIJO', 'EVENTUAL', 'SERVICIOS'])],
             'salario_base' => 'nullable|numeric|min:0',
             'estado' => 'required|boolean',
+            'foto' => 'nullable|image|mimes:jpeg,png,webp|max:2048',
+            'eliminar_foto' => 'nullable|boolean',
         ]);
+
+        $fotoAnterior = $personal->foto;
+        $nuevaFoto = $request->hasFile('foto')
+            ? $request->file('foto')->store('personal', 'public')
+            : null;
+        $eliminarFoto = $request->boolean('eliminar_foto');
 
         $personal->update([
             'id_persona' => $request->id_persona,
@@ -152,7 +163,12 @@ class PersonalController extends Controller
             'tipo_contrato' => $request->tipo_contrato,
             'salario_base' => $request->salario_base ?? 0,
             'estado' => $request->estado,
+            'foto' => $nuevaFoto ?? ($eliminarFoto ? null : $fotoAnterior),
         ]);
+
+        if (($nuevaFoto || $eliminarFoto) && $fotoAnterior) {
+            Storage::disk('public')->delete($fotoAnterior);
+        }
 
         return response()->json([
             'message' => 'Personal actualizado correctamente.',

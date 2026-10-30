@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 class CobroVentaController extends Controller {
     private function verificarAcceso(Request $request, Venta $venta): void {
-        if ($request->user()->hasAnyRole(['ADMIN','GERENTE_GENERAL']) || $request->user()->can('cobros.supervisar')) return;
+        if ($request->user()->hasRole('ADMIN')) return;
         $personal=Personal::where('id_persona',$request->user()->id_persona)->where('estado',true)->pluck('id_personal');
         $vigente=AsignacionPersonal::whereIn('id_personal',$personal)->where('id_ubicacion',$venta->id_ubicacion)
             ->where('estado',true)->whereDate('fecha_inicio','<=',now()->toDateString())

@@ -34,6 +34,7 @@ const routes = [
 
   { path: "/cajas-punto-venta", component: () => import("./components/ventas/CajasPuntoVentaView.vue") },
   { path: "/cobros-ventas", component: () => import("./components/ventas/CobrosVentasView.vue") },
+  { path: "/mi-panel", component: () => import("./components/operaciones/MiPanelOperativo.vue") },
   { path: "/ventas-stand", component: () => import("./components/ventas/VentasStandView.vue") },
   { path: "/pedidos", component: () => import("./components/pedidos/PedidosView.vue") },
   { path: "/pedidos/crear", component: () => import("./components/pedidos/PedidosFormulario.vue") },
@@ -92,7 +93,7 @@ router.beforeEach(async (to) => {
     [/^\/usuarios(?:\/|$)/, 'usuarios.ver'],
     [/^\/ventas-stand(?:\/|$)/, 'ventas.ver'],
     [/^\/(?:cobros-ventas|cajas-punto-venta)(?:\/|$)/, 'cobros.ver'],
-    [/^\/asignaciones(?:\/|$)/, 'asignaciones.ver'],
+    [/^\/asignaciones(?:\/|$)/, 'eventos.ver'],
     [/^\/personal(?:\/|$)/, 'personal.ver'],
     [/^\/eventos(?:\/|$)/, 'eventos.ver'],
     [/^\/movimientos(?:\/|$)/, 'movimientos.ver'],

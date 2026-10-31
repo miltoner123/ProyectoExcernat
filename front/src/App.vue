@@ -57,9 +57,9 @@ async function cerrarSesion() {
             </div>
             <button class="menu-section exc-group" @click="abiertos.personal=!abiertos.personal">PERSONAL <span>{{abiertos.personal?'⌃':'⌄'}}</span></button><div v-show="abiertos.personal" class="exc-group-links">
             <RouterLink v-if="puede('personas.ver')" to="/personas" class="menu-item"><AppIcon name="users"/> Personas</RouterLink>
-            <RouterLink v-if="puede('cargos.ver')" to="/cargos" class="menu-item"><AppIcon name="briefcase"/> Cargos</RouterLink>
+            <RouterLink v-if="puede('personal.ver')" to="/cargos" class="menu-item"><AppIcon name="briefcase"/> Cargos</RouterLink>
             <RouterLink v-if="puede('personal.ver')" to="/personal" class="menu-item"><AppIcon name="users"/> Personal</RouterLink>
-            <RouterLink v-if="puede('asignaciones.ver')" to="/asignaciones" class="menu-item"><AppIcon name="pin"/> Asignaciones</RouterLink>
+            <RouterLink v-if="puede('eventos.ver')" to="/asignaciones" class="menu-item"><AppIcon name="pin"/> Asignaciones</RouterLink>
             <RouterLink v-if="puede('usuarios.ver')" to="/usuarios" class="menu-item"> <AppIcon name="shield"/> Gestión de Usuarios
             </RouterLink>
           </div></nav>

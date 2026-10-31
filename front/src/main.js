@@ -93,7 +93,7 @@ router.beforeEach(async (to) => {
     [/^\/usuarios(?:\/|$)/, 'usuarios.ver'],
     [/^\/ventas-stand(?:\/|$)/, 'ventas.ver'],
     [/^\/(?:cobros-ventas|cajas-punto-venta)(?:\/|$)/, 'cobros.ver'],
-    [/^\/asignaciones(?:\/|$)/, 'asignaciones.ver'],
+    [/^\/asignaciones(?:\/|$)/, 'eventos.ver'],
     [/^\/personal(?:\/|$)/, 'personal.ver'],
     [/^\/eventos(?:\/|$)/, 'eventos.ver'],
     [/^\/movimientos(?:\/|$)/, 'movimientos.ver'],

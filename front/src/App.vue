@@ -36,6 +36,7 @@ async function cerrarSesion() {
           <div class="sidebar-title">MENÚ PRINCIPAL</div>
           <nav class="menu">
             <RouterLink to="/" class="menu-item"><AppIcon name="dashboard"/> Dashboard principal</RouterLink>
+            <RouterLink to="/mi-panel" class="menu-item"><AppIcon name="pin"/> Mi panel operativo</RouterLink>
             <button class="menu-section exc-group" @click="abiertos.productos=!abiertos.productos">PRODUCTOS <span>{{abiertos.productos?'⌃':'⌄'}}</span></button><div v-show="abiertos.productos" class="exc-group-links">
             <RouterLink v-if="puede('productos.ver')" to="/productos" class="menu-item"><AppIcon name="package"/> Productos</RouterLink>
             <RouterLink v-if="puede('presentaciones.ver')" to="/presentaciones" class="menu-item"><AppIcon name="layers"/> Presentaciones</RouterLink>
@@ -44,6 +45,7 @@ async function cerrarSesion() {
             <RouterLink v-if="puede('ubicaciones.ver')" to="/ubicaciones" class="menu-item"><AppIcon name="pin"/> Ubicaciones</RouterLink>
             <RouterLink v-if="puede('inventarios.ver')" to="/inventarios" class="menu-item"><AppIcon name="package"/> Inventarios</RouterLink>
             <RouterLink v-if="puede('movimientos.ver')" to="/movimientos" class="menu-item"><AppIcon name="arrows"/> Movimientos de Inventario</RouterLink>
+            <RouterLink v-if="puede('transferencias.recibir')" to="/recepciones-transferencias" class="menu-item"><AppIcon name="package"/> Recepciones pendientes</RouterLink>
             <RouterLink v-if="puede('pedidos.ver')" to="/pedidos" class="menu-item"><AppIcon name="clipboard"/> Pedidos de abastecimiento</RouterLink>
             </div><button class="menu-section exc-group" @click="abiertos.eventos=!abiertos.eventos">EVENTOS <span>{{abiertos.eventos?'⌃':'⌄'}}</span></button><div v-show="abiertos.eventos" class="exc-group-links">
             <RouterLink v-if="puede('eventos.ver')" to="/eventos" class="menu-item"><AppIcon name="calendar"/> Eventos</RouterLink>

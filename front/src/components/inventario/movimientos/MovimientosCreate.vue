@@ -71,15 +71,7 @@
                 <small>Desde {{ a.fecha_inicio }}{{ a.fecha_fin ? ' hasta ' + a.fecha_fin : ' · sin fecha de finalización' }}</small>
               </div>
             </div>
-            <div v-else-if="responsableEvento" class="responsables-lista">
-              <div class="responsable-fila">
-                <span class="rol-responsable">Responsable del evento</span>
-                <strong>{{ nombrePersonal(responsableEvento) }}</strong>
-                <small>Registrado al crear el evento. Para autorizar operaciones de este stand debe contar con asignación vigente al stand.</small>
-              </div>
-              <p class="encargado-aviso">Este stand todavía no tiene un ENCARGADO asignado específicamente. El responsable del evento no adquiere automáticamente acceso operativo al stand.</p>
-            </div>
-            <p v-else class="encargado-aviso">No existe encargado vigente para este stand ni responsable del evento. Revisa las asignaciones antes de entregar productos.</p>
+            <p v-else class="encargado-aviso">No hay un encargado operativo vigente para este stand. El responsable general del evento no sustituye una asignación al stand.</p>
             <p v-if="vendedoresStand.length" class="encargado-ayuda">Vendedores vigentes: {{ vendedoresStand.map(nombreResponsable).join(', ') }}</p>
           </template>
           <button type="button" class="btn-consultar-asignaciones" @click="$router.push('/asignaciones')">Consultar asignaciones</button>
@@ -202,10 +194,6 @@ export default {
         (!a.fecha_inicio || String(a.fecha_inicio).slice(0, 10) <= hoy) &&
         (!a.fecha_fin || String(a.fecha_fin).slice(0, 10) >= hoy)
       );
-    },
-    responsableEvento() {
-      const evento = this.eventos.find(e => Number(e.id_evento) === Number(this.destinoSeleccionado?.id_evento));
-      return evento?.responsable || null;
     },
     encargadosStand() {
       return this.asignacionesVigentes.filter(a => String(a.funcion_asignada || '').trim().toUpperCase() === 'ENCARGADO');

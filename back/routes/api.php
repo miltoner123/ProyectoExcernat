@@ -11,6 +11,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // AUTENTICACIÓN
     Route::get('/usuario', [AuthController::class, 'usuario']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    // Panel de ubicaciones vigentes del usuario (sin exponer asignaciones ajenas).
+    Route::get('/mi-panel-operativo', [\App\Http\Controllers\PanelOperativoController::class, 'index']);
 
     // USUARIOS
     Route::get('/usuarios', [UsuarioController::class, 'index'])->middleware('permission:usuarios.ver');

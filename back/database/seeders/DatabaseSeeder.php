@@ -366,13 +366,12 @@ class DatabaseSeeder extends Seeder
 
             // Tres niveles de acceso para nuevas cuentas. Los roles históricos se
             // conservan para no modificar usuarios ni permisos existentes.
+            // Nivel ENCARGADO: sin permisos operativos generales.
+            // Los permisos por área se asignan individualmente con
+            // php artisan excernat:acceso-area.
             $roles['ENCARGADO'] = [
-                'personas.ver', 'personal.ver', 'productos.ver', 'presentaciones.ver',
-                'lotes.ver', 'ubicaciones.ver', 'inventarios.ver',
-                'movimientos.ver', 'movimientos.registrar',
-                'recepciones.ver', 'recepciones.confirmar', 'transferencias.recibir',
-                'pedidos.ver', 'pedidos.gestionar', 'ventas.ver', 'ventas.registrar',
-                'cobros.ver', 'cobros.registrar', 'eventos.ver',
+                'productos.ver', 'presentaciones.ver', 'ubicaciones.ver',
+                'eventos.ver',
             ];
             $roles['CONSULTA'] = [
                 'productos.ver', 'presentaciones.ver', 'ubicaciones.ver',

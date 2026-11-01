@@ -15,12 +15,12 @@ class VentaController extends Controller {
         $persona=$request->user()->id_persona;
         $personal=Personal::where('id_persona',$persona)->where('estado',true)->pluck('id_personal');
         $asignado=AsignacionPersonal::whereIn('id_personal',$personal)->where('id_ubicacion',$id)
-            ->where('estado',true)->whereDate('fecha_inicio','<=',now()->toDateString())
+            ->where('estado',true)->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['ENCARGADO'])->whereDate('fecha_inicio','<=',now()->toDateString())
             ->where(function($q){$q->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',now()->toDateString());})->exists();
         if (!$asignado) abort(403,'No tiene asignación vigente a este punto de venta.');
     }
     private function autorizarConsulta(Request $request, int $id): void {
-        if ($request->user()->hasRole('ADMIN')) return;
+        if ($request->user()->hasRole('ADMIN') || $request->user()->can('contabilidad.ver') || $request->user()->can('ventas.supervisar')) return;
         $personal=Personal::where('id_persona',$request->user()->id_persona)->where('estado',true)->pluck('id_personal');
         if (!AsignacionPersonal::whereIn('id_personal',$personal)->where('id_ubicacion',$id)
             ->where('estado',true)->whereDate('fecha_inicio','<=',now()->toDateString())
@@ -29,15 +29,26 @@ class VentaController extends Controller {
     }
     public function stands(Request $request) {
         $query=Ubicacion::with('evento')->whereIn('tipo',['STAND','SUCURSAL','ALMACEN','ALMACEN_CENTRAL','CENTRAL'])->where('estado',true);
-        if (!$request->user()->hasRole('ADMIN')) {
+        if (!$request->user()->hasRole('ADMIN') && !$request->user()->can('contabilidad.ver') && !$request->user()->can('ventas.supervisar')) {
             $ids=Personal::where('id_persona',$request->user()->id_persona)->where('estado',true)->pluck('id_personal');
-            $ubicaciones=AsignacionPersonal::whereIn('id_personal',$ids)->where('estado',true)
+            $ubicaciones=AsignacionPersonal::whereIn('id_personal',$ids)->where('estado',true)->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['ENCARGADO'])
                 ->whereDate('fecha_inicio','<=',now()->toDateString())
                 ->where(fn($q)=>$q->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',now()->toDateString()))
                 ->pluck('id_ubicacion');
             $query->whereIn('id_ubicacion',$ubicaciones);
         }
         return response()->json($query->orderBy('nombre')->get());
+    }
+    public function vendedores(Request $request) {
+        $data = $request->validate(['id_ubicacion'=>'required|integer|exists:ubicaciones,id_ubicacion']);
+        $id = (int) $data['id_ubicacion'];
+        $this->autorizarStand($request, $id);
+        return response()->json(AsignacionPersonal::with('personal.persona')
+            ->where('id_ubicacion', $id)->where('estado', true)
+            ->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['VENDEDOR'])
+            ->whereDate('fecha_inicio', '<=', today())
+            ->where(fn($q) => $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', today()))
+            ->orderBy('id_asignacion')->get());
     }
     public function existencias(Request $request) {
         $data=$request->validate(['id_ubicacion'=>'required|integer|exists:ubicaciones,id_ubicacion']);
@@ -46,13 +57,13 @@ class VentaController extends Controller {
             ->where('id_ubicacion',$id)->where('stock_actual','>',0)->orderBy('id_lote')->get());
     }
     public function index(Request $request) {
-        $q=Venta::with(['ubicacion.evento','usuario','detalles.lote.presentacion.producto'])->orderByDesc('id_venta');
+        $q=Venta::with(['ubicacion.evento','usuario','asignacionVendedor.personal.persona','detalles.lote.presentacion.producto'])->orderByDesc('id_venta');
         $request->validate(['fecha_desde'=>'nullable|date','fecha_hasta'=>'nullable|date|after_or_equal:fecha_desde','estado'=>'nullable|in:CONFIRMADA,ANULADA']);
         if($request->filled('fecha_desde')) $q->whereDate('fecha_venta','>=',$request->query('fecha_desde'));
         if($request->filled('fecha_hasta')) $q->whereDate('fecha_venta','<=',$request->query('fecha_hasta'));
         if($request->filled('estado')) $q->where('estado',$request->query('estado'));
         if($request->filled('id_ubicacion')) { $id=(int)$request->query('id_ubicacion');$this->autorizarConsulta($request,$id);$q->where('id_ubicacion',$id); }
-        elseif(!$request->user()->hasRole('ADMIN')) {
+        elseif(!$request->user()->hasRole('ADMIN') && !$request->user()->can('contabilidad.ver') && !$request->user()->can('ventas.supervisar')) {
             $ids=Personal::where('id_persona',$request->user()->id_persona)->where('estado',true)->pluck('id_personal');
             $loc=AsignacionPersonal::whereIn('id_personal',$ids)->where('estado',true)->whereDate('fecha_inicio','<=',now()->toDateString())
               ->where(fn($w)=>$w->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',now()->toDateString()))->pluck('id_ubicacion');
@@ -61,8 +72,8 @@ class VentaController extends Controller {
         return response()->json($q->paginate(15));
     }
     public function show(Request $request, int $id) {
-        $venta=Venta::with(['ubicacion.evento','usuario','detalles.lote.presentacion.producto','usuarioAnulacion'])->findOrFail($id);
-        if (!$request->user()->hasRole('ADMIN')) {
+        $venta=Venta::with(['ubicacion.evento','usuario','asignacionVendedor.personal.persona','detalles.lote.presentacion.producto','usuarioAnulacion'])->findOrFail($id);
+        if (!$request->user()->hasRole('ADMIN') && !$request->user()->can('contabilidad.ver') && !$request->user()->can('ventas.supervisar')) {
             $this->autorizarConsulta($request,(int)$venta->id_ubicacion);
         }
         return response()->json($venta);
@@ -90,6 +101,7 @@ class VentaController extends Controller {
         $data=$request->validate([
             'id_ubicacion'=>'required|integer|exists:ubicaciones,id_ubicacion',
             'observacion'=>'nullable|string|max:1000',
+            'id_asignacion_vendedor'=>'required|integer|exists:asignaciones_personal,id_asignacion',
             'detalles'=>'required|array|min:1|max:30',
             'detalles.*.id_lote'=>'required|integer|distinct|exists:lotes,id_lote',
             'detalles.*.cantidad'=>'required|integer|min:1|max:1000000',
@@ -99,6 +111,13 @@ class VentaController extends Controller {
             'pago.clave_operacion'=>'required_with:pago|string|max:100',
         ]);
         $id=(int)$data['id_ubicacion']; $this->autorizarStand($request,$id);
+        $asignacion = AsignacionPersonal::whereKey($data['id_asignacion_vendedor'])
+            ->where('id_ubicacion', $id)->where('estado', true)
+            ->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['VENDEDOR'])
+            ->whereDate('fecha_inicio', '<=', today())
+            ->where(fn($q) => $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', today()))
+            ->whereHas('personal', fn($q) => $q->where('estado', true))->first();
+        if (!$asignacion) throw ValidationException::withMessages(['id_asignacion_vendedor'=>'Seleccione un vendedor vigente del punto de venta.']);
         $venta=DB::transaction(function()use($data,$id,$request){
             // La caja se bloquea antes del inventario para serializar venta y cierre.
             $caja=null;
@@ -129,7 +148,7 @@ class VentaController extends Controller {
                 $lineas[]=['inventario'=>$inventario,'id_lote'=>$item['id_lote'],'cantidad'=>$cantidad,
                     'precio'=>number_format($centavos/100,2,'.',''),'subtotal'=>number_format($subtotal/100,2,'.','')];
             }
-            $venta=Venta::create(['id_ubicacion'=>$id,'id_usuario'=>$request->user()->id,
+            $venta=Venta::create(['id_ubicacion'=>$id,'id_usuario'=>$request->user()->id,'id_asignacion_vendedor'=>$asignacion->id_asignacion,
                 'fecha_venta'=>now(),'estado'=>'CONFIRMADA','total'=>number_format($totalCentavos/100,2,'.',''),
                 'observacion'=>$data['observacion']??null]);
             foreach($lineas as $linea){
@@ -147,6 +166,6 @@ class VentaController extends Controller {
             }
             return $venta;
         },3);
-        return response()->json(['message'=>'Venta confirmada.','venta'=>$venta->load(['ubicacion','usuario','detalles.lote.presentacion.producto'])],201);
+        return response()->json(['message'=>'Venta confirmada.','venta'=>$venta->load(['ubicacion','usuario','asignacionVendedor.personal.persona','detalles.lote.presentacion.producto'])],201);
     }
 }

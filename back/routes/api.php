@@ -60,10 +60,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // UBICACIONES
     Route::get('/ubicaciones', [\App\Http\Controllers\UbicacionController::class, 'index'])->middleware('permission:ubicaciones.ver');
-    Route::post('/ubicaciones', [\App\Http\Controllers\UbicacionController::class, 'store'])->middleware('permission:ubicaciones.gestionar');
+    Route::post('/ubicaciones', [\App\Http\Controllers\UbicacionController::class, 'store'])->middleware('permission:ubicaciones.gestionar|eventos.gestionar');
     Route::get('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'show'])->middleware('permission:ubicaciones.ver');
-    Route::post('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'update'])->middleware('permission:ubicaciones.gestionar');
-    Route::delete('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'destroy'])->middleware('permission:ubicaciones.gestionar');
+    Route::post('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'update'])->middleware('permission:ubicaciones.gestionar|eventos.gestionar');
+    Route::delete('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'destroy'])->middleware('permission:ubicaciones.gestionar|eventos.gestionar');
 
     // EVENTOS
     Route::get('/eventos', [\App\Http\Controllers\EventoController::class, 'index'])->middleware('permission:eventos.ver');
@@ -103,6 +103,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cajas-punto-venta/{id}/cerrar', [\App\Http\Controllers\CajaPuntoVentaController::class, 'cerrar'])->middleware('permission:cobros.registrar');
     Route::get('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'index'])->middleware('permission:cobros.ver');
     Route::post('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'store'])->middleware('permission:cobros.registrar');
+    Route::get('/reportes/contabilidad/resumen', [\App\Http\Controllers\ReporteContableController::class, 'resumen'])->middleware('permission:contabilidad.ver');
+    Route::get('/ventas-stand/vendedores', [\App\Http\Controllers\VentaController::class, 'vendedores'])->middleware('permission:ventas.registrar');
     Route::get('/ventas-stand/stands', [\App\Http\Controllers\VentaController::class, 'stands'])->middleware('permission:ventas.ver');
     Route::get('/ventas-stand/existencias', [\App\Http\Controllers\VentaController::class, 'existencias'])->middleware('permission:ventas.ver');
     Route::get('/ventas-stand', [\App\Http\Controllers\VentaController::class, 'index'])->middleware('permission:ventas.ver');

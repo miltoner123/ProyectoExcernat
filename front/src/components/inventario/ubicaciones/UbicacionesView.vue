@@ -67,7 +67,7 @@
               <td>{{ u.tipo }}</td>
               <td>{{ u.propiedad }}</td>
               <td>{{ u.departamento }}</td>
-              <td>{{ u.direccion || '—' }}</td>
+              <td>{{ u.tipo === 'STAND' && u.ubicacion_especifica ? `${u.direccion || '—'} · ${u.ubicacion_especifica}` : (u.direccion || '—') }}</td>
               <td>{{ u.evento?.nombre || '—' }}</td>
               <td>
                 <span :class="u.estado ? 'activo' : 'inactivo'">

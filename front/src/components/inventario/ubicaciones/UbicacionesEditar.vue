@@ -96,7 +96,7 @@
             </div>
 
 
-            <div class="campo">
+            <div class="campo" v-if="ubicacion.tipo !== 'STAND'">
                 <label>Dirección:</label>
 
                 <input
@@ -105,6 +105,17 @@
                 >
             </div>
 
+
+            <div class="campo" v-if="ubicacion.tipo === 'STAND'">
+                <label>Lugar general del evento:</label>
+                <input type="text" :value="ubicacion.evento?.lugar || ubicacion.direccion || ''" disabled>
+                <small>Se hereda del evento y no se modifica desde el stand.</small>
+            </div>
+            <div class="campo" v-if="ubicacion.tipo === 'STAND'">
+                <label>Ubicación específica del stand:</label>
+                <input type="text" v-model.trim="ubicacion.ubicacion_especifica" maxlength="255"
+                       placeholder="Ej. Pabellón Amarillo, sector A, puesto 2">
+            </div>
 
             <div class="campo">
                 <label>Estado:</label>

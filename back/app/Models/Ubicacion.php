@@ -16,6 +16,7 @@ class Ubicacion extends Model
         'propiedad',
         'departamento',
         'direccion',
+        'ubicacion_especifica',
         'estado',
     ];
 

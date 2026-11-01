@@ -34,6 +34,7 @@ const routes = [
 
   { path: "/cajas-punto-venta", component: () => import("./components/ventas/CajasPuntoVentaView.vue") },
   { path: "/cobros-ventas", component: () => import("./components/ventas/CobrosVentasView.vue") },
+  { path: "/reportes/contabilidad", component: () => import("./components/reportes/ReporteContableView.vue") },
   { path: "/ventas-stand", component: () => import("./components/ventas/VentasStandView.vue") },
   { path: "/pedidos", component: () => import("./components/pedidos/PedidosView.vue") },
   { path: "/pedidos/crear", component: () => import("./components/pedidos/PedidosFormulario.vue") },
@@ -111,7 +112,8 @@ router.beforeEach(async (to) => {
   const encontrada = reglas.find(([patron]) => patron.test(to.path));
   const admin = sesion.usuario.roles?.some(r => r.name === 'ADMIN');
   const permisos = sesion.usuario.permisos || [];
-  if (encontrada && !admin && !permisos.includes(encontrada[1])) return '/';
+  const standComercial = (to.path === '/ubicaciones/crear' || /^\/ubicaciones\/editar\/\d+$/.test(to.path)) && to.query.tipo === 'STAND' && !!to.query.id_evento && permisos.includes('eventos.gestionar');
+  if (encontrada && !admin && !permisos.includes(encontrada[1]) && !standComercial) return '/';
   const cambios = [
     [/^\/usuarios(?:\/|$)/, 'usuarios.editar'],
     [/^\/productos\/(?:crear|editar)(?:\/|$)/, 'productos.gestionar'],
@@ -127,7 +129,7 @@ router.beforeEach(async (to) => {
     [/^\/asignaciones\/(?:crear|editar)(?:\/|$)/, 'eventos.asignar_personal'],
   ];
   const cambio = cambios.find(([patron]) => patron.test(to.path));
-  if (cambio && !admin && !permisos.includes(cambio[1])) return '/';
+  if (cambio && !admin && !permisos.includes(cambio[1]) && !standComercial) return '/';
   return true;
 });
 

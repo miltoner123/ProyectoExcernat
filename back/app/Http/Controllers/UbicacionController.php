@@ -6,9 +6,17 @@ use App\Models\Ubicacion;
 use App\Models\Evento;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 class UbicacionController extends Controller
 {
+    private function autorizarGestion(Request $request, string $tipo): void
+    {
+        if ($request->user()->hasRole('ADMIN') || $request->user()->can('ubicaciones.gestionar')) return;
+        abort_unless($tipo === 'STAND' && $request->user()->can('eventos.gestionar'), 403,
+            'La gestión comercial solo permite crear o editar stands de eventos.');
+    }
+
     // LISTAR Y FILTRAR UBICACIONES
     public function index(Request $request)
     {
@@ -51,11 +59,12 @@ class UbicacionController extends Controller
     private function validar(Request $request)
     {
         return $request->validate([
-            'nombre' => 'required|string|max:255',
+            'nombre' => 'nullable|string|max:255',
             'tipo' => 'required|in:ALMACEN,SUCURSAL,STAND',
             'propiedad' => 'required|in:PROPIA,EXTERNA,TEMPORAL',
             'departamento' => 'required|string|max:100',
             'direccion' => 'nullable|string|max:255',
+            'ubicacion_especifica' => 'nullable|string|max:255',
             'id_evento' => 'nullable|integer|exists:eventos,id_evento',
             'estado' => 'sometimes|boolean'
         ]);
@@ -106,14 +115,47 @@ class UbicacionController extends Controller
     public function store(Request $request)
     {
         $datos = $this->validar($request);
+        $this->autorizarGestion($request, $datos['tipo']);
         $this->validarRelacion($datos);
 
+        if ($datos['tipo'] !== 'STAND' && empty(trim($datos['nombre'] ?? ''))) {
+            throw ValidationException::withMessages(['nombre'=>'El nombre es obligatorio.']);
+        }
         $datos['id_evento'] = $datos['tipo'] === 'STAND'
             ? $datos['id_evento']
             : null;
 
         $datos['estado'] = $datos['estado'] ?? true;
-
+        if ($datos['tipo'] !== 'STAND') $datos['ubicacion_especifica'] = null;
+        if ($datos['tipo'] === 'STAND') {
+            $evento = Evento::findOrFail($datos['id_evento']);
+            $datos['departamento'] = $evento->departamento;
+            $datos['direccion'] = $evento->lugar;
+            return DB::transaction(function () use ($datos, $evento) {
+                // Bloqueo del evento: evita que dos stands reciban el mismo correlativo.
+                Evento::whereKey($evento->getKey())->lockForUpdate()->firstOrFail();
+                $prefijo = $evento->nombre . ' - STAND ';
+                $nombres = Ubicacion::where('tipo', 'STAND')->where('id_evento', $evento->getKey())
+                    ->pluck('nombre');
+                $numero = 1;
+                foreach ($nombres as $nombre) {
+                    if (preg_match('/^' . preg_quote($prefijo, '/') . '(\d+)$/iu', $nombre, $m)) {
+                        $numero = max($numero, (int)$m[1] + 1);
+                    }
+                }
+                // Si el formulario trae nombre manual, conservarlo; si no, generar correlativo.
+                if (empty(trim($datos['nombre'] ?? ''))) {
+                    $datos['nombre'] = $prefijo . str_pad((string)$numero, 2, '0', STR_PAD_LEFT);
+                }
+                if (Ubicacion::where('tipo', 'STAND')->where('id_evento', $evento->getKey())
+                    ->whereRaw('LOWER(nombre) = LOWER(?)', [$datos['nombre']])->exists()) {
+                    throw ValidationException::withMessages(['nombre'=>'Ya existe un stand con ese nombre en este evento.']);
+                }
+                $ubicacion = Ubicacion::create($datos);
+                return response()->json(['message'=>'Stand registrado correctamente.',
+                    'ubicacion'=>$ubicacion->load('evento')], 201);
+            });
+        }
         $ubicacion = Ubicacion::create($datos);
 
         return response()->json([
@@ -149,9 +191,17 @@ class UbicacionController extends Controller
         }
 
         $datos = $this->validar($request);
+        $this->autorizarGestion($request, $ubicacion->tipo);
+        $this->autorizarGestion($request, $datos['tipo']);
+        if ($datos['tipo'] === 'STAND' && !empty($datos['id_evento'])) {
+            $evento = Evento::findOrFail($datos['id_evento']);
+            $datos['departamento'] = $evento->departamento;
+            $datos['direccion'] = $evento->lugar;
+        }
         $datos['id_evento'] = $datos['tipo'] === 'STAND'
             ? ($datos['id_evento'] ?? null)
             : null;
+        if ($datos['tipo'] !== 'STAND') $datos['ubicacion_especifica'] = null;
 
         $tieneHistorial =
             $ubicacion->inventarios()->exists() ||
@@ -194,7 +244,7 @@ class UbicacionController extends Controller
     }
 
     // ELIMINAR UBICACIÓN SIN HISTORIAL
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $ubicacion = Ubicacion::find($id);
 
@@ -203,6 +253,8 @@ class UbicacionController extends Controller
                 'message' => 'Ubicación no encontrada.'
             ], 404);
         }
+
+        $this->autorizarGestion($request, $ubicacion->tipo);
 
         $tieneHistorial =
             $ubicacion->inventarios()->exists() ||

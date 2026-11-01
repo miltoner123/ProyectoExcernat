@@ -69,7 +69,7 @@
                 <td>{{ formatearFecha(evento.fecha_inicio) }}</td>
                 <td>{{ formatearFecha(evento.fecha_fin) }}</td>
                 <td>{{ nombreResponsable(evento) }}</td>
-                <td><span :class="evento.estado ? 'estado-activo' : 'estado-inactivo'">{{ evento.estado_operativo || (evento.estado ? 'EN CURSO' : 'INACTIVO') }}</span></td>
+                <td><span :class="evento.estado ? 'estado-activo' : 'estado-inactivo'">{{ estadoVisible(evento) }}</span></td>
                 <td>
                   <div class="acciones">
                     <button class="btn btn-stands" :aria-expanded="eventoAbierto === evento.id_evento"
@@ -77,7 +77,7 @@
                       {{ eventoAbierto === evento.id_evento ? '▴ Ocultar' : '▾ Stands' }}
                     </button>
                     <button class="btn btn-editar" @click="verPendientes(evento)">Pendientes</button>
-                    <button v-if="evento.estado_operativo === 'EN_CURSO' && evento.estado" class="btn btn-editar" @click="finalizarEvento(evento)">Finalizar</button>
+                    <button v-if="estadoVisible(evento) === 'EN_CURSO'" class="btn btn-editar" @click="finalizarEvento(evento)">Finalizar</button>
                     <button v-if="evento.estado_operativo === 'FINALIZADO'" class="btn btn-editar" @click="cerrarEvento(evento)">Cerrar</button>
                     <button class="btn btn-editar" @click="$router.push(`/eventos/editar/${evento.id_evento}`)">Editar</button>
                     <button class="btn btn-eliminar" :disabled="eliminando === evento.id_evento" @click="eliminarEvento(evento)">Eliminar</button>
@@ -102,7 +102,7 @@
                             <td><strong>{{ stand.nombre }}</strong></td><td>{{ stand.propiedad }}</td>
                             <td>{{ stand.departamento }}</td><td>{{ stand.direccion || '—' }}</td>
                             <td><span :class="stand.estado ? 'estado-activo' : 'estado-inactivo'">{{ stand.estado ? '● Activo' : '● Inactivo' }}</span></td>
-                            <td><button class="btn btn-editar" @click="$router.push(`/ubicaciones/editar/${stand.id_ubicacion}`)">Editar</button></td>
+                            <td><button class="btn btn-editar" @click="$router.push(`/ubicaciones/editar/${stand.id_ubicacion}?tipo=STAND&id_evento=${evento.id_evento}`)">Editar</button></td>
                           </tr>
                           <tr v-if="!stands.length"><td colspan="7" class="sin-registros">Este evento todavía no tiene stands registrados.</td></tr>
                         </tbody>
@@ -145,6 +145,17 @@ export default {
   mounted() { this.eventosGet(); },
   beforeUnmount() { clearTimeout(this.temporizadorBusqueda); this.numeroPeticion++; this.numeroPeticionStands++; },
   methods: {
+    estadoVisible(evento) {
+      if (!evento.estado) return evento.estado_operativo === 'CERRADO' ? 'CERRADO' : 'INACTIVO';
+      if (['FINALIZADO', 'CERRADO'].includes(evento.estado_operativo)) return evento.estado_operativo;
+      const hoy = new Date();
+      const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+      const inicio = String(evento.fecha_inicio || '').slice(0,10);
+      const fin = String(evento.fecha_fin || '').slice(0,10);
+      if (inicio && fechaHoy < inicio) return 'PROGRAMADO';
+      if (fin && fechaHoy > fin) return 'PENDIENTE DE FINALIZAR';
+      return 'EN_CURSO';
+    },
     async verPendientes(evento) {
       try { const {data}=await api.get(`/api/eventos/${evento.id_evento}/pendientes`);
         const p=data.pendientes;

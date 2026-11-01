@@ -56,6 +56,7 @@ async function cerrarSesion() {
               <RouterLink v-if="puede('cobros.ver')" to="/cajas-punto-venta" class="menu-item"><AppIcon name="briefcase"/> Apertura y cierre de cajas</RouterLink>
               <RouterLink v-if="puede('cobros.ver')" to="/cobros-ventas" class="menu-item"><AppIcon name="clipboard"/> Cobros de ventas</RouterLink>
             </div>
+            <RouterLink v-if="puede('contabilidad.ver')" to="/reportes/contabilidad" class="menu-item"><AppIcon name="clipboard"/> Resumen contable</RouterLink>
             <button v-if="alguno('personas.ver','personal.ver','usuarios.ver','eventos.asignar_personal')" class="menu-section exc-group" @click="abiertos.personal=!abiertos.personal">PERSONAL <span>{{abiertos.personal?'⌃':'⌄'}}</span></button><div v-show="abiertos.personal" class="exc-group-links">
             <RouterLink v-if="puede('personas.ver')" to="/personas" class="menu-item"><AppIcon name="users"/> Personas</RouterLink>
             <RouterLink v-if="puede('personal.gestionar')" to="/cargos" class="menu-item"><AppIcon name="briefcase"/> Cargos</RouterLink>

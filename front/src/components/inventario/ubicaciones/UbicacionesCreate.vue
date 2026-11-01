@@ -9,7 +9,8 @@
             <div class="campo">
                 <label>Nombre *</label>
                 <input v-model.trim="ubicacion.nombre" type="text"
-                       placeholder="Ej. Almacén Central" required>
+                       :placeholder="ubicacion.tipo === 'STAND' ? 'Nombre automático al guardar' : 'Ej. Almacén Central'" :required="ubicacion.tipo !== 'STAND'">
+                <small v-if="ubicacion.tipo === 'STAND'">Se propone el nombre del evento + STAND y correlativo. Puedes escribir un nombre personalizado.</small>
             </div>
 
             <div class="campo">
@@ -35,7 +36,7 @@
 
             <div v-if="ubicacion.tipo === 'STAND'" class="campo">
                 <label>Evento asociado *</label>
-                <select v-model="ubicacion.id_evento" required>
+                <select v-model="ubicacion.id_evento" @change="sincronizarEvento" required>
                     <option :value="null" disabled>Seleccione un evento</option>
                     <option v-for="evento in eventosDisponibles"
                             :key="evento.id_evento" :value="evento.id_evento">
@@ -48,7 +49,16 @@
                 </small>
             </div>
 
-            <div class="campo">
+            <div v-if="ubicacion.tipo === 'STAND' && eventoSeleccionado" class="campo">
+                <div style="background:#e9f4ed;padding:12px;border-radius:8px;border-left:4px solid #f47b20">
+                    <strong>Datos heredados del evento</strong>
+                    <p>Evento: {{ eventoSeleccionado.nombre }}</p>
+                    <p>Lugar: {{ eventoSeleccionado.lugar }}</p>
+                    <p>Departamento: {{ eventoSeleccionado.departamento }}</p>
+                    <small>La ubicación general se reutiliza automáticamente; no es necesario escribirla otra vez.</small>
+                </div>
+            </div>
+            <div v-if="ubicacion.tipo !== 'STAND'" class="campo">
                 <label>Departamento *</label>
                 <select v-model="ubicacion.departamento" required>
                     <option value="" disabled>Seleccione un departamento</option>
@@ -58,10 +68,17 @@
                 </select>
             </div>
 
-            <div class="campo">
+            <div v-if="ubicacion.tipo !== 'STAND'" class="campo">
                 <label>Dirección</label>
                 <input v-model.trim="ubicacion.direccion" type="text"
                        placeholder="Ingrese la dirección">
+            </div>
+
+            <div v-if="ubicacion.tipo === 'STAND'" class="campo">
+                <label>Ubicación específica del stand</label>
+                <input v-model.trim="ubicacion.ubicacion_especifica" type="text" maxlength="255"
+                       placeholder="Ej. Pabellón Rojo, sector B, puesto 15">
+                <small>El lugar general se toma del evento. Especifique el pabellón, sector o puesto de este stand.</small>
             </div>
 
             <div class="campo">
@@ -101,6 +118,7 @@ export default {
                 propiedad: '',
                 departamento: '',
                 direccion: '',
+                ubicacion_especifica: '',
                 estado: true
             },
             eventos: [],
@@ -114,6 +132,7 @@ export default {
     },
 
     computed: {
+        eventoSeleccionado() { return this.eventos.find(e => Number(e.id_evento) === Number(this.ubicacion.id_evento)) || null; },
         eventosDisponibles() {
             return this.eventos.filter(e =>
                 e.estado === true || e.estado === 1 || e.estado === '1'
@@ -145,14 +164,21 @@ export default {
                 });
 
                 this.eventos = data.data ?? data;
+                this.sincronizarEvento();
             } catch (error) {
                 console.error('Error al obtener eventos:', error);
             }
         },
 
+        sincronizarEvento() {
+            if (this.ubicacion.tipo !== 'STAND' || !this.eventoSeleccionado) return;
+            this.ubicacion.departamento = this.eventoSeleccionado.departamento;
+            this.ubicacion.direccion = this.eventoSeleccionado.lugar;
+        },
         cambiarTipo() {
             if (this.ubicacion.tipo === 'STAND') {
                 this.ubicacion.propiedad = 'TEMPORAL';
+                this.sincronizarEvento();
             } else {
                 this.ubicacion.id_evento = null;
 
@@ -171,6 +197,7 @@ export default {
                 return;
             }
 
+            this.sincronizarEvento();
             this.guardando = true;
 
             const datos = {

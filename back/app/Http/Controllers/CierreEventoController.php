@@ -17,6 +17,7 @@ class CierreEventoController extends Controller {
  public function finalizar(Request $r,int $id){
   $e=DB::transaction(function()use($id){$e=Evento::whereKey($id)->lockForUpdate()->firstOrFail();
    if(!$e->estado || $e->estado_operativo==='CERRADO')throw ValidationException::withMessages(['evento'=>'Evento inactivo o cerrado.']);
+   if($e->fecha_inicio && $e->fecha_inicio->startOfDay()->isFuture())throw ValidationException::withMessages(['evento'=>'No se puede finalizar un evento antes de su fecha de inicio.']);
    if($e->estado_operativo!=='FINALIZADO'){$e->update(['estado_operativo'=>'FINALIZADO','fecha_finalizacion'=>now()]);}return $e;},3);
   return response()->json(['message'=>'Evento finalizado. Ventas bloqueadas; se permiten devoluciones y cierre de cajas.','evento'=>$e]);
  }

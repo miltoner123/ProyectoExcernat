@@ -14,13 +14,13 @@ class CajaPuntoVentaController extends Controller {
   self::validarEvento($u);
   if($r->user()->hasRole('ADMIN')) return;
   $ids=Personal::where('id_persona',$r->user()->id_persona)->where('estado',true)->pluck('id_personal');
-  if(!AsignacionPersonal::whereIn('id_personal',$ids)->where('id_ubicacion',$u->id_ubicacion)->where('estado',true)->whereDate('fecha_inicio','<=',today())->where(fn($q)=>$q->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',today()))->exists()) abort(403,'No tiene asignación vigente a este punto de venta.');
+  if(!AsignacionPersonal::whereIn('id_personal',$ids)->where('id_ubicacion',$u->id_ubicacion)->where('estado',true)->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['ENCARGADO'])->whereDate('fecha_inicio','<=',today())->where(fn($q)=>$q->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',today()))->exists()) abort(403,'No tiene asignación vigente a este punto de venta.');
  }
  public function ubicaciones(Request $r){
   $q=Ubicacion::with('evento')->where('estado',true);
   if(!$r->user()->hasRole('ADMIN')){
    $ids=Personal::where('id_persona',$r->user()->id_persona)->where('estado',true)->pluck('id_personal');
-   $q->whereIn('id_ubicacion',AsignacionPersonal::whereIn('id_personal',$ids)->where('estado',true)->whereDate('fecha_inicio','<=',today())->where(fn($w)=>$w->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',today()))->pluck('id_ubicacion'));
+   $q->whereIn('id_ubicacion',AsignacionPersonal::whereIn('id_personal',$ids)->where('estado',true)->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['ENCARGADO'])->whereDate('fecha_inicio','<=',today())->where(fn($w)=>$w->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',today()))->pluck('id_ubicacion'));
   }
   return $q->orderBy('nombre')->get();
  }

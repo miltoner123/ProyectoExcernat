@@ -8,7 +8,7 @@
                 <p>Control de existencias por ubicación y lote.</p>
             </div>
 
-            <button @click="crearInventario">
+            <button v-if="puedeGestionar" @click="crearInventario">
                 + Nuevo Inventario
             </button>
         </div>
@@ -130,7 +130,7 @@
                         </td>
 
                         <td>
-                            <button
+                            <button v-if="puedeGestionar"
                                 @click="editarInventario(inventario.id_inventario)"
                             >
                                 Editar mínimo
@@ -195,8 +195,10 @@
 
 <script>
 import api from '../../../services/api';
+import { sesion } from '../../../services/sesion';
 
 export default {
+    computed: { puedeGestionar() { return sesion.usuario?.roles?.some(r=>r.name==='ADMIN') || (sesion.usuario?.permisos||[]).includes('inventarios.gestionar'); } },
 
     data() {
         return {

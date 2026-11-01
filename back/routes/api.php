@@ -63,7 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/ubicaciones', [\App\Http\Controllers\UbicacionController::class, 'store'])->middleware('permission:ubicaciones.gestionar|eventos.gestionar');
     Route::get('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'show'])->middleware('permission:ubicaciones.ver');
     Route::post('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'update'])->middleware('permission:ubicaciones.gestionar|eventos.gestionar');
-    Route::delete('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'destroy'])->middleware('permission:ubicaciones.gestionar|eventos.gestionar');
+    Route::delete('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'destroy'])->middleware('permission:ubicaciones.gestionar');
 
     // EVENTOS
     Route::get('/eventos', [\App\Http\Controllers\EventoController::class, 'index'])->middleware('permission:eventos.ver');
@@ -84,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/inventarios/{id}', [\App\Http\Controllers\InventarioController::class, 'destroy'])->middleware('permission:inventarios.gestionar');
 
     // RECEPCIÓN DE PRODUCCIÓN (ALMACÉN CENTRAL)
+    Route::get('/recepciones-produccion/seguimiento', [\App\Http\Controllers\RecepcionProduccionController::class, 'seguimiento'])->middleware('permission:lotes.ver');
     Route::get('/recepciones-produccion', [\App\Http\Controllers\RecepcionProduccionController::class, 'index'])->middleware('permission:recepciones.ver');
     Route::post('/recepciones-produccion/{id}/confirmar', [\App\Http\Controllers\RecepcionProduccionController::class, 'confirmar'])->middleware('permission:recepciones.confirmar');
 

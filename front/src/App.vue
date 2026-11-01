@@ -40,6 +40,7 @@ async function cerrarSesion() {
             <button v-if="alguno('productos.ver','presentaciones.ver','lotes.ver')" class="menu-section exc-group" @click="abiertos.productos=!abiertos.productos">PRODUCTOS <span>{{abiertos.productos?'⌃':'⌄'}}</span></button><div v-show="abiertos.productos" class="exc-group-links">
             <RouterLink v-if="puede('productos.ver')" to="/productos" class="menu-item"><AppIcon name="package"/> Productos</RouterLink>
             <RouterLink v-if="puede('presentaciones.ver')" to="/presentaciones" class="menu-item"><AppIcon name="layers"/> Presentaciones</RouterLink>
+            <RouterLink v-if="puede('lotes.ver')" to="/produccion/seguimiento" class="menu-item"><AppIcon name="clipboard"/> Seguimiento de lotes</RouterLink>
             <RouterLink v-if="puede('lotes.ver')" to="/lotes" class="menu-item"><AppIcon name="tag"/> Producción y lotes</RouterLink>
             </div><button v-if="alguno('ubicaciones.ver','inventarios.ver','movimientos.ver','pedidos.ver','recepciones.ver','transferencias.recibir')" class="menu-section exc-group" @click="abiertos.inventario=!abiertos.inventario">INVENTARIO <span>{{abiertos.inventario?'⌃':'⌄'}}</span></button><div v-show="abiertos.inventario" class="exc-group-links">
             <RouterLink v-if="puede('ubicaciones.ver')" to="/ubicaciones" class="menu-item"><AppIcon name="pin"/> Ubicaciones</RouterLink>

@@ -6,7 +6,7 @@
         <h1>Gestión de Ubicaciones</h1>
         <p>Administración de almacenes, sucursales y stands.</p>
       </div>
-      <button @click="$router.push('/ubicaciones/crear')">
+      <button v-if="puedeGestionarUbicaciones" @click="$router.push('/ubicaciones/crear')">
         + Nueva Ubicación
       </button>
     </div>
@@ -76,10 +76,10 @@
               </td>
               <td>
                 <div class="acciones">
-                  <button @click="$router.push(`/ubicaciones/editar/${u.id_ubicacion}`)">
+                  <button v-if="puedeEditar(u)" @click="$router.push(u.tipo === 'STAND' && !puedeGestionarUbicaciones ? `/ubicaciones/editar/${u.id_ubicacion}?tipo=STAND&id_evento=${u.id_evento}` : `/ubicaciones/editar/${u.id_ubicacion}`)">
                     Editar
                   </button>
-                  <button class="eliminar" @click="eliminarUbicacion(u.id_ubicacion)">
+                  <button v-if="puedeGestionarUbicaciones" class="eliminar" @click="eliminarUbicacion(u.id_ubicacion)">
                     Eliminar
                   </button>
                 </div>
@@ -124,10 +124,14 @@
 
 <script>
 import api from '../../../services/api';
+import { sesion } from '../../../services/sesion';
 
 const API = 'http://localhost:8000/api/ubicaciones';
 
 export default {
+  computed: {
+    puedeGestionarUbicaciones() { return sesion.usuario?.roles?.some(r=>r.name==='ADMIN') || (sesion.usuario?.permisos||[]).includes('ubicaciones.gestionar'); },
+  },
   data() {
     return {
       ubicaciones: [],
@@ -156,6 +160,7 @@ export default {
   },
 
   methods: {
+    puedeEditar(u) { return this.puedeGestionarUbicaciones || (u.tipo === 'STAND' && (sesion.usuario?.permisos||[]).includes('eventos.gestionar')); },
     async obtenerUbicaciones() {
       const peticion = ++this.numeroPeticion;
       this.cargando = true;

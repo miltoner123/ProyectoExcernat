@@ -1,0 +1,8 @@
+<template><main class="seg"><header><div><h1>Seguimiento de lotes de producción</h1><p>Consulta de recepción en Almacén Central. Solo lectura.</p></div><button @click="cargar" :disabled="cargando">Actualizar</button></header><p v-if="error" class="error">{{error}}</p><table><thead><tr><th>Lote</th><th>Producto</th><th>Producido</th><th>Recibido</th><th>Pendiente</th><th>Estado</th></tr></thead><tbody><tr v-for="l in lotes" :key="l.id_lote"><td>{{l.codigo_lote}}</td><td>{{l.producto}} · {{l.presentacion}}</td><td>{{l.cantidad_producida}}</td><td>{{l.cantidad_recibida}}</td><td>{{l.cantidad_pendiente}}</td><td><strong>{{l.estado_recepcion}}</strong></td></tr><tr v-if="!lotes.length"><td colspan="6">Sin lotes registrados.</td></tr></tbody></table></main></template>
+<script setup>
+import {ref,onMounted} from 'vue';import api from '../../../services/api';
+const lotes=ref([]),error=ref(''),cargando=ref(false);
+async function cargar(){cargando.value=true;error.value='';try{const r=await api.get('/api/recepciones-produccion/seguimiento');lotes.value=r.data.data||[]}catch(e){error.value=e.response?.data?.message||'No se pudo consultar el seguimiento.'}finally{cargando.value=false}}
+onMounted(cargar);
+</script>
+<style scoped>.seg{padding:24px;color:#103a2d}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}p{color:#64766c}table{width:100%;border-collapse:collapse;background:white}th{background:#0c3025;color:white;text-align:left}td,th{padding:13px;border-bottom:1px solid #e2e9e5}.error{color:#b32d24}button{background:#f47b20;border:0;border-radius:8px;padding:10px 18px;color:white;font-weight:bold}</style>

@@ -25,7 +25,8 @@ class RecepcionProduccionController extends Controller
     {
         return (int) DB::table('detalle_movimiento as d')
             ->join('movimientos_inventario as m', 'm.id_movimiento', '=', 'd.id_movimiento')
-            ->where('d.id_lote', $id)->where('m.tipo', 'ENTRADA')->sum('d.cantidad');
+            ->where('d.id_lote', $id)->where('m.tipo', 'ENTRADA')
+            ->where('m.referencia', 'RECEPCION-LOTE-' . $id)->sum('d.cantidad');
     }
 
     public function index(Request $request)
@@ -46,6 +47,29 @@ class RecepcionProduccionController extends Controller
                 ];
             })->filter(fn ($l) => $l['cantidad_pendiente'] > 0)->values();
         return response()->json(['almacen' => $central->nombre, 'total' => $lotes->count(), 'data' => $lotes]);
+    }
+
+    // Seguimiento de producción: incluye lotes pendientes y recibidos.
+    public function seguimiento(Request $request)
+    {
+        $lotes = Lote::with('presentacion.producto')->where('estado', true)
+            ->orderByDesc('id_lote')->get()->map(function ($lote) {
+                $recibida = $this->totalIngresado((int) $lote->id_lote);
+                $producida = (int) $lote->cantidad_producida;
+                $pendiente = max(0, $producida - $recibida);
+                return [
+                    'id_lote' => $lote->id_lote,
+                    'codigo_lote' => $lote->codigo_lote,
+                    'producto' => $lote->presentacion?->producto?->nombre,
+                    'presentacion' => $lote->presentacion?->nombre_presentacion,
+                    'cantidad_producida' => $producida,
+                    'cantidad_recibida' => $recibida,
+                    'cantidad_pendiente' => $pendiente,
+                    'estado_recepcion' => $recibida === 0 ? 'PENDIENTE' : ($pendiente > 0 ? 'PARCIAL' : 'RECIBIDO'),
+                    'fecha_produccion' => $lote->fecha_produccion,
+                ];
+            });
+        return response()->json(['data' => $lotes, 'total' => $lotes->count()]);
     }
 
     public function confirmar(Request $request, int $id)

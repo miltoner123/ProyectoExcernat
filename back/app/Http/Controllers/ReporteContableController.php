@@ -12,10 +12,20 @@ class ReporteContableController extends Controller
         $data = $request->validate([
             'desde' => 'nullable|date',
             'hasta' => 'nullable|date|after_or_equal:desde',
+            'id_evento' => 'nullable|integer|exists:eventos,id_evento',
+            'id_ubicacion' => 'nullable|integer|exists:ubicaciones,id_ubicacion',
         ]);
         $ventas = DB::table('ventas')->where('estado', 'CONFIRMADA');
         $cobros = DB::table('cobros_ventas')->join('ventas', 'ventas.id_venta', '=', 'cobros_ventas.id_venta')
             ->where('ventas.estado', 'CONFIRMADA');
+        if (!empty($data['id_ubicacion'])) {
+            $ventas->where('id_ubicacion', $data['id_ubicacion']);
+            $cobros->where('ventas.id_ubicacion', $data['id_ubicacion']);
+        }
+        if (!empty($data['id_evento'])) {
+            $ventas->whereIn('id_ubicacion', DB::table('ubicaciones')->where('id_evento', $data['id_evento'])->select('id_ubicacion'));
+            $cobros->whereIn('ventas.id_ubicacion', DB::table('ubicaciones')->where('id_evento', $data['id_evento'])->select('id_ubicacion'));
+        }
         if (!empty($data['desde'])) {
             $ventas->whereDate('fecha_venta', '>=', $data['desde']);
             $cobros->whereDate('ventas.fecha_venta', '>=', $data['desde']);
@@ -25,6 +35,11 @@ class ReporteContableController extends Controller
             $cobros->whereDate('ventas.fecha_venta', '<=', $data['hasta']);
         }
         return response()->json([
+            'por_ubicacion' => (clone $ventas)->join('ubicaciones', 'ubicaciones.id_ubicacion', '=', 'ventas.id_ubicacion')
+                ->select('ubicaciones.id_ubicacion', 'ubicaciones.nombre', 'ubicaciones.tipo', 'ubicaciones.id_evento')
+                ->selectRaw('COUNT(*) as operaciones, SUM(ventas.total) as total')
+                ->groupBy('ubicaciones.id_ubicacion', 'ubicaciones.nombre', 'ubicaciones.tipo', 'ubicaciones.id_evento')
+                ->orderBy('ubicaciones.nombre')->get(),
             'ventas_confirmadas' => (clone $ventas)->count(),
             'total_ventas' => (clone $ventas)->sum('total'),
             'total_cobrado' => (clone $cobros)->sum('cobros_ventas.monto'),

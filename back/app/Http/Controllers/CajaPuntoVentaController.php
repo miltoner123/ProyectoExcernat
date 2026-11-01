@@ -18,7 +18,7 @@ class CajaPuntoVentaController extends Controller {
  }
  public function ubicaciones(Request $r){
   $q=Ubicacion::with('evento')->where('estado',true);
-  if(!$r->user()->hasRole('ADMIN')){
+  if(!$r->user()->hasRole('ADMIN') && !$r->user()->can('contabilidad.ver')){
    $ids=Personal::where('id_persona',$r->user()->id_persona)->where('estado',true)->pluck('id_personal');
    $q->whereIn('id_ubicacion',AsignacionPersonal::whereIn('id_personal',$ids)->where('estado',true)->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['ENCARGADO'])->whereDate('fecha_inicio','<=',today())->where(fn($w)=>$w->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',today()))->pluck('id_ubicacion'));
   }
@@ -28,7 +28,7 @@ class CajaPuntoVentaController extends Controller {
   $data=$r->validate(['id_ubicacion'=>'required|integer|exists:ubicaciones,id_ubicacion']);
   $u=Ubicacion::with('evento')->findOrFail($data['id_ubicacion']);
   // Consultar el historial debe ser posible aunque el evento haya finalizado.
-  if(!$r->user()->hasRole('ADMIN')){
+  if(!$r->user()->hasRole('ADMIN') && !$r->user()->can('contabilidad.ver')){
    $ids=Personal::where('id_persona',$r->user()->id_persona)->where('estado',true)->pluck('id_personal');
    if(!AsignacionPersonal::whereIn('id_personal',$ids)->where('id_ubicacion',$u->id_ubicacion)->exists())abort(403);
   }

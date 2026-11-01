@@ -329,15 +329,15 @@ export default {
     async cargarCatalogos() {
       this.cargandoCatalogos = true;
       try {
-        const [ubicaciones,eventos,lotes,inventarios,movimientos] = await Promise.all([
+        const [ubicaciones,lotes,inventarios,movimientos] = await Promise.all([
           this.obtenerTodos('ubicaciones'),
-          this.obtenerTodos('eventos'),
           this.obtenerTodos('lotes',{estado:'true'}),
           this.obtenerTodos('inventarios'),
           this.obtenerTodos('movimientos-inventario',{tipo:'ENTRADA'})
         ]);
         this.ubicaciones = ubicaciones.filter(u => u.estado === true || u.estado === 1);
-        this.eventos = eventos;
+        // La ubicación ya trae la relación evento. No exigir eventos.ver a Logística.
+        this.eventos = [...new Map(ubicaciones.filter(u => u.id_evento && u.evento).map(u => [Number(u.id_evento), u.evento])).values()];
         this.lotes = lotes.filter(l => l.estado === true || l.estado === 1);
         this.inventarios = inventarios;
         const ingresos = {};

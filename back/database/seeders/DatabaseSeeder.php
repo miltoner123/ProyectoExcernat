@@ -264,6 +264,7 @@ class DatabaseSeeder extends Seeder
                     'categorias.ver',
                     'productos.ver',
                     'presentaciones.ver',
+                    'ubicaciones.ver',
                     'inventarios.ver',
                     'ventas.ver',
                     'ventas.supervisar',

@@ -114,7 +114,8 @@ router.beforeEach(async (to) => {
   const encontrada = reglas.find(([patron]) => patron.test(to.path));
   const admin = sesion.usuario.roles?.some(r => r.name === 'ADMIN');
   const permisos = sesion.usuario.permisos || [];
-  const standComercial = (to.path === '/ubicaciones/crear' || /^\/ubicaciones\/editar\/\d+$/.test(to.path)) && to.query.tipo === 'STAND' && !!to.query.id_evento && permisos.includes('eventos.gestionar');
+  // Gerencia Comercial puede crear y editar SUCURSALES o STANDS; el backend limita tipos.
+  const standComercial = (to.path === '/ubicaciones/crear' || /^\/ubicaciones\/editar\/\d+$/.test(to.path)) && permisos.includes('eventos.gestionar');
   if (encontrada && !admin && !permisos.includes(encontrada[1]) && !standComercial) return '/';
   const cambios = [
     [/^\/usuarios(?:\/|$)/, 'usuarios.editar'],

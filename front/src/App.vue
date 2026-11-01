@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import AppIcon from './components/AppIcon.vue';
+import AvisosOperativos from './components/inventario/ubicaciones/AvisosOperativos.vue';
 const menuVisible=ref(true);
 const abiertos=ref({productos:true,inventario:true,eventos:true,personal:true,comercial:true});
 const puede = (permiso) => sesion.usuario?.roles?.some(r => r.name === 'ADMIN') || (sesion.usuario?.permisos || []).includes(permiso);
@@ -67,7 +68,7 @@ async function cerrarSesion() {
             </RouterLink>
           </div></nav>
         </aside>
-        <div class="exc-content-area"><main class="main-content"><RouterView /></main><footer class="exc-footer">EXCERNAT · Excelentes Cereales Naturales © {{new Date().getFullYear()}} <span>Sistema de gestión empresarial</span></footer></div> 
+        <div class="exc-content-area"><main class="main-content"><AvisosOperativos v-if="puede('recepciones.confirmar')"/><RouterView /></main><footer class="exc-footer">EXCERNAT · Excelentes Cereales Naturales © {{new Date().getFullYear()}} <span>Sistema de gestión empresarial</span></footer></div> 
       </div>
     </template> 
     <RouterView v-else /> 

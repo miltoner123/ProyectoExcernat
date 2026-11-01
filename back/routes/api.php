@@ -63,7 +63,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/ubicaciones', [\App\Http\Controllers\UbicacionController::class, 'store'])->middleware('permission:ubicaciones.gestionar|eventos.gestionar');
     Route::get('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'show'])->middleware('permission:ubicaciones.ver');
     Route::post('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'update'])->middleware('permission:ubicaciones.gestionar|eventos.gestionar');
+    Route::post('/ubicaciones/{id}/habilitacion-inventario', [\App\Http\Controllers\UbicacionController::class, 'habilitarInventario'])->middleware('permission:recepciones.confirmar');
     Route::delete('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'destroy'])->middleware('permission:ubicaciones.gestionar');
+
+    Route::get('/avisos-operativos', [\App\Http\Controllers\AvisosOperativosController::class, 'index']);
 
     // EVENTOS
     Route::get('/eventos', [\App\Http\Controllers\EventoController::class, 'index'])->middleware('permission:eventos.ver');

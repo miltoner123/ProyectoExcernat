@@ -6,7 +6,7 @@
         <h1>Gestión de Ubicaciones</h1>
         <p>Administración de almacenes, sucursales y stands.</p>
       </div>
-      <button v-if="puedeGestionarUbicaciones" @click="$router.push('/ubicaciones/crear')">
+      <button v-if="puedeGestionarUbicaciones || puedeGestionarComercial" @click="$router.push('/ubicaciones/crear')">
         + Nueva Ubicación
       </button>
     </div>
@@ -51,13 +51,14 @@
             <th>Dirección</th>
             <th>Evento</th>
             <th>Estado</th>
+            <th>Inventario</th>
             <th>Opciones</th>
           </tr>
         </thead>
 
         <tbody>
           <tr v-if="cargando">
-            <td colspan="9" class="mensaje">Cargando ubicaciones...</td>
+            <td colspan="10" class="mensaje">Cargando ubicaciones...</td>
           </tr>
 
           <template v-else>
@@ -74,8 +75,10 @@
                   {{ u.estado ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
+              <td><strong>{{ u.estado_inventario || 'HABILITADO' }}</strong></td>
               <td>
                 <div class="acciones">
+                  <button v-if="puedeHabilitar && u.estado_inventario !== 'HABILITADO'" @click="habilitar(u)">Habilitar inventario</button>
                   <button v-if="puedeEditar(u)" @click="$router.push(u.tipo === 'STAND' && !puedeGestionarUbicaciones ? `/ubicaciones/editar/${u.id_ubicacion}?tipo=STAND&id_evento=${u.id_evento}` : `/ubicaciones/editar/${u.id_ubicacion}`)">
                     Editar
                   </button>
@@ -87,7 +90,7 @@
             </tr>
 
             <tr v-if="!ubicaciones.length">
-              <td colspan="9" class="mensaje">
+              <td colspan="10" class="mensaje">
                 No se encontraron ubicaciones.
               </td>
             </tr>
@@ -130,6 +133,8 @@ const API = 'http://localhost:8000/api/ubicaciones';
 
 export default {
   computed: {
+    puedeGestionarComercial() { return (sesion.usuario?.permisos||[]).includes('eventos.gestionar'); },
+    puedeHabilitar() { return sesion.usuario?.roles?.some(r=>r.name==='ADMIN') || (sesion.usuario?.permisos||[]).includes('recepciones.confirmar'); },
     puedeGestionarUbicaciones() { return sesion.usuario?.roles?.some(r=>r.name==='ADMIN') || (sesion.usuario?.permisos||[]).includes('ubicaciones.gestionar'); },
   },
   data() {
@@ -160,7 +165,14 @@ export default {
   },
 
   methods: {
-    puedeEditar(u) { return this.puedeGestionarUbicaciones || (u.tipo === 'STAND' && (sesion.usuario?.permisos||[]).includes('eventos.gestionar')); },
+    async habilitar(u) {
+      if (!window.confirm(`¿Habilitar inventario de ${u.nombre}?`)) return;
+      try {
+        await api.post(`${API}/${u.id_ubicacion}/habilitacion-inventario`, {estado_inventario:'HABILITADO'});
+        this.filtrar();
+      } catch (error) { window.alert(error.response?.data?.message || 'No se pudo habilitar.'); }
+    },
+    puedeEditar(u) { return this.puedeGestionarUbicaciones || (['STAND','SUCURSAL'].includes(u.tipo) && (sesion.usuario?.permisos||[]).includes('eventos.gestionar')); },
     async obtenerUbicaciones() {
       const peticion = ++this.numeroPeticion;
       this.cargando = true;

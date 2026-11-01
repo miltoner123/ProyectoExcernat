@@ -13,8 +13,8 @@ class UbicacionController extends Controller
     private function autorizarGestion(Request $request, string $tipo): void
     {
         if ($request->user()->hasRole('ADMIN') || $request->user()->can('ubicaciones.gestionar')) return;
-        abort_unless($tipo === 'STAND' && $request->user()->can('eventos.gestionar'), 403,
-            'La gestión comercial solo permite crear o editar stands de eventos.');
+        abort_unless(in_array($tipo, ['STAND','SUCURSAL'], true) && $request->user()->can('eventos.gestionar'), 403,
+            'La gestión comercial solo permite crear o editar stands y sucursales.');
     }
 
     // LISTAR Y FILTRAR UBICACIONES
@@ -126,6 +126,7 @@ class UbicacionController extends Controller
             : null;
 
         $datos['estado'] = $datos['estado'] ?? true;
+        $datos['estado_inventario'] = 'PENDIENTE_VALIDACION';
         if ($datos['tipo'] !== 'STAND') $datos['ubicacion_especifica'] = null;
         if ($datos['tipo'] === 'STAND') {
             $evento = Evento::findOrFail($datos['id_evento']);
@@ -162,6 +163,30 @@ class UbicacionController extends Controller
             'message' => 'Ubicación registrada correctamente.',
             'ubicacion' => $ubicacion->load('evento')
         ], 201);
+    }
+
+    // Solo Logística o ADMIN habilitan inventario; cambios registrados con usuario y fecha.
+    public function habilitarInventario(Request $request, int $id)
+    {
+        abort_unless($request->user()->hasRole('ADMIN') || $request->user()->can('recepciones.confirmar'),403);
+        $datos=$request->validate([
+            'estado_inventario'=>'required|in:HABILITADO,OBSERVADO,SUSPENDIDO',
+            'observacion'=>'nullable|string|max:1000',
+        ]);
+        $ubicacion=DB::transaction(function()use($id,$request,$datos){
+            $u=Ubicacion::whereKey($id)->lockForUpdate()->firstOrFail();
+            if (!$u->estado && $datos['estado_inventario']==='HABILITADO') {
+                throw ValidationException::withMessages(['estado_inventario'=>'La ubicación está inactiva.']);
+            }
+            $u->update([
+                'estado_inventario'=>$datos['estado_inventario'],
+                'habilitado_por'=>$request->user()->id,
+                'habilitado_en'=>now(),
+                'observacion_habilitacion'=>$datos['observacion']??null,
+            ]);
+            return $u;
+        });
+        return response()->json(['message'=>'Estado logístico actualizado.','ubicacion'=>$ubicacion]);
     }
 
     // MOSTRAR UBICACIÓN

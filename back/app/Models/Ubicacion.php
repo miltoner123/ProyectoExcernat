@@ -18,10 +18,12 @@ class Ubicacion extends Model
         'direccion',
         'ubicacion_especifica',
         'estado',
+        'estado_inventario', 'habilitado_por', 'habilitado_en', 'observacion_habilitacion',
     ];
 
     protected $casts = [
         'estado' => 'boolean',
+        'habilitado_en' => 'datetime',
     ];
 
     public function evento()

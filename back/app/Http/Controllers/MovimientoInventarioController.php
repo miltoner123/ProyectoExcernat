@@ -89,6 +89,13 @@ class MovimientoInventarioController extends Controller
         $origen = $datos['id_ubicacion_origen'] ?? null;
         $destino = $datos['id_ubicacion_destino'] ?? null;
 
+        // No autorizar nuevos movimientos sobre ubicaciones pendientes o suspendidas.
+        foreach (array_filter([$origen, $destino]) as $idUbicacion) {
+            $ubicacionLogistica=Ubicacion::findOrFail($idUbicacion);
+            if ($ubicacionLogistica->estado_inventario !== 'HABILITADO') {
+                throw ValidationException::withMessages(['ubicacion'=>'La ubicación '.$ubicacionLogistica->nombre.' requiere habilitación logística.']);
+            }
+        }
         $this->validarOperacion($datos, $tipo, $origen, $destino);
         if ($tipo === 'DEVOLUCION') {
             $uOrigen=Ubicacion::with('evento')->findOrFail($origen);

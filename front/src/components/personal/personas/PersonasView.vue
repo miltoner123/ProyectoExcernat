@@ -6,7 +6,7 @@
         <h1>Gestión de Personas</h1>
         <p>Administración de personas registradas en el sistema.</p>
       </div>
-      <button class="btn-primario" @click="$router.push('/personas/crear')">
+      <button v-if="puedeGestionar" class="btn-primario" @click="$router.push('/personas/crear')">
         + Nueva Persona
       </button>
     </div>
@@ -80,7 +80,7 @@
               </span>
             </td>
             <td>
-              <div class="acciones">
+              <div v-if="puedeGestionar" class="acciones">
                 <button @click="$router.push(`/personas/editar/${persona.id_persona}`)">
                   Editar
                 </button>
@@ -133,9 +133,12 @@
 </template>
 
 <script>
+import { sesion } from '../../../services/sesion';
+
 import api from '../../../services/api';
 
 export default {
+  computed: { puedeGestionar() { return sesion.usuario?.roles?.some(r => r.name === 'ADMIN') || (sesion.usuario?.permisos || []).includes('personas.gestionar'); } },
   name: 'PersonasView',
 
   data() {

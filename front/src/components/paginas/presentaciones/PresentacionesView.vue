@@ -8,7 +8,7 @@
                 <p>Gestión de presentaciones comerciales de productos</p>
             </div>
 
-            <button class="btn-crear" @click="crearPresentacion">
+            <button v-if="puedeGestionar" class="btn-crear" @click="crearPresentacion">
                 + Crear Presentación
             </button>
         </div>
@@ -101,7 +101,7 @@
                             </td>
 
                             <td>
-                                <div class="acciones">
+                                <div v-if="puedeGestionar" class="acciones">
                                     <button
                                         class="btn-editar"
                                         @click="editarPresentacion(presentacion.id_presentacion)"
@@ -162,11 +162,13 @@
 
 <script>
 import api from '../../../services/api';
+import { sesion } from '../../../services/sesion';
 import Viewer from 'viewerjs';
 import 'viewerjs/dist/viewer.css';
 
 export default {
 
+    computed: { puedeGestionar() { return sesion.usuario?.roles?.some(r => r.name === 'ADMIN') || (sesion.usuario?.permisos || []).includes('presentaciones.gestionar'); } },
     data() {
         return {
             presentaciones: [],

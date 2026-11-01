@@ -45,6 +45,8 @@ async function cerrarSesion() {
             <RouterLink v-if="puede('ubicaciones.ver')" to="/ubicaciones" class="menu-item"><AppIcon name="pin"/> Ubicaciones</RouterLink>
             <RouterLink v-if="puede('inventarios.ver')" to="/inventarios" class="menu-item"><AppIcon name="package"/> Inventarios</RouterLink>
             <RouterLink v-if="puede('movimientos.ver')" to="/movimientos" class="menu-item"><AppIcon name="arrows"/> Movimientos de Inventario</RouterLink>
+            <RouterLink v-if="puede('recepciones.ver')" to="/recepciones-produccion" class="menu-item"><AppIcon name="package"/> Recepción de producción</RouterLink>
+            <RouterLink v-if="puede('transferencias.recibir')" to="/recepciones-transferencias" class="menu-item"><AppIcon name="arrows"/> Recepción de transferencias</RouterLink>
             <RouterLink v-if="puede('pedidos.ver')" to="/pedidos" class="menu-item"><AppIcon name="clipboard"/> Pedidos de abastecimiento</RouterLink>
             </div><button v-if="puede('eventos.ver')" class="menu-section exc-group" @click="abiertos.eventos=!abiertos.eventos">EVENTOS <span>{{abiertos.eventos?'⌃':'⌄'}}</span></button><div v-show="abiertos.eventos" class="exc-group-links">
             <RouterLink v-if="puede('eventos.ver')" to="/eventos" class="menu-item"><AppIcon name="calendar"/> Eventos</RouterLink>
@@ -56,7 +58,7 @@ async function cerrarSesion() {
             </div>
             <button v-if="alguno('personas.ver','personal.ver','usuarios.ver','eventos.asignar_personal')" class="menu-section exc-group" @click="abiertos.personal=!abiertos.personal">PERSONAL <span>{{abiertos.personal?'⌃':'⌄'}}</span></button><div v-show="abiertos.personal" class="exc-group-links">
             <RouterLink v-if="puede('personas.ver')" to="/personas" class="menu-item"><AppIcon name="users"/> Personas</RouterLink>
-            <RouterLink v-if="puede('personal.ver')" to="/cargos" class="menu-item"><AppIcon name="briefcase"/> Cargos</RouterLink>
+            <RouterLink v-if="puede('personal.gestionar')" to="/cargos" class="menu-item"><AppIcon name="briefcase"/> Cargos</RouterLink>
             <RouterLink v-if="puede('personal.ver')" to="/personal" class="menu-item"><AppIcon name="users"/> Personal</RouterLink>
             <RouterLink v-if="puede('eventos.asignar_personal')" to="/asignaciones" class="menu-item"><AppIcon name="pin"/> Asignaciones</RouterLink>
             <RouterLink v-if="puede('usuarios.ver')" to="/usuarios" class="menu-item"> <AppIcon name="shield"/> Gestión de Usuarios

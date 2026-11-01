@@ -104,7 +104,8 @@ router.beforeEach(async (to) => {
     [/^\/(?:cobros-ventas|cajas-punto-venta)(?:\/|$)/, 'cobros.ver'],
     [/^\/eventos(?:\/|$)/, 'eventos.ver'],
     [/^\/personas(?:\/|$)/, 'personas.ver'],
-    [/^\/(?:cargos|personal)(?:\/|$)/, 'personal.ver'],
+    [/^\/cargos(?:\/|$)/, 'personal.gestionar'],
+    [/^\/personal(?:\/|$)/, 'personal.ver'],
     [/^\/asignaciones(?:\/|$)/, 'eventos.ver'],
   ];
   const encontrada = reglas.find(([patron]) => patron.test(to.path));

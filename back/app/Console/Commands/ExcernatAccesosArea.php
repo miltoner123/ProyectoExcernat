@@ -18,7 +18,7 @@ class ExcernatAccesosArea extends Command
         $perfiles = [
             'produccion' => ['productos.ver','presentaciones.ver','lotes.ver','lotes.gestionar','producciones.ver','producciones.registrar'],
             'almacen' => ['productos.ver','presentaciones.ver','lotes.ver','ubicaciones.ver','inventarios.ver','movimientos.ver','movimientos.registrar','recepciones.ver','recepciones.confirmar','transferencias.recibir','pedidos.ver'],
-            'comercial' => ['personas.ver','personal.ver','productos.ver','presentaciones.ver','ubicaciones.ver','inventarios.ver','eventos.ver','eventos.gestionar','eventos.asignar_personal','pedidos.ver','pedidos.gestionar','ventas.ver','ventas.supervisar','cobros.ver','cobros.supervisar','reportes.ver','compras.ver','compras.gestionar'],
+            'comercial' => ['personas.ver','personal.ver','productos.ver','presentaciones.ver','ubicaciones.ver','inventarios.ver','eventos.ver','eventos.gestionar','eventos.asignar_personal','pedidos.ver','pedidos.gestionar','ventas.ver','cobros.ver','reportes.ver'],
             'contabilidad' => ['ventas.ver','cobros.ver','cobros.supervisar','contabilidad.ver','contabilidad.gestionar','reportes.ver','eventos.ver'],
             'administracion' => ['personas.ver','personas.gestionar','personal.ver','personal.gestionar','asistencias.ver','asistencias.registrar','asistencias.gestionar','ventas.ver','cobros.ver','contabilidad.ver','reportes.ver','eventos.ver'],
             'consulta' => ['productos.ver','presentaciones.ver','eventos.ver','reportes.ver'],

@@ -64,7 +64,8 @@ export default {
           email: this.email,
           password: this.password
         });
-        establecerUsuario(respuesta.data.usuario);
+        const perfil = await api.get('/api/usuario');
+        establecerUsuario(perfil.data);
         const destino = this.$route.query.redirect;
         this.$router.replace(
           typeof destino === 'string' && destino.startsWith('/') && !destino.startsWith('//')

@@ -11,11 +11,21 @@ use Illuminate\Validation\ValidationException;
 
 class RecepcionTransferenciaController extends Controller
 {
+    private function esAlmacenCentral(?int $id): bool
+    {
+        if (!$id) return false;
+        return \App\Models\Ubicacion::whereKey($id)
+            ->where('tipo', 'ALMACEN')->where('estado', true)
+            ->whereRaw("UPPER(TRIM(nombre)) IN ('ALMACÉN CENTRAL', 'ALMACEN CENTRAL')")
+            ->exists();
+    }
+
     private function puedeRecibir(Request $request, MovimientoInventario $mov): bool
     {
         $usuario = $request->user();
         if (!$usuario) return false;
         if ($usuario->hasRole('ADMIN')) return true;
+        if ($usuario->can('recepciones.confirmar') && $this->esAlmacenCentral($mov->id_ubicacion_destino)) return true;
         if (!$usuario->id_persona || !$mov->id_ubicacion_destino) return false;
         $personalIds = Personal::where('id_persona', $usuario->id_persona)->where('estado', true)->pluck('id_personal');
         return AsignacionPersonal::whereIn('id_personal', $personalIds)
@@ -37,6 +47,12 @@ class RecepcionTransferenciaController extends Controller
                 ->whereDate('fecha_inicio', '<=', now()->toDateString())
                 ->where(function ($q) { $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', now()->toDateString()); })
                 ->whereRaw("UPPER(funcion_asignada) LIKE ?", ['%ENCARGAD%'])->pluck('id_ubicacion');
+            if ($request->user()->can('recepciones.confirmar')) {
+                $central = \App\Models\Ubicacion::where('tipo', 'ALMACEN')->where('estado', true)
+                    ->whereRaw("UPPER(TRIM(nombre)) IN ('ALMACÉN CENTRAL', 'ALMACEN CENTRAL')")
+                    ->pluck('id_ubicacion');
+                $ubicaciones = $ubicaciones->merge($central)->unique();
+            }
             $query->whereIn('id_ubicacion_destino', $ubicaciones);
         }
         return response()->json(['data' => $query->orderBy('id_movimiento')->get()]);

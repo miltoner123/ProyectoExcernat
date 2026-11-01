@@ -4,6 +4,7 @@ import AppIcon from './components/AppIcon.vue';
 const menuVisible=ref(true);
 const abiertos=ref({productos:true,inventario:true,eventos:true,personal:true,comercial:true});
 const puede = (permiso) => sesion.usuario?.roles?.some(r => r.name === 'ADMIN') || (sesion.usuario?.permisos || []).includes(permiso);
+const alguno = (...permisos) => permisos.some(puede);
 import { useRouter } from 'vue-router';
 import api from './services/api';
 import { sesion, establecerUsuario } from './services/sesion';
@@ -36,18 +37,16 @@ async function cerrarSesion() {
           <div class="sidebar-title">MENÚ PRINCIPAL</div>
           <nav class="menu">
             <RouterLink to="/" class="menu-item"><AppIcon name="dashboard"/> Dashboard principal</RouterLink>
-            <RouterLink to="/mi-panel" class="menu-item"><AppIcon name="pin"/> Mi panel operativo</RouterLink>
-            <button class="menu-section exc-group" @click="abiertos.productos=!abiertos.productos">PRODUCTOS <span>{{abiertos.productos?'⌃':'⌄'}}</span></button><div v-show="abiertos.productos" class="exc-group-links">
+            <button v-if="alguno('productos.ver','presentaciones.ver','lotes.ver')" class="menu-section exc-group" @click="abiertos.productos=!abiertos.productos">PRODUCTOS <span>{{abiertos.productos?'⌃':'⌄'}}</span></button><div v-show="abiertos.productos" class="exc-group-links">
             <RouterLink v-if="puede('productos.ver')" to="/productos" class="menu-item"><AppIcon name="package"/> Productos</RouterLink>
             <RouterLink v-if="puede('presentaciones.ver')" to="/presentaciones" class="menu-item"><AppIcon name="layers"/> Presentaciones</RouterLink>
-            <RouterLink v-if="puede('lotes.ver')" to="/lotes" class="menu-item"><AppIcon name="tag"/> Lotes</RouterLink>
-            </div><button class="menu-section exc-group" @click="abiertos.inventario=!abiertos.inventario">INVENTARIO <span>{{abiertos.inventario?'⌃':'⌄'}}</span></button><div v-show="abiertos.inventario" class="exc-group-links">
+            <RouterLink v-if="puede('lotes.ver')" to="/lotes" class="menu-item"><AppIcon name="tag"/> Producción y lotes</RouterLink>
+            </div><button v-if="alguno('ubicaciones.ver','inventarios.ver','movimientos.ver','pedidos.ver','recepciones.ver','transferencias.recibir')" class="menu-section exc-group" @click="abiertos.inventario=!abiertos.inventario">INVENTARIO <span>{{abiertos.inventario?'⌃':'⌄'}}</span></button><div v-show="abiertos.inventario" class="exc-group-links">
             <RouterLink v-if="puede('ubicaciones.ver')" to="/ubicaciones" class="menu-item"><AppIcon name="pin"/> Ubicaciones</RouterLink>
             <RouterLink v-if="puede('inventarios.ver')" to="/inventarios" class="menu-item"><AppIcon name="package"/> Inventarios</RouterLink>
             <RouterLink v-if="puede('movimientos.ver')" to="/movimientos" class="menu-item"><AppIcon name="arrows"/> Movimientos de Inventario</RouterLink>
-            <RouterLink v-if="puede('transferencias.recibir')" to="/recepciones-transferencias" class="menu-item"><AppIcon name="package"/> Recepciones pendientes</RouterLink>
             <RouterLink v-if="puede('pedidos.ver')" to="/pedidos" class="menu-item"><AppIcon name="clipboard"/> Pedidos de abastecimiento</RouterLink>
-            </div><button class="menu-section exc-group" @click="abiertos.eventos=!abiertos.eventos">EVENTOS <span>{{abiertos.eventos?'⌃':'⌄'}}</span></button><div v-show="abiertos.eventos" class="exc-group-links">
+            </div><button v-if="puede('eventos.ver')" class="menu-section exc-group" @click="abiertos.eventos=!abiertos.eventos">EVENTOS <span>{{abiertos.eventos?'⌃':'⌄'}}</span></button><div v-show="abiertos.eventos" class="exc-group-links">
             <RouterLink v-if="puede('eventos.ver')" to="/eventos" class="menu-item"><AppIcon name="calendar"/> Eventos</RouterLink>
             </div><button v-if="puede('ventas.ver') || puede('cobros.ver')" class="menu-section exc-group" @click="abiertos.comercial=!abiertos.comercial">VENTAS Y CAJAS <span>{{abiertos.comercial?'⌃':'⌄'}}</span></button>
             <div v-show="abiertos.comercial" class="exc-group-links">
@@ -55,11 +54,11 @@ async function cerrarSesion() {
               <RouterLink v-if="puede('cobros.ver')" to="/cajas-punto-venta" class="menu-item"><AppIcon name="briefcase"/> Apertura y cierre de cajas</RouterLink>
               <RouterLink v-if="puede('cobros.ver')" to="/cobros-ventas" class="menu-item"><AppIcon name="clipboard"/> Cobros de ventas</RouterLink>
             </div>
-            <button class="menu-section exc-group" @click="abiertos.personal=!abiertos.personal">PERSONAL <span>{{abiertos.personal?'⌃':'⌄'}}</span></button><div v-show="abiertos.personal" class="exc-group-links">
+            <button v-if="alguno('personas.ver','personal.ver','usuarios.ver','eventos.asignar_personal')" class="menu-section exc-group" @click="abiertos.personal=!abiertos.personal">PERSONAL <span>{{abiertos.personal?'⌃':'⌄'}}</span></button><div v-show="abiertos.personal" class="exc-group-links">
             <RouterLink v-if="puede('personas.ver')" to="/personas" class="menu-item"><AppIcon name="users"/> Personas</RouterLink>
             <RouterLink v-if="puede('personal.ver')" to="/cargos" class="menu-item"><AppIcon name="briefcase"/> Cargos</RouterLink>
             <RouterLink v-if="puede('personal.ver')" to="/personal" class="menu-item"><AppIcon name="users"/> Personal</RouterLink>
-            <RouterLink v-if="puede('eventos.ver')" to="/asignaciones" class="menu-item"><AppIcon name="pin"/> Asignaciones</RouterLink>
+            <RouterLink v-if="puede('eventos.asignar_personal')" to="/asignaciones" class="menu-item"><AppIcon name="pin"/> Asignaciones</RouterLink>
             <RouterLink v-if="puede('usuarios.ver')" to="/usuarios" class="menu-item"> <AppIcon name="shield"/> Gestión de Usuarios
             </RouterLink>
           </div></nav>

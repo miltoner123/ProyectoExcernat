@@ -34,7 +34,6 @@ const routes = [
 
   { path: "/cajas-punto-venta", component: () => import("./components/ventas/CajasPuntoVentaView.vue") },
   { path: "/cobros-ventas", component: () => import("./components/ventas/CobrosVentasView.vue") },
-  { path: "/mi-panel", component: () => import("./components/operaciones/MiPanelOperativo.vue") },
   { path: "/ventas-stand", component: () => import("./components/ventas/VentasStandView.vue") },
   { path: "/pedidos", component: () => import("./components/pedidos/PedidosView.vue") },
   { path: "/pedidos/crear", component: () => import("./components/pedidos/PedidosFormulario.vue") },
@@ -89,18 +88,45 @@ router.beforeEach(async (to) => {
   }
   if (to.meta.publica) return sesion.usuario ? '/' : true;
   if (!sesion.usuario) return { path: '/login', query: { redirect: to.fullPath } };
+  // Seguridad de navegacion: los permisos reales siguen siendo exigidos por Laravel.
   const reglas = [
     [/^\/usuarios(?:\/|$)/, 'usuarios.ver'],
+    [/^\/productos(?:\/|$)/, 'productos.ver'],
+    [/^\/presentaciones(?:\/|$)/, 'presentaciones.ver'],
+    [/^\/lotes(?:\/|$)/, 'lotes.ver'],
+    [/^\/ubicaciones(?:\/|$)/, 'ubicaciones.ver'],
+    [/^\/inventarios(?:\/|$)/, 'inventarios.ver'],
+    [/^\/movimientos(?:\/|$)/, 'movimientos.ver'],
+    [/^\/recepciones-transferencias(?:\/|$)/, 'transferencias.recibir'],
+    [/^\/recepciones-produccion(?:\/|$)/, 'recepciones.ver'],
+    [/^\/pedidos(?:\/|$)/, 'pedidos.ver'],
     [/^\/ventas-stand(?:\/|$)/, 'ventas.ver'],
     [/^\/(?:cobros-ventas|cajas-punto-venta)(?:\/|$)/, 'cobros.ver'],
-    [/^\/asignaciones(?:\/|$)/, 'eventos.ver'],
-    [/^\/personal(?:\/|$)/, 'personal.ver'],
     [/^\/eventos(?:\/|$)/, 'eventos.ver'],
-    [/^\/movimientos(?:\/|$)/, 'movimientos.ver'],
+    [/^\/personas(?:\/|$)/, 'personas.ver'],
+    [/^\/(?:cargos|personal)(?:\/|$)/, 'personal.ver'],
+    [/^\/asignaciones(?:\/|$)/, 'eventos.ver'],
   ];
-  const requerida = reglas.find(([patron]) => patron.test(to.path))?.[1];
+  const encontrada = reglas.find(([patron]) => patron.test(to.path));
   const admin = sesion.usuario.roles?.some(r => r.name === 'ADMIN');
-  if (requerida && !admin && !(sesion.usuario.permisos || []).includes(requerida)) return '/';
+  const permisos = sesion.usuario.permisos || [];
+  if (encontrada && !admin && !permisos.includes(encontrada[1])) return '/';
+  const cambios = [
+    [/^\/usuarios(?:\/|$)/, 'usuarios.editar'],
+    [/^\/productos\/(?:crear|editar)(?:\/|$)/, 'productos.gestionar'],
+    [/^\/presentaciones\/(?:crear|editar)(?:\/|$)/, 'presentaciones.gestionar'],
+    [/^\/lotes\/(?:crear|editar)(?:\/|$)/, 'lotes.gestionar'],
+    [/^\/ubicaciones\/(?:crear|editar)(?:\/|$)/, 'ubicaciones.gestionar'],
+    [/^\/inventarios\/(?:crear|editar)(?:\/|$)/, 'inventarios.gestionar'],
+    [/^\/movimientos\/crear(?:\/|$)/, 'movimientos.registrar'],
+    [/^\/pedidos\/(?:crear|editar)(?:\/|$)/, 'pedidos.gestionar'],
+    [/^\/eventos\/(?:crear|editar)(?:\/|$)/, 'eventos.gestionar'],
+    [/^\/personas\/(?:crear|editar)(?:\/|$)/, 'personas.gestionar'],
+    [/^\/(?:cargos|personal)\/(?:crear|editar)(?:\/|$)/, 'personal.gestionar'],
+    [/^\/asignaciones\/(?:crear|editar)(?:\/|$)/, 'eventos.asignar_personal'],
+  ];
+  const cambio = cambios.find(([patron]) => patron.test(to.path));
+  if (cambio && !admin && !permisos.includes(cambio[1])) return '/';
   return true;
 });
 

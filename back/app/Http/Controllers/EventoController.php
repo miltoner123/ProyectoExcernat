@@ -132,6 +132,19 @@ public function index(Request $request)
             ], 404);
         }
 
+        // El responsable temporal solo consulta datos del stand asignado.
+        // No puede enumerar asignaciones de otros trabajadores del evento.
+        $usuario = $request->user();
+        if (!$usuario->hasRole('ADMIN') && !$usuario->can('eventos.ver')) {
+            $acceso = app(\App\Services\AccesoTemporalEvento::class);
+            $ids = $acceso->ubicaciones($usuario)->map(fn($x) => (int) $x)->all();
+            $evento->setRelation('ubicaciones', $evento->ubicaciones->filter(
+                fn($u) => in_array((int) $u->id_ubicacion, $ids, true)
+            )->values());
+            $evento->setRelation('asignacionesPersonal', $evento->asignacionesPersonal->filter(
+                fn($a) => in_array((int) $a->id_ubicacion, $ids, true)
+            )->values());
+        }
         return response()->json($evento);
     }
 

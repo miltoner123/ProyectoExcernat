@@ -27,7 +27,7 @@ class PanelOperativoController extends Controller
         $asignaciones = $query->orderBy('id_ubicacion')->get();
         $ubicaciones = $asignaciones->pluck('id_ubicacion')->unique()->values();
         $pendientes = collect();
-        if ($usuario->can('transferencias.recibir')) {
+        if ($usuario->can('transferencias.recibir') || $asignaciones->contains(fn($a) => str_contains(mb_strtoupper((string)$a->funcion_asignada), 'ENCARGAD'))) {
             $pendientes = MovimientoInventario::query()
                 ->whereIn('id_ubicacion_destino', $ubicaciones)
                 ->whereIn('tipo', ['TRANSFERENCIA', 'DEVOLUCION'])
@@ -39,9 +39,9 @@ class PanelOperativoController extends Controller
             'asignaciones' => $asignaciones,
             'recepciones_pendientes' => $pendientes,
             'permisos' => [
-                'recibir' => $usuario->can('transferencias.recibir'),
-                'vender' => $usuario->can('ventas.registrar'),
-                'ventas_ver' => $usuario->can('ventas.ver'),
+                'recibir' => $usuario->can('transferencias.recibir') || $asignaciones->contains(fn($a) => str_contains(mb_strtoupper((string)$a->funcion_asignada), 'ENCARGAD')),
+                'vender' => $usuario->can('ventas.registrar') || $asignaciones->contains(fn($a) => str_contains(mb_strtoupper((string)$a->funcion_asignada), 'ENCARGAD')),
+                'ventas_ver' => $usuario->can('ventas.ver') || $asignaciones->isNotEmpty(),
                 'cajas' => $usuario->can('cobros.ver'),
                 'inventarios' => $usuario->can('inventarios.ver'),
                 'movimientos' => $usuario->can('movimientos.ver'),

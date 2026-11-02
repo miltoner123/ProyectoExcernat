@@ -60,6 +60,7 @@ async function cerrarSesion() {
             <RouterLink v-if="puede('pedidos.ver')" to="/pedidos" class="menu-item"><AppIcon name="clipboard"/> Pedidos de abastecimiento</RouterLink>
             </div><button v-if="puede('eventos.ver') || encargadoTemporal()" class="menu-section exc-group" @click="abiertos.eventos=!abiertos.eventos">EVENTOS <span>{{abiertos.eventos?'⌃':'⌄'}}</span></button><div v-show="abiertos.eventos" class="exc-group-links">
             <RouterLink v-if="puede('eventos.ver') || encargadoTemporal()" to="/eventos" class="menu-item"><AppIcon name="calendar"/> Eventos</RouterLink>
+            <RouterLink v-if="encargadoTemporal()" to="/mi-panel-operativo" class="menu-item"><AppIcon name="clipboard"/> Mi stand asignado</RouterLink>
             </div><button v-if="puede('ventas.ver') || puede('cobros.ver') || encargadoTemporal()" class="menu-section exc-group" @click="abiertos.comercial=!abiertos.comercial">VENTAS Y CAJAS <span>{{abiertos.comercial?'⌃':'⌄'}}</span></button>
             <div v-show="abiertos.comercial" class="exc-group-links">
               <RouterLink v-if="puede('ventas.ver') || encargadoTemporal()" to="/ventas-stand" class="menu-item"><AppIcon name="clipboard"/> Ventas por ubicación</RouterLink>
@@ -71,7 +72,7 @@ async function cerrarSesion() {
             <RouterLink v-if="puede('personas.ver')" to="/personas" class="menu-item"><AppIcon name="users"/> Personas</RouterLink>
             <RouterLink v-if="puede('personal.gestionar')" to="/cargos" class="menu-item"><AppIcon name="briefcase"/> Cargos</RouterLink>
             <RouterLink v-if="puede('personal.ver')" to="/personal" class="menu-item"><AppIcon name="users"/> Personal</RouterLink>
-            <RouterLink v-if="puede('eventos.asignar_personal','eventos.gestionar')" to="/asignaciones" class="menu-item"><AppIcon name="pin"/> Asignaciones</RouterLink>
+            <RouterLink v-if="alguno('eventos.asignar_personal','eventos.gestionar')" to="/asignaciones" class="menu-item"><AppIcon name="pin"/> Asignaciones</RouterLink>
             <RouterLink v-if="puede('usuarios.ver')" to="/usuarios" class="menu-item"> <AppIcon name="shield"/> Gestión de Usuarios
             </RouterLink>
           </div></nav>

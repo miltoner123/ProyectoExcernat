@@ -6,14 +6,15 @@
     <section v-for="u in ubicaciones" :key="u.id" class="tarjeta">
       <div class="fila"><div><h2>{{ u.nombre }}</h2><p>{{ u.evento || u.tipo }} · {{ u.funciones.join(', ') }}</p></div><span v-if="u.pendientes" class="pendientes">{{ u.pendientes }} recepción(es) pendiente(s)</span></div>
       <div class="acciones">
-        <RouterLink v-if="permisos.recibir && u.encargado" to="/recepciones-transferencias">Recibir productos</RouterLink>
-        <RouterLink v-if="permisos.vender" :to="'/ventas-stand?id_ubicacion=' + u.id">Registrar venta</RouterLink>
-        <RouterLink v-if="permisos.ventas_ver" :to="'/ventas-stand?id_ubicacion=' + u.id">Historial de ventas</RouterLink>
-        <RouterLink v-if="permisos.cajas" :to="'/cajas-punto-venta?id_ubicacion=' + u.id">Mi caja</RouterLink>
+        <RouterLink v-if="u.encargado && u.evento" to="/eventos">Ver evento y stands</RouterLink>
+        <RouterLink v-if="u.encargado" to="/recepciones-transferencias">Recibir productos</RouterLink>
+        <RouterLink v-if="u.encargado && permisos.vender" :to="'/ventas-stand?id_ubicacion=' + u.id">Registrar venta</RouterLink>
+        <RouterLink v-if="u.encargado && permisos.ventas_ver" :to="'/ventas-stand?id_ubicacion=' + u.id">Historial de ventas</RouterLink>
+        <RouterLink v-if="u.encargado && permisos.cajas" :to="'/cajas-punto-venta?id_ubicacion=' + u.id">Mi caja</RouterLink>
         <RouterLink v-if="permisos.inventarios" to="/inventarios">Inventario</RouterLink>
         <RouterLink v-if="permisos.movimientos" to="/movimientos">Movimientos</RouterLink>
       </div>
-      <small v-if="permisos.recibir && !u.encargado">Las recepciones requieren función ENCARGADO vigente en esta ubicación.</small>
+      <small v-if="!u.encargado">Las recepciones requieren función ENCARGADO vigente en esta ubicación.</small>
     </section>
   </main>
 </template>

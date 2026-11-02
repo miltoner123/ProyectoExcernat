@@ -54,6 +54,7 @@ const routes = [
   { path: "/movimientos", component: () => import("./components/inventario/movimientos/MovimientosView.vue")},
   { path: "/movimientos/crear", component: () => import("./components/inventario/movimientos/MovimientosCreate.vue")},
   { path: "/movimientos/detalle/:id",component: () => import("./components/inventario/movimientos/MovimientosDetalle.vue")},
+  { path: "/mi-panel-operativo", component: () => import("./components/operaciones/MiPanelOperativo.vue") },
   { path: "/eventos", component: () => import("./components/eventos/EventosView.vue") },
   { path: "/eventos/crear", component: () => import("./components/eventos/EventosCreate.vue") },
   { path: "/eventos/editar/:id", component: () => import("./components/eventos/EventosEditar.vue") },
@@ -119,7 +120,17 @@ router.beforeEach(async (to) => {
   const permisos = sesion.usuario.permisos || [];
   // Gerencia Comercial puede crear y editar SUCURSALES o STANDS; el backend limita tipos.
   const standComercial = (to.path === '/ubicaciones/crear' || /^\/ubicaciones\/editar\/\d+$/.test(to.path)) && permisos.includes('eventos.gestionar');
-  if (encontrada && !admin && !permisos.includes(encontrada[1]) && !standComercial) return '/';
+  // Permisos permanentes primero; solo las rutas operativas admiten asignacion temporal.
+  // La API restringe el evento/stand y comprueba la asignacion vigente en cada peticion.
+  let temporal = false;
+  const rutasTemporales = ['/eventos', '/recepciones-transferencias', '/ventas-stand', '/mi-panel-operativo'];
+  if (!admin && rutasTemporales.includes(to.path) && !permisos.includes(encontrada?.[1])) {
+    try {
+      const { data } = await api.get('/api/mi-contexto-eventos');
+      temporal = Array.isArray(data.asignaciones) && data.asignaciones.length > 0;
+    } catch (_) { temporal = false; }
+  }
+  if (encontrada && !admin && !permisos.includes(encontrada[1]) && !standComercial && !temporal) return '/';
   const cambios = [
     [/^\/usuarios(?:\/|$)/, 'usuarios.editar'],
     [/^\/productos\/(?:crear|editar)(?:\/|$)/, 'productos.gestionar'],
@@ -135,7 +146,7 @@ router.beforeEach(async (to) => {
     [/^\/asignaciones\/(?:crear|editar)(?:\/|$)/, 'eventos.asignar_personal'],
   ];
   const cambio = cambios.find(([patron]) => patron.test(to.path));
-  if (cambio && !admin && !permisos.includes(cambio[1]) && !standComercial) return '/';
+  if (cambio && !admin && !permisos.includes(cambio[1]) && !(cambio[1] === 'eventos.asignar_personal' && permisos.includes('eventos.gestionar')) && !standComercial) return '/';
   return true;
 });
 

@@ -41,7 +41,7 @@
                 {{ u.persona?.apellidos || '' }}
               </td>
               <td>{{ u.email }}</td>
-              <td>{{ u.roles?.find(r => ['ADMIN','ENCARGADO','CONSULTA'].includes(r.name))?.name || 'Sin nivel' }}<small v-if="u.roles?.find(r => !['ADMIN','ENCARGADO','CONSULTA'].includes(r.name))"> · {{ u.roles.find(r => !['ADMIN','ENCARGADO','CONSULTA'].includes(r.name)).name }}</small></td>
+              <td>{{ u.roles?.find(r => ['ADMIN','ENCARGADO','CONSULTA'].includes(r.name))?.name || 'Sin nivel' }}</td>
               <td>
                 <span :class="u.estado ? 'activo' : 'inactivo'">
                   {{ u.estado ? 'Activo' : 'Inactivo' }}

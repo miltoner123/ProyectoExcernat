@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Personal;
 use App\Services\AccesoPorCargo;
+use App\Services\AuditoriaSeguridad;
 use App\Models\Persona;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -150,6 +151,7 @@ class PersonalController extends Controller
             'eliminar_foto' => 'nullable|boolean',
         ]);
 
+        $auditoriaAnterior = ['cargo_id' => $personal->id_cargo, 'estado' => (bool) $personal->estado];
         $fotoAnterior = $personal->foto;
         $nuevaFoto = $request->hasFile('foto')
             ? $request->file('foto')->store('personal', 'public')
@@ -172,6 +174,12 @@ class PersonalController extends Controller
         if ($usuario && !$usuario->hasRole('ADMIN')) {
             $acceso = app(AccesoPorCargo::class);
             $acceso->sincronizar($usuario, $acceso->nivel($usuario));
+        }
+
+        $auditoriaNuevo = ['cargo_id' => $personal->id_cargo, 'estado' => (bool) $personal->estado];
+        if ($auditoriaAnterior !== $auditoriaNuevo) {
+            app(AuditoriaSeguridad::class)->registrar('PERSONAL_ACCESO_CAMBIADO', 'personal', $personal->id_personal,
+                $usuario?->id, $auditoriaAnterior, $auditoriaNuevo, $request->user()?->id);
         }
 
         if (($nuevaFoto || $eliminarFoto) && $fotoAnterior) {

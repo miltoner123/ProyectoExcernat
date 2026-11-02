@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Persona;
 use App\Models\User;
 use App\Services\AccesoPorCargo;
+use App\Services\AuditoriaSeguridad;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -95,7 +96,7 @@ class UsuarioController extends Controller
 
         $this->validarRol($request, $datos['rol']);
 
-        return DB::transaction(function () use ($datos) {
+        return DB::transaction(function () use ($datos, $request) {
             $persona = Persona::whereKey($datos['id_persona'])
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -126,6 +127,10 @@ class UsuarioController extends Controller
             ]);
 
             app(AccesoPorCargo::class)->sincronizar($usuario, $datos['rol']);
+            app(AuditoriaSeguridad::class)->registrar('USUARIO_CREADO', 'users', $usuario->id, $usuario->id, [], [
+                'email' => $usuario->email, 'estado' => (bool) $usuario->estado,
+                'nivel' => $datos['rol'], 'roles' => $usuario->getRoleNames()->values()->all(),
+            ], $request->user()->id);
 
             return response()->json([
                 'message' => 'Usuario registrado correctamente.',
@@ -175,7 +180,12 @@ class UsuarioController extends Controller
             abort(403, 'No puede modificar una cuenta ADMIN.');
         }
 
-        return DB::transaction(function () use ($usuario, $datos) {
+        return DB::transaction(function () use ($usuario, $datos, $request) {
+            $anterior = [
+                'email' => $usuario->email, 'estado' => (bool) $usuario->estado,
+                'nivel' => app(AccesoPorCargo::class)->nivel($usuario),
+                'roles' => $usuario->getRoleNames()->values()->all(),
+            ];
             $cambios = [
                 'email' => $datos['email'],
                 'estado' => $datos['estado'],
@@ -187,6 +197,14 @@ class UsuarioController extends Controller
 
             $usuario->update($cambios);
             app(AccesoPorCargo::class)->sincronizar($usuario, $datos['rol']);
+            $nuevo = [
+                'email' => $usuario->email, 'estado' => (bool) $usuario->estado,
+                'nivel' => $datos['rol'], 'roles' => $usuario->getRoleNames()->values()->all(),
+            ];
+            if ($anterior !== $nuevo || !empty($datos['password'])) {
+                app(AuditoriaSeguridad::class)->registrar('USUARIO_ACTUALIZADO', 'users', $usuario->id, $usuario->id,
+                    $anterior, $nuevo + ['contrasena_modificada' => !empty($datos['password'])], $request->user()->id);
+            }
 
             return response()->json([
                 'message' => 'Usuario actualizado correctamente.',

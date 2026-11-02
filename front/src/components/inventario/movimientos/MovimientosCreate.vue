@@ -302,7 +302,8 @@ export default {
       }
       this.cargandoResponsables = true;
       try {
-        const registros = await this.obtenerTodos('asignaciones-personal', { id_ubicacion: id });
+        const { data } = await api.get(`/api/stands/${id}/responsables-operativos`);
+        const registros = (data.responsables || []).map(a => ({ ...a, id_ubicacion: id, funcion_asignada: a.funcion, personal: { persona: { nombres_razon_social: a.nombre, apellidos: '' } }, fecha_inicio: null, fecha_fin: null, estado: true }));
         if (solicitud !== this.solicitudResponsables) return;
         this.asignacionesStand = registros.filter(a => Number(a.id_ubicacion) === Number(id));
       } catch (error) {

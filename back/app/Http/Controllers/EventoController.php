@@ -15,6 +15,10 @@ public function index(Request $request)
     if (!in_array($limit, [10, 25, 50], true)) $limit = 10;
 
     $query = Evento::with('responsable.persona');
+    $acceso = app(\App\Services\AccesoTemporalEvento::class);
+    if (!$request->user()->hasRole('ADMIN') && !$request->user()->can('eventos.ver')) {
+        $query->whereIn('id_evento', $acceso->eventos($request->user()));
+    }
 
     if ($request->filled('buscar')) {
         $buscar = trim($request->query('buscar'));
@@ -112,8 +116,10 @@ public function index(Request $request)
     }
 
     // MOSTRAR EVENTO
-    public function show($id)
+    public function show(Request $request, $id)
     {
+        if (!app(\App\Services\AccesoTemporalEvento::class)->puedeVerEvento($request->user(), (int)$id)) abort(403);
+
         $evento = Evento::with([
             'responsable.persona',
             'ubicaciones',

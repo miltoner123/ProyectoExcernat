@@ -11,6 +11,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // AUTENTICACIÓN
     Route::get('/usuario', [AuthController::class, 'usuario']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/eventos/{id}/stands-operativos', [\App\Http\Controllers\ContextoOperativoController::class, 'standsEvento']);
+    Route::get('/mi-contexto-eventos', [\App\Http\Controllers\ContextoOperativoController::class, 'mio']);
+    Route::get('/stands/{id}/responsables-operativos', [\App\Http\Controllers\ContextoOperativoController::class, 'responsables']);
     // Panel de ubicaciones vigentes del usuario (sin exponer asignaciones ajenas).
     Route::get('/mi-panel-operativo', [\App\Http\Controllers\PanelOperativoController::class, 'index']);
 
@@ -69,12 +72,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/avisos-operativos', [\App\Http\Controllers\AvisosOperativosController::class, 'index']);
 
     // EVENTOS
-    Route::get('/eventos', [\App\Http\Controllers\EventoController::class, 'index'])->middleware('permission:eventos.ver');
+    Route::get('/eventos', [\App\Http\Controllers\EventoController::class, 'index'])->middleware('\App\Http\Middleware\PermisoOEncargo:eventos.ver');
     Route::post('/eventos', [\App\Http\Controllers\EventoController::class, 'store'])->middleware('permission:eventos.gestionar');
     Route::get('/eventos/{id}/pendientes', [\App\Http\Controllers\CierreEventoController::class, 'resumen'])->middleware('permission:eventos.ver');
     Route::post('/eventos/{id}/finalizar', [\App\Http\Controllers\CierreEventoController::class, 'finalizar'])->middleware('permission:eventos.gestionar');
     Route::post('/eventos/{id}/cerrar', [\App\Http\Controllers\CierreEventoController::class, 'cerrar'])->middleware('permission:eventos.gestionar');
-    Route::get('/eventos/{id}', [\App\Http\Controllers\EventoController::class, 'show'])->middleware('permission:eventos.ver');
+    Route::get('/eventos/{id}', [\App\Http\Controllers\EventoController::class, 'show'])->middleware('\App\Http\Middleware\PermisoOEncargo:eventos.ver');
     Route::post('/eventos/{id}', [\App\Http\Controllers\EventoController::class, 'update'])->middleware('permission:eventos.gestionar');
     Route::delete('/eventos/{id}', [\App\Http\Controllers\EventoController::class, 'destroy'])->middleware('permission:eventos.gestionar');
 
@@ -92,9 +95,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/recepciones-produccion/{id}/confirmar', [\App\Http\Controllers\RecepcionProduccionController::class, 'confirmar'])->middleware('permission:recepciones.confirmar');
 
     // MOVIMIENTOS DE INVENTARIO
-    Route::get('/recepciones-transferencias', [\App\Http\Controllers\RecepcionTransferenciaController::class, 'index'])->middleware('permission:transferencias.recibir');
+    Route::get('/recepciones-transferencias', [\App\Http\Controllers\RecepcionTransferenciaController::class, 'index'])->middleware('\App\Http\Middleware\PermisoOEncargo:transferencias.recibir');
     Route::get('/pedidos/{id}/seguimiento', [\App\Http\Controllers\RecepcionTransferenciaController::class, 'seguimiento'])->middleware('permission:pedidos.ver');
-    Route::post('/recepciones-transferencias/{id}/confirmar', [\App\Http\Controllers\RecepcionTransferenciaController::class, 'confirmar'])->middleware('permission:transferencias.recibir');
+    Route::post('/recepciones-transferencias/{id}/confirmar', [\App\Http\Controllers\RecepcionTransferenciaController::class, 'confirmar'])->middleware('\App\Http\Middleware\PermisoOEncargo:transferencias.recibir');
 
     Route::get('/movimientos-inventario', [\App\Http\Controllers\MovimientoInventarioController::class, 'index'])->middleware('permission:movimientos.ver');
     Route::post('/movimientos-inventario', [\App\Http\Controllers\MovimientoInventarioController::class, 'store'])->middleware('permission:movimientos.registrar');
@@ -108,12 +111,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'index'])->middleware('permission:cobros.ver');
     Route::post('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'store'])->middleware('permission:cobros.registrar');
     Route::get('/reportes/contabilidad/resumen', [\App\Http\Controllers\ReporteContableController::class, 'resumen'])->middleware('permission:contabilidad.ver');
-    Route::get('/ventas-stand/vendedores', [\App\Http\Controllers\VentaController::class, 'vendedores'])->middleware('permission:ventas.registrar');
-    Route::get('/ventas-stand/stands', [\App\Http\Controllers\VentaController::class, 'stands'])->middleware('permission:ventas.ver');
-    Route::get('/ventas-stand/existencias', [\App\Http\Controllers\VentaController::class, 'existencias'])->middleware('permission:ventas.ver');
-    Route::get('/ventas-stand', [\App\Http\Controllers\VentaController::class, 'index'])->middleware('permission:ventas.ver');
-    Route::post('/ventas-stand', [\App\Http\Controllers\VentaController::class, 'store'])->middleware('permission:ventas.registrar');
-    Route::get('/ventas-stand/{id}', [\App\Http\Controllers\VentaController::class, 'show'])->middleware('permission:ventas.ver');
+    Route::get('/ventas-stand/vendedores', [\App\Http\Controllers\VentaController::class, 'vendedores'])->middleware('\App\Http\Middleware\PermisoOEncargo:ventas.registrar');
+    Route::get('/ventas-stand/stands', [\App\Http\Controllers\VentaController::class, 'stands'])->middleware('\App\Http\Middleware\PermisoOEncargo:ventas.ver');
+    Route::get('/ventas-stand/existencias', [\App\Http\Controllers\VentaController::class, 'existencias'])->middleware('\App\Http\Middleware\PermisoOEncargo:ventas.ver');
+    Route::get('/ventas-stand', [\App\Http\Controllers\VentaController::class, 'index'])->middleware('\App\Http\Middleware\PermisoOEncargo:ventas.ver');
+    Route::post('/ventas-stand', [\App\Http\Controllers\VentaController::class, 'store'])->middleware('\App\Http\Middleware\PermisoOEncargo:ventas.registrar');
+    Route::get('/ventas-stand/{id}', [\App\Http\Controllers\VentaController::class, 'show'])->middleware('\App\Http\Middleware\PermisoOEncargo:ventas.ver');
     Route::post('/ventas-stand/{id}/anular', [\App\Http\Controllers\VentaController::class, 'anular'])->middleware('permission:ventas.supervisar');
 
     // PEDIDOS (PERMISOS TEMPORALES)
@@ -140,18 +143,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/cargos/{id}', [\App\Http\Controllers\CargoController::class, 'destroy'])->middleware('permission:personal.gestionar');
 
     // PERSONAL
-    Route::get('/personal', [\App\Http\Controllers\PersonalController::class, 'index'])->middleware('permission:personal.ver');
+    Route::get('/personal', [\App\Http\Controllers\PersonalController::class, 'index'])->middleware('permission:personal.ver|eventos.gestionar');
     Route::post('/personal', [\App\Http\Controllers\PersonalController::class, 'store'])->middleware('permission:personal.gestionar');
     Route::get('/personal/{id}', [\App\Http\Controllers\PersonalController::class, 'show'])->middleware('permission:personal.ver');
     Route::put('/personal/{id}', [\App\Http\Controllers\PersonalController::class, 'update'])->middleware('permission:personal.gestionar');
     Route::delete('/personal/{id}', [\App\Http\Controllers\PersonalController::class, 'destroy'])->middleware('permission:personal.gestionar');
 
     // ASIGNACIONES DE PERSONAL
-    Route::get('/asignaciones-personal', [\App\Http\Controllers\AsignacionPersonalController::class, 'index'])->middleware('permission:eventos.ver');
-    Route::post('/asignaciones-personal', [\App\Http\Controllers\AsignacionPersonalController::class, 'store'])->middleware('permission:eventos.asignar_personal');
-    Route::get('/asignaciones-personal/{id}', [\App\Http\Controllers\AsignacionPersonalController::class, 'show'])->middleware('permission:eventos.ver');
-    Route::post('/asignaciones-personal/{id}', [\App\Http\Controllers\AsignacionPersonalController::class, 'update'])->middleware('permission:eventos.asignar_personal');
-    Route::delete('/asignaciones-personal/{id}', [\App\Http\Controllers\AsignacionPersonalController::class, 'destroy'])->middleware('permission:eventos.asignar_personal');
+    Route::get('/asignaciones-personal', [\App\Http\Controllers\AsignacionPersonalController::class, 'index'])->middleware('permission:eventos.ver|eventos.gestionar');
+    Route::post('/asignaciones-personal', [\App\Http\Controllers\AsignacionPersonalController::class, 'store'])->middleware('permission:eventos.asignar_personal|eventos.gestionar');
+    Route::get('/asignaciones-personal/{id}', [\App\Http\Controllers\AsignacionPersonalController::class, 'show'])->middleware('permission:eventos.ver|eventos.gestionar');
+    Route::post('/asignaciones-personal/{id}', [\App\Http\Controllers\AsignacionPersonalController::class, 'update'])->middleware('permission:eventos.asignar_personal|eventos.gestionar');
+    Route::delete('/asignaciones-personal/{id}', [\App\Http\Controllers\AsignacionPersonalController::class, 'destroy'])->middleware('permission:eventos.asignar_personal|eventos.gestionar');
 
 
 });

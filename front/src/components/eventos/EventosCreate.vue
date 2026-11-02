@@ -87,28 +87,8 @@
                 </div>
 
             </div>
+            <!-- El encargado operativo se asigna por stand en Personal > Asignaciones. -->
 
-            <div class="campo">
-
-                <label>Responsable:</label>
-
-                <select v-model="evento.id_responsable">
-
-                    <option :value="null">
-                        Sin responsable asignado
-                    </option>
-
-                    <option
-                        v-for="trabajador in personal"
-                        :key="trabajador.id_personal"
-                        :value="trabajador.id_personal"
-                    >
-                        {{ nombrePersonal(trabajador) }}
-                    </option>
-
-                </select>
-
-            </div>
 
             <div class="campo">
 

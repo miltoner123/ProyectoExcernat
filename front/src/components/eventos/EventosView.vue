@@ -4,9 +4,9 @@
       <div>
         <div class="etiqueta-seccion"><span class="punto"></span> MÓDULO DE EVENTOS</div>
         <h1>Gestión de Eventos</h1>
-        <p>Administra ferias, exposiciones, responsables y stands desde un solo lugar.</p>
+        <p>Administra ferias, stands y asigna encargados desde Personal > Asignaciones.</p>
       </div>
-      <button class="btn btn-principal" @click="$router.push('/eventos/crear')">＋ Nuevo evento</button>
+      <button v-if="puedeAdministrar" class="btn btn-principal" @click="$router.push('/eventos/crear')">＋ Nuevo evento</button>
     </header>
 
     <section class="indicadores">
@@ -76,11 +76,11 @@
                       @click="alternarStands(evento.id_evento)">
                       {{ eventoAbierto === evento.id_evento ? '▴ Ocultar' : '▾ Stands' }}
                     </button>
-                    <button class="btn btn-editar" @click="verPendientes(evento)">Pendientes</button>
-                    <button v-if="estadoVisible(evento) === 'EN_CURSO'" class="btn btn-editar" @click="finalizarEvento(evento)">Finalizar</button>
-                    <button v-if="evento.estado_operativo === 'FINALIZADO'" class="btn btn-editar" @click="cerrarEvento(evento)">Cerrar</button>
-                    <button class="btn btn-editar" @click="$router.push(`/eventos/editar/${evento.id_evento}`)">Editar</button>
-                    <button class="btn btn-eliminar" :disabled="eliminando === evento.id_evento" @click="eliminarEvento(evento)">Eliminar</button>
+                    <button v-if="puedeAdministrar" class="btn btn-editar" @click="verPendientes(evento)">Pendientes</button>
+                    <button v-if="puedeAdministrar && estadoVisible(evento) === 'EN_CURSO'" class="btn btn-editar" @click="finalizarEvento(evento)">Finalizar</button>
+                    <button v-if="puedeAdministrar && evento.estado_operativo === 'FINALIZADO'" class="btn btn-editar" @click="cerrarEvento(evento)">Cerrar</button>
+                    <button v-if="puedeAdministrar" class="btn btn-editar" @click="$router.push(`/eventos/editar/${evento.id_evento}`)">Editar</button>
+                    <button v-if="puedeAdministrar" class="btn btn-eliminar" :disabled="eliminando === evento.id_evento" @click="eliminarEvento(evento)">Eliminar</button>
                   </div>
                 </td>
               </tr>
@@ -89,7 +89,7 @@
                   <div class="stands-detalle">
                     <div class="stands-cabecera">
                       <div><span class="subtitulo">STANDS VINCULADOS</span><h3>Stands de {{ evento.nombre }}</h3><p>Ubicaciones asignadas exclusivamente a este evento.</p></div>
-                      <button class="btn btn-principal" @click="$router.push(`/ubicaciones/crear?tipo=STAND&id_evento=${evento.id_evento}`)">＋ Nuevo stand</button>
+                      <button v-if="puedeAdministrar" class="btn btn-principal" @click="$router.push(`/ubicaciones/crear?tipo=STAND&id_evento=${evento.id_evento}`)">＋ Nuevo stand</button>
                     </div>
                     <p v-if="cargandoStands" class="mensaje-info">Cargando stands...</p>
                     <p v-else-if="errorStands" class="mensaje-error" role="alert">{{ errorStands }}</p>
@@ -102,7 +102,7 @@
                             <td><strong>{{ stand.nombre }}</strong></td><td>{{ stand.propiedad }}</td>
                             <td>{{ stand.departamento }}</td><td>{{ stand.direccion || '—' }}</td>
                             <td><span :class="stand.estado ? 'estado-activo' : 'estado-inactivo'">{{ stand.estado ? '● Activo' : '● Inactivo' }}</span></td>
-                            <td><button class="btn btn-editar" @click="$router.push(`/ubicaciones/editar/${stand.id_ubicacion}?tipo=STAND&id_evento=${evento.id_evento}`)">Editar</button></td>
+                            <td><button v-if="puedeAdministrar" class="btn btn-editar" @click="$router.push(`/ubicaciones/editar/${stand.id_ubicacion}?tipo=STAND&id_evento=${evento.id_evento}`)">Editar</button></td>
                           </tr>
                           <tr v-if="!stands.length"><td colspan="7" class="sin-registros">Este evento todavía no tiene stands registrados.</td></tr>
                         </tbody>
@@ -130,6 +130,7 @@
 
 <script>
 import api from '../../services/api';
+import { sesion } from '../../services/sesion';
 
 export default {
   name: 'EventosView',
@@ -142,6 +143,7 @@ export default {
       pagination: { current_page: 1, last_page: 1, per_page: 10, total: 0 }
     };
   },
+  computed: { puedeAdministrar() { return sesion.usuario?.roles?.some(r => r.name === 'ADMIN') || (sesion.usuario?.permisos || []).includes('eventos.gestionar'); } },
   mounted() { this.eventosGet(); },
   beforeUnmount() { clearTimeout(this.temporizadorBusqueda); this.numeroPeticion++; this.numeroPeticionStands++; },
   methods: {
@@ -184,18 +186,9 @@ export default {
       this.cargandoStands = true;
       const peticion = ++this.numeroPeticionStands;
       try {
-        const resultado = [];
-        let pagina = 1;
-        let ultimaPagina = 1;
-        do {
-          const { data } = await api.get('/api/ubicaciones', {
-            params: { id_evento: idEvento, tipo: 'STAND', limit: 50, page: pagina }
-          });
-          if (peticion !== this.numeroPeticionStands) return;
-          resultado.push(...(Array.isArray(data) ? data : (data.data || [])));
-          ultimaPagina = Number(data.last_page || 1);
-          pagina++;
-        } while (pagina <= ultimaPagina);
+        const { data } = await api.get(`/api/eventos/${idEvento}/stands-operativos`);
+        if (peticion !== this.numeroPeticionStands) return;
+        const resultado = data.data || [];
         this.stands = resultado.filter(stand => stand.tipo === 'STAND' && Number(stand.id_evento) === Number(idEvento));
       } catch (error) {
         if (peticion !== this.numeroPeticionStands) return;

@@ -17,6 +17,7 @@ import AboutView from "./components/AboutView.vue";
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { publica: true } },
+  { path: '/auditoria-seguridad', name: 'AuditoriaSeguridad', component: () => import('./components/seguridad/AuditoriaSeguridadView.vue')},
   { path: '/usuarios', name: 'Usuarios', component: () => import('./components/seguridad/UsuariosView.vue')},
   { path: "/", component: HomeView },
   { path: "/about", component: AboutView },
@@ -90,8 +91,10 @@ router.beforeEach(async (to) => {
   }
   if (to.meta.publica) return sesion.usuario ? '/' : true;
   if (!sesion.usuario) return { path: '/login', query: { redirect: to.fullPath } };
+  if (to.path === '/auditoria-seguridad' && !sesion.usuario.roles?.some(r => r.name === 'ADMIN')) return '/';
   // Seguridad de navegacion: los permisos reales siguen siendo exigidos por Laravel.
   const reglas = [
+    [/^\/auditoria-seguridad(?:\/|$)/, 'usuarios.ver'],
     [/^\/usuarios(?:\/|$)/, 'usuarios.ver'],
     [/^\/productos(?:\/|$)/, 'productos.ver'],
     [/^\/presentaciones(?:\/|$)/, 'presentaciones.ver'],

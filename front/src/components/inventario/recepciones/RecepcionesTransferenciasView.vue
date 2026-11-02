@@ -4,6 +4,7 @@
     <p v-if="error" class="rt-error">{{ error }}</p>
     <p v-if="cargando">Cargando transferencias...</p>
     <div v-else-if="!movimientos.length" class="rt-empty">No tienes transferencias pendientes de recepción.</div>
+    <section class="rt-card"><h2>Historial de recepciones y diferencias</h2><button @click="cargarHistorial">Actualizar historial</button><p v-if="errorHistorial" class="rt-error">{{ errorHistorial }}</p><p v-if="!historial.length">Sin recepciones confirmadas visibles.</p><table v-else><thead><tr><th>Movimiento</th><th>Origen / destino</th><th>Estado</th><th>Lotes y diferencias</th><th>Receptor</th></tr></thead><tbody><tr v-for="m in historial" :key="m.id_movimiento"><td>#{{ m.id_movimiento }}</td><td>{{m.origen?.nombre}} → {{m.destino?.nombre}}</td><td>{{m.estado_recepcion}}</td><td><div v-for="d in m.detalles" :key="d.id_detalle_movimiento">{{d.lote?.codigo_lote}}: enviado {{d.cantidad}}, recibido {{d.cantidad_recibida ?? d.cantidad}}, faltante {{Math.max(0,Number(d.cantidad)-Number(d.cantidad_recibida ?? d.cantidad))}}<span v-if="d.observacion_recepcion"> — {{d.observacion_recepcion}}</span></div></td><td>{{m.receptor?.name || '—'}}</td></tr></tbody></table></section>
     <article v-for="m in movimientos" :key="m.id_movimiento" class="rt-card">
       <div class="rt-title"><strong>{{ m.tipo === 'DEVOLUCION' ? 'Devolución' : 'Transferencia' }} #{{ m.id_movimiento }}</strong><span>PENDIENTE</span></div>
       <p><b>Origen:</b> {{ m.origen?.nombre || '—' }} · <b>Destino:</b> {{ m.destino?.nombre || '—' }}</p>
@@ -18,9 +19,10 @@
 import api from '../../../services/api';
 export default {
   name: 'RecepcionesTransferenciasView',
-  data() { return { movimientos: [], cargando: false, procesando: null, error: '', cantidades: {}, observaciones: {} }; },
-  mounted() { this.cargar(); },
+  data() { return { movimientos: [], cargando: false, procesando: null, error: '', errorHistorial:'', historial:[], cantidades: {}, observaciones: {} }; },
+  mounted() { this.cargar(); this.cargarHistorial(); },
   methods: {
+    async cargarHistorial(){try{const {data}=await api.get('/api/recepciones-transferencias/historial');this.historial=data.data||[];this.errorHistorial='';}catch(e){this.errorHistorial=e.response?.data?.message||'No se pudo cargar el historial.';}},
     fecha(v) { return v ? new Date(v).toLocaleString('es-BO') : '—'; },
     async cargar() { this.cargando = true; this.error = ''; try { const { data } = await api.get('/api/recepciones-transferencias'); this.movimientos = data.data || [];
       for (const m of this.movimientos) {
@@ -41,7 +43,7 @@ export default {
       }
       if (!window.confirm(`¿Registrar la recepción de la transferencia #${m.id_movimiento}? La operación no se puede repetir.`)) return;
       this.procesando = m.id_movimiento; this.error = '';
-      try { await api.post(`/api/recepciones-transferencias/${m.id_movimiento}/confirmar`, { detalles }); await this.cargar(); }
+      try { await api.post(`/api/recepciones-transferencias/${m.id_movimiento}/confirmar`, { detalles }); await this.cargar(); await this.cargarHistorial(); }
       catch(e) { this.error = Object.values(e.response?.data?.errors || {}).flat().join(' ') || e.response?.data?.message || 'No se pudo confirmar.'; }
       finally { this.procesando = null; }
     }

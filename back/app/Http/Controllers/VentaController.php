@@ -101,6 +101,7 @@ class VentaController extends Controller {
         $data=$request->validate([
             'id_ubicacion'=>'required|integer|exists:ubicaciones,id_ubicacion',
             'observacion'=>'nullable|string|max:1000',
+            'descuento_total'=>'nullable|numeric|min:0|max:9999999.99',
             'id_asignacion_vendedor'=>'required|integer|exists:asignaciones_personal,id_asignacion',
             'detalles'=>'required|array|min:1|max:30',
             'detalles.*.id_lote'=>'required|integer|distinct|exists:lotes,id_lote',
@@ -148,8 +149,15 @@ class VentaController extends Controller {
                 $lineas[]=['inventario'=>$inventario,'id_lote'=>$item['id_lote'],'cantidad'=>$cantidad,
                     'precio'=>number_format($centavos/100,2,'.',''),'subtotal'=>number_format($subtotal/100,2,'.','')];
             }
+            $descuentoCentavos=(int) round((float)($data['descuento_total']??0)*100);
+            if ($descuentoCentavos >= $totalCentavos) {
+                throw ValidationException::withMessages(['descuento_total'=>'El descuento debe ser menor al subtotal de la venta.']);
+            }
+            $totalFinalCentavos=$totalCentavos-$descuentoCentavos;
             $venta=Venta::create(['id_ubicacion'=>$id,'id_usuario'=>$request->user()->id,'id_asignacion_vendedor'=>$asignacion->id_asignacion,
-                'fecha_venta'=>now(),'estado'=>'CONFIRMADA','total'=>number_format($totalCentavos/100,2,'.',''),
+                'fecha_venta'=>now(),'estado'=>'CONFIRMADA','subtotal_bruto'=>number_format($totalCentavos/100,2,'.',''),
+                'descuento_total'=>number_format($descuentoCentavos/100,2,'.',''),
+                'total'=>number_format($totalFinalCentavos/100,2,'.',''),
                 'observacion'=>$data['observacion']??null]);
             foreach($lineas as $linea){
                 $venta->detalles()->create(['id_lote'=>$linea['id_lote'],'cantidad'=>$linea['cantidad'],
@@ -158,7 +166,7 @@ class VentaController extends Controller {
             }
             if ($caja) {
                 $venta->cobros()->create(['id_caja'=>$caja->id_caja,'id_usuario'=>$request->user()->id,
-                    'monto'=>number_format($totalCentavos/100,2,'.',''),
+                    'monto'=>number_format($totalFinalCentavos/100,2,'.',''),
                     'metodo_pago'=>$data['pago']['metodo_pago'],
                     'referencia'=>$data['pago']['referencia']??null,
                     'clave_operacion'=>$data['pago']['clave_operacion'],

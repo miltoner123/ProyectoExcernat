@@ -43,6 +43,31 @@ class DatabaseSeeder extends Seeder
             ->forgetCachedPermissions();
 
         DB::transaction(function () use ($password) {
+            // ========================================================
+// EXCERNAT - ALMACÉN CENTRAL PERMANENTE
+// ========================================================
+
+$ahora = now();
+
+$almacenCentral = DB::table('ubicaciones')
+    ->where('nombre', 'ALMACÉN CENTRAL')
+    ->where('tipo', 'ALMACEN')
+    ->first();
+
+if (!$almacenCentral) {
+    DB::table('ubicaciones')->insert([
+        'id_evento' => null,
+        'nombre' => 'ALMACÉN CENTRAL',
+        'tipo' => 'ALMACEN',
+        'propiedad' => 'PROPIA',
+        'departamento' => 'La Paz',
+        'direccion' => 'Almacén principal de EXCERNAT',
+        'estado' => true,
+        'estado_inventario' => 'HABILITADO',
+        'created_at' => $ahora,
+        'updated_at' => $ahora,
+    ]);
+}
 
             // ==========================================
             // 1. CATEGORÍAS

@@ -121,6 +121,31 @@ class RecepcionTransferenciaController extends Controller
         ]);
     }
 
+    public function historial(Request $request)
+    {
+        $usuario=$request->user();
+        $query=MovimientoInventario::with(['origen','destino','detalles.lote.presentacion.producto','receptor'])
+            ->whereIn('tipo',['TRANSFERENCIA','DEVOLUCION'])
+            ->whereIn('estado_recepcion',['RECIBIDA','OBSERVADA']);
+        if (!$usuario->hasRole('ADMIN')) {
+            $ids=Personal::where('id_persona',$usuario->id_persona)->where('estado',true)->pluck('id_personal');
+            $destinos=AsignacionPersonal::whereIn('id_personal',$ids)->where('estado',true)
+                ->whereDate('fecha_inicio','<=',today())
+                ->where(fn($q)=>$q->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',today()))
+                ->whereRaw('UPPER(funcion_asignada) LIKE ?', ['%ENCARGAD%'])->pluck('id_ubicacion');
+            $central=$usuario->can('recepciones.confirmar')
+                ? \App\Models\Ubicacion::where('tipo','ALMACEN')->where('estado',true)
+                    ->whereRaw("UPPER(TRIM(nombre)) IN ('ALMACÉN CENTRAL','ALMACEN CENTRAL')")
+                    ->pluck('id_ubicacion') : collect();
+            $query->where(function($q) use ($destinos,$central) {
+                $q->whereIn('id_ubicacion_destino',$destinos)
+                  ->orWhereIn('id_ubicacion_destino',$central)
+                  ->orWhereIn('id_ubicacion_origen',$central);
+            });
+        }
+        return response()->json($query->orderByDesc('fecha_recepcion')->paginate(30));
+    }
+
     public function seguimiento(Request $request, int $id)
     {
         $pedido = \App\Models\Pedido::with(['ubicacionSolicitante','detalles.presentacion.producto'])->findOrFail($id);

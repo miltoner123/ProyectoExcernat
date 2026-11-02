@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Personal;
+use App\Services\AccesoPorCargo;
 use App\Models\Persona;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -165,6 +166,13 @@ class PersonalController extends Controller
             'estado' => $request->estado,
             'foto' => $nuevaFoto ?? ($eliminarFoto ? null : $fotoAnterior),
         ]);
+
+        // Actualizar los permisos de la cuenta existente al cambiar cargo o estado.
+        $usuario = \App\Models\User::where('id_persona', $personal->id_persona)->first();
+        if ($usuario && !$usuario->hasRole('ADMIN')) {
+            $acceso = app(AccesoPorCargo::class);
+            $acceso->sincronizar($usuario, $acceso->nivel($usuario));
+        }
 
         if (($nuevaFoto || $eliminarFoto) && $fotoAnterior) {
             Storage::disk('public')->delete($fotoAnterior);

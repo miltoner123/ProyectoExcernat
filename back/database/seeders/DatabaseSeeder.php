@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Categoria;
+use App\Models\Cargo;
+use App\Services\AccesoPorCargo;
 use App\Models\Persona;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -71,6 +73,15 @@ class DatabaseSeeder extends Seeder
                 );
             }
 
+            // Cargos de referencia, sin alterar datos ni asignaciones existentes.
+            // Permisos siempre definidos por los roles Spatie configurados abajo.
+            foreach (array_keys(AccesoPorCargo::CARGOS) as $nombreCargo) {
+                Cargo::firstOrCreate(['nombre' => $nombreCargo], [
+                    'descripcion' => 'Cargo laboral EXCERNAT',
+                    'estado' => true,
+                ]);
+            }
+
             // ==========================================
             // 2. PERSONA ADMINISTRADORA
             // ==========================================
@@ -123,9 +134,6 @@ class DatabaseSeeder extends Seeder
                 'personal.gestionar',
 
                 // ASISTENCIAS
-                'asistencias.ver',
-                'asistencias.registrar',
-                'asistencias.gestionar',
 
                 // CATEGORÍAS
                 'categorias.ver',
@@ -214,7 +222,6 @@ class DatabaseSeeder extends Seeder
                     'usuarios.ver',
                     'personas.ver',
                     'personal.ver',
-                    'asistencias.ver',
                     'categorias.ver',
                     'productos.ver',
                     'presentaciones.ver',
@@ -240,8 +247,6 @@ class DatabaseSeeder extends Seeder
                     'personas.gestionar',
                     'personal.ver',
                     'personal.gestionar',
-                    'asistencias.ver',
-                    'asistencias.gestionar',
                     'contabilidad.ver',
                     'reportes.ver',
                     'pedidos.ver',

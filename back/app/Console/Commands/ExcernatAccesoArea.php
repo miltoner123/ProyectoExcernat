@@ -17,7 +17,7 @@ class ExcernatAccesoArea extends Command
             'produccion' => ['productos.ver','presentaciones.ver','lotes.ver','lotes.gestionar','producciones.ver','producciones.registrar'],
             'almacen' => ['productos.ver','presentaciones.ver','lotes.ver','ubicaciones.ver','inventarios.ver','movimientos.ver','movimientos.registrar','recepciones.ver','recepciones.confirmar','transferencias.recibir','pedidos.ver'],
             'comercial' => ['productos.ver','presentaciones.ver','inventarios.ver','ventas.ver','ventas.supervisar','cobros.ver','cobros.supervisar','eventos.ver','eventos.gestionar','eventos.asignar_personal','pedidos.ver','reportes.ver'],
-            'administracion' => ['personas.ver','personal.ver','asistencias.ver','ventas.ver','cobros.ver','cobros.supervisar','contabilidad.ver','contabilidad.gestionar','reportes.ver'],
+            'administracion' => ['personas.ver','personal.ver','ventas.ver','cobros.ver','cobros.supervisar','contabilidad.ver','contabilidad.gestionar','reportes.ver'],
             'consulta' => ['productos.ver','presentaciones.ver','ubicaciones.ver','eventos.ver'],
         ];
         $area = strtolower($this->argument('area'));

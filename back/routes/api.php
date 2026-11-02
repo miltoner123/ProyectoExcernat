@@ -153,11 +153,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/asignaciones-personal/{id}', [\App\Http\Controllers\AsignacionPersonalController::class, 'update'])->middleware('permission:eventos.asignar_personal');
     Route::delete('/asignaciones-personal/{id}', [\App\Http\Controllers\AsignacionPersonalController::class, 'destroy'])->middleware('permission:eventos.asignar_personal');
 
-    // ASISTENCIAS
-    Route::get('/asistencias', [\App\Http\Controllers\AsistenciaController::class, 'index'])->middleware('permission:asistencias.ver');
-    Route::post('/asistencias', [\App\Http\Controllers\AsistenciaController::class, 'store'])->middleware('permission:asistencias.registrar');
-    Route::get('/asistencias/{id}', [\App\Http\Controllers\AsistenciaController::class, 'show'])->middleware('permission:asistencias.ver');
-    Route::post('/asistencias/{id}', [\App\Http\Controllers\AsistenciaController::class, 'update'])->middleware('permission:asistencias.gestionar');
-    Route::delete('/asistencias/{id}', [\App\Http\Controllers\AsistenciaController::class, 'destroy'])->middleware('permission:asistencias.gestionar');
 
 });

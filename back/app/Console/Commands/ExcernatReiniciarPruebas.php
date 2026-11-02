@@ -27,7 +27,7 @@ class ExcernatReiniciarPruebas extends Command
         $tablas = [
             'cobros_ventas', 'detalle_ventas', 'ventas', 'cajas_punto_venta',
             'detalle_pedidos', 'pedidos', 'detalle_movimiento', 'movimientos_inventario',
-            'inventarios', 'asistencias', 'asignaciones_personal',
+            'inventarios', 'asignaciones_personal',
             'lotes', 'ubicaciones', 'eventos',
         ];
         $presentes = array_values(array_filter($tablas, fn ($t) => Schema::hasTable($t)));

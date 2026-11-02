@@ -56,8 +56,4 @@ class Personal extends Model
         return $this->hasMany(AsignacionPersonal::class, 'id_personal', 'id_personal');
     }
 
-    public function asistencias()
-    {
-        return $this->hasMany(Asistencia::class, 'id_personal', 'id_personal');
-    }
 }

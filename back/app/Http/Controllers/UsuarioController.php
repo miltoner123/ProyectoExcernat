@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Persona;
 use App\Models\User;
+use App\Services\AccesoPorCargo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -105,6 +106,14 @@ class UsuarioController extends Controller
                 ]);
             }
 
+            if ($persona->personal()->whereHas('cargo', function ($q) {
+                $q->whereRaw('UPPER(nombre) = ?', ['VENDEDOR']);
+            })->exists()) {
+                throw ValidationException::withMessages([
+                    'id_persona' => 'El personal vendedor no requiere acceso al sistema.',
+                ]);
+            }
+
             $usuario = User::create([
                 'id_persona' => $persona->id_persona,
                 'name' => trim(
@@ -116,7 +125,7 @@ class UsuarioController extends Controller
                 'estado' => true,
             ]);
 
-            $usuario->assignRole($datos['rol']);
+            app(AccesoPorCargo::class)->sincronizar($usuario, $datos['rol']);
 
             return response()->json([
                 'message' => 'Usuario registrado correctamente.',
@@ -177,7 +186,7 @@ class UsuarioController extends Controller
             }
 
             $usuario->update($cambios);
-            $usuario->syncRoles([$datos['rol']]);
+            app(AccesoPorCargo::class)->sincronizar($usuario, $datos['rol']);
 
             return response()->json([
                 'message' => 'Usuario actualizado correctamente.',

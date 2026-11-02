@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Services\AccesoPorCargo;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
@@ -40,6 +41,11 @@ class AuthController extends Controller
             throw ValidationException::withMessages([
                 'email' => ['Esta cuenta se encuentra deshabilitada.'],
             ]);
+        }
+
+        if (!$usuario->hasRole('ADMIN')) {
+            $acceso = app(AccesoPorCargo::class);
+            $acceso->sincronizar($usuario, $acceso->nivel($usuario));
         }
 
         // Renovar el identificador de sesión.

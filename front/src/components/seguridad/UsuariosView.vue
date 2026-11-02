@@ -268,7 +268,7 @@ export default {
         email: usuario.email,
         password: '',
         password_confirmation: '',
-        rol: usuario.roles?.[0]?.name || '',
+        rol: usuario.roles?.find(r => ['ADMIN', 'ENCARGADO', 'CONSULTA'].includes(r.name))?.name || 'CONSULTA',
         estado: Boolean(usuario.estado)
       };
       this.errorFormulario = '';

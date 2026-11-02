@@ -3,33 +3,63 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\DB;
 
 /** Los cargos definen el rol funcional; el nivel determina si puede operarlo. */
 class AccesoPorCargo
 {
+    // Correspondencias explícitas. Normalizamos acentos, espacios y mayúsculas;
+    // nunca se adivina un rol a partir de palabras sueltas.
     public const CARGOS = [
         'Administrador General' => 'GERENTE_GENERAL',
+        'Gerente General' => 'GERENTE_GENERAL',
         'Responsable Administrativo' => 'ADMINISTRADOR',
+        'Encargado Administrativo' => 'ADMINISTRADOR',
         'Responsable Comercial' => 'ENCARGADO_COMERCIAL',
         'Gerente Comercial' => 'ENCARGADO_COMERCIAL',
+        'Encargado Comercial' => 'ENCARGADO_COMERCIAL',
         'Responsable de Almacén' => 'ENCARGADO_ALMACEN',
+        'Responsable Almacén' => 'ENCARGADO_ALMACEN',
         'Encargado de Almacén' => 'ENCARGADO_ALMACEN',
+        'Responsable de Almacén y Logística' => 'ENCARGADO_ALMACEN',
         'Responsable de Producción' => 'SUBENCARGADO_PRODUCCION',
+        'Responsable Producción' => 'SUBENCARGADO_PRODUCCION',
         'Encargado de Producción' => 'SUBENCARGADO_PRODUCCION',
         'Responsable de Contabilidad' => 'CONTABILIDAD',
+        'Responsable Contable' => 'CONTABILIDAD',
         'Contador' => 'CONTABILIDAD',
         'Responsable de Sistemas' => 'ENCARGADO_SISTEMAS',
+        'Responsable Sistemas' => 'ENCARGADO_SISTEMAS',
         'Encargado de Sistemas' => 'ENCARGADO_SISTEMAS',
         'Encargado de Stand' => 'ENCARGADO_VENTAS',
+        'Responsable de Stand' => 'ENCARGADO_VENTAS',
         'Encargado de Sucursal' => 'ENCARGADO_VENTAS',
+        'Responsable de Sucursal' => 'ENCARGADO_VENTAS',
     ];
+
+    private static function normalizar(string $valor): string
+    {
+        $valor = trim(mb_strtoupper($valor, 'UTF-8'));
+        $valor = strtr($valor, [
+            'Á'=>'A', 'É'=>'E', 'Í'=>'I', 'Ó'=>'O', 'Ú'=>'U', 'Ü'=>'U',
+        ]);
+        return preg_replace('/\s+/u', ' ', $valor) ?? $valor;
+    }
+
+    public static function rolDeNombreCargo(?string $nombre): ?string
+    {
+        if (!$nombre) return null;
+        $buscado = self::normalizar($nombre);
+        foreach (self::CARGOS as $cargo => $rol) {
+            if (self::normalizar($cargo) === $buscado) return $rol;
+        }
+        return null;
+    }
 
     public function rolFuncional(User $usuario): ?string
     {
         $personal = $usuario->persona?->personal;
         if (!$personal || !$personal->estado || !$personal->cargo?->estado) return null;
-        return self::CARGOS[$personal->cargo->nombre] ?? null;
+        return self::rolDeNombreCargo($personal->cargo->nombre);
     }
 
     public function sincronizar(User $usuario, string $nivel): void

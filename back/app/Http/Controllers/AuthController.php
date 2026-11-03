@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Services\AccesoPorCargo;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -17,7 +20,48 @@ class AuthController extends Controller
         $datos = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+            'captcha_token' => ['nullable', 'string', 'max:4096'],
         ]);
+
+        // Limitar intentos por correo e IP sin revelar existencia de usuarios.
+        $clave = 'excernat-login:' . sha1(Str::lower($datos['email']) . '|' . $request->ip());
+        if (RateLimiter::tooManyAttempts($clave, 5)) {
+            throw ValidationException::withMessages([
+                'email' => ['Demasiados intentos. Inténtelo nuevamente en unos minutos.'],
+            ]);
+        }
+        RateLimiter::hit($clave, 120);
+
+        // CAPTCHA: el servidor verifica cada token ante el proveedor.
+        if (config('services.turnstile.enabled')) {
+            $secret = config('services.turnstile.secret_key');
+            if (!is_string($secret) || $secret === '') {
+                abort(503, 'Verificación de seguridad no configurada.');
+            }
+            $token = $datos['captcha_token'] ?? '';
+            if ($token === '') {
+                throw ValidationException::withMessages([
+                    'captcha_token' => ['Complete la verificación de seguridad.'],
+                ]);
+            }
+            try {
+                $respuesta = Http::asForm()->timeout(8)->post(
+                    'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+                    ['secret' => $secret, 'response' => $token, 'remoteip' => $request->ip()]
+                );
+                $verificado = $respuesta->successful() && $respuesta->json('success') === true;
+                $hostname = $respuesta->json('hostname');
+                $permitido = config('services.turnstile.hostname');
+                if ($permitido && $hostname !== $permitido) $verificado = false;
+            } catch (\Throwable $e) {
+                abort(503, 'No se pudo verificar la seguridad. Inténtelo nuevamente.');
+            }
+            if (!$verificado) {
+                throw ValidationException::withMessages([
+                    'captcha_token' => ['Verificación de seguridad inválida o vencida.'],
+                ]);
+            }
+        }
 
         // Autenticar utilizando la sesión web de Laravel.
         if (!Auth::guard('web')->attempt([
@@ -48,6 +92,8 @@ class AuthController extends Controller
             $acceso->sincronizar($usuario, $acceso->nivel($usuario));
         }
 
+        RateLimiter::clear($clave);
+
         // Renovar el identificador de sesión.
         $request->session()->regenerate();
 
@@ -60,6 +106,14 @@ class AuthController extends Controller
             'mensaje' => 'Inicio de sesión correcto.',
             'usuario' => $usuario->load('persona', 'roles'),
         ], 200);
+    }
+
+    public function captchaConfig()
+    {
+        return response()->json([
+            'enabled' => (bool) config('services.turnstile.enabled'),
+            'site_key' => config('services.turnstile.enabled') ? config('services.turnstile.site_key') : null,
+        ]);
     }
 
     /**

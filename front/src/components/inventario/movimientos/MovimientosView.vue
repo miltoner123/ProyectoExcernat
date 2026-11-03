@@ -50,7 +50,7 @@
         </div>
         <p v-else class="recepciones-aviso">No hay pedidos pendientes.</p>
       </template>
-      <p class="recepciones-aviso"><strong>Nota:</strong> Los despachos se vinculan al pedido. El inventario del destino aumenta únicamente cuando se confirma la recepción.</p>
+      
     </section>
     <div class="filtros">
       <input v-model="buscar" @input="buscarMovimientos" placeholder="Buscar lote, ubicación u observación...">

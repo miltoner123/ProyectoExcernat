@@ -8,6 +8,7 @@
       <label>Evento <select v-model="idEvento"><option value="">Todos</option><option v-for="e in eventos" :key="e.id_evento" :value="e.id_evento">{{e.nombre}}</option></select></label>
       <label>Ubicación <select v-model="idUbicacion"><option value="">Todas</option><option v-for="u in ubicaciones" :key="u.id_ubicacion" :value="u.id_ubicacion">{{u.nombre}} · {{u.tipo}}</option></select></label>
       <button @click="cargar" :disabled="cargando">Consultar</button>
+      <button type="button" @click="exportarPdf" :disabled="cargando || !datos || exportando">{{exportando ? 'Generando...' : 'Descargar PDF'}}</button>
     </div>
     <p v-if="error" role="alert" class="error">{{error}}</p>
     <div v-if="datos" class="tarjetas">
@@ -28,11 +29,26 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
-const desde=ref(''),hasta=ref(''),idEvento=ref(''),idUbicacion=ref(''),eventos=ref([]),ubicaciones=ref([]),datos=ref(null),error=ref(''),cargando=ref(false);
+const desde=ref(''),hasta=ref(''),idEvento=ref(''),idUbicacion=ref(''),eventos=ref([]),ubicaciones=ref([]),datos=ref(null),error=ref(''),cargando=ref(false),exportando=ref(false);
 const moneda=v=>Number(v||0).toFixed(2);
+function parametros() {
+  return {...(desde.value?{desde:desde.value}:{}),...(hasta.value?{hasta:hasta.value}:{}),...(idEvento.value?{id_evento:idEvento.value}:{}),...(idUbicacion.value?{id_ubicacion:idUbicacion.value}:{})};
+}
+async function exportarPdf() {
+  exportando.value = true; error.value = '';
+  try {
+    const {data} = await api.get('/api/reportes/contabilidad/pdf', {params:parametros(),responseType:'blob'});
+    const url = URL.createObjectURL(new Blob([data], {type:'application/pdf'}));
+    const enlace = document.createElement('a');
+    enlace.href = url; enlace.download = 'EXCERNAT_Reporte_Ventas.pdf';
+    document.body.appendChild(enlace); enlace.click(); enlace.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (e) { error.value = 'No se pudo descargar el PDF del reporte.'; }
+  finally { exportando.value = false; }
+}
 async function cargar(){
   error.value='';cargando.value=true;
-  try{const {data}=await api.get('/api/reportes/contabilidad/resumen',{params:{...(desde.value?{desde:desde.value}:{}),...(hasta.value?{hasta:hasta.value}:{}),...(idEvento.value?{id_evento:idEvento.value}:{}),...(idUbicacion.value?{id_ubicacion:idUbicacion.value}:{})}});datos.value=data;}
+  try{const {data}=await api.get('/api/reportes/contabilidad/resumen',{params:parametros()});datos.value=data;}
   catch(e){datos.value=null;error.value=e.response?.data?.message||'No se pudo cargar el resumen.';}
   finally{cargando.value=false;}
 }

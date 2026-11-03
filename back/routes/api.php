@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UsuarioController;
 
+Route::get('/seguridad/captcha-config', [AuthController::class, 'captchaConfig']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -114,6 +115,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'index'])->middleware('permission:cobros.ver');
     Route::post('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'store'])->middleware('permission:cobros.registrar');
     Route::get('/reportes/contabilidad/resumen', [\App\Http\Controllers\ReporteContableController::class, 'resumen'])->middleware('permission:contabilidad.ver');
+    Route::get('/reportes/contabilidad/pdf', [\App\Http\Controllers\ReporteContableController::class, 'pdf'])->middleware('permission:contabilidad.ver');
     Route::get('/ventas-stand/vendedores', [\App\Http\Controllers\VentaController::class, 'vendedores'])->middleware('\App\Http\Middleware\PermisoOEncargo:ventas.registrar');
     Route::get('/ventas-stand/stands', [\App\Http\Controllers\VentaController::class, 'stands'])->middleware('\App\Http\Middleware\PermisoOEncargo:ventas.ver');
     Route::get('/ventas-stand/existencias', [\App\Http\Controllers\VentaController::class, 'existencias'])->middleware('\App\Http\Middleware\PermisoOEncargo:ventas.ver');

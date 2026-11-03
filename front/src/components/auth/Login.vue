@@ -34,6 +34,10 @@
           <button type="button" class="exc-login__toggle" :aria-label="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'" :aria-pressed="mostrarPassword" @click="mostrarPassword = !mostrarPassword">{{ mostrarPassword ? 'Ocultar' : 'Mostrar' }}</button>
         </div>
 
+        <div v-if="captchaEnabled" class="exc-login__captcha">
+          <div ref="captchaContainer"></div>
+          <small v-if="!captchaToken">Complete la verificación de seguridad para ingresar.</small>
+        </div>
         <p v-if="error" class="exc-login__error" role="alert">{{ error }}</p>
         <button class="exc-login__submit" type="submit" :disabled="cargando">
           {{ cargando ? 'Ingresando...' : 'Ingresar al sistema' }}
@@ -52,17 +56,63 @@ import { establecerUsuario } from '../../services/sesion';
 export default {
   name: 'LoginView',
   data() {
-    return { email: '', password: '', error: '', cargando: false, mostrarPassword: false };
+    return { email: '', password: '', error: '', cargando: false, mostrarPassword: false, captchaEnabled: false, captchaKey: '', captchaToken: '', captchaWidgetId: null };
+  },
+  async mounted() {
+    try {
+      const { data } = await api.get('/api/seguridad/captcha-config');
+      this.captchaEnabled = Boolean(data.enabled);
+      this.captchaKey = data.site_key || '';
+      if (this.captchaEnabled) {
+        if (!this.captchaKey) throw new Error('Falta la clave pública de CAPTCHA.');
+        await this.$nextTick();
+        await this.cargarCaptcha();
+      }
+    } catch (e) {
+      this.error = 'No se pudo configurar la verificación de seguridad.';
+    }
   },
   methods: {
+    async cargarCaptcha() {
+      if (!window.turnstile) {
+        await new Promise((resolve, reject) => {
+          const anterior = document.querySelector('script[data-excernat-turnstile]');
+          if (anterior) {
+            anterior.addEventListener('load', resolve, { once: true });
+            anterior.addEventListener('error', reject, { once: true });
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+          script.async = true;
+          script.defer = true;
+          script.dataset.excernatTurnstile = '1';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      if (!this.$refs.captchaContainer || !window.turnstile) throw new Error('CAPTCHA no disponible');
+      this.captchaWidgetId = window.turnstile.render(this.$refs.captchaContainer, {
+        sitekey: this.captchaKey,
+        callback: token => { this.captchaToken = token; },
+        'expired-callback': () => { this.captchaToken = ''; },
+        'error-callback': () => { this.captchaToken = ''; }
+      });
+    },
     async iniciarSesion() {
       this.error = '';
+      if (this.captchaEnabled && !this.captchaToken) {
+        this.error = 'Complete la verificación de seguridad.';
+        return;
+      }
       this.cargando = true;
       try {
         await api.get('/sanctum/csrf-cookie');
         const respuesta = await api.post('/api/login', {
           email: this.email,
-          password: this.password
+          password: this.password,
+          ...(this.captchaEnabled ? { captcha_token: this.captchaToken } : {})
         });
         const perfil = await api.get('/api/usuario');
         establecerUsuario(perfil.data);
@@ -72,8 +122,9 @@ export default {
             ? destino : '/'
         );
       } catch (error) {
-        console.error('Error de inicio de sesión:', error);
-        this.error = error.response?.data?.errors?.email?.[0]
+        this.captchaToken = '';
+        if (window.turnstile && this.captchaWidgetId !== null) window.turnstile.reset(this.captchaWidgetId);
+        this.error = error.response?.data?.errors?.captcha_token?.[0] || error.response?.data?.errors?.email?.[0]
           || error.response?.data?.message
           || 'No se pudo iniciar sesión.';
       } finally {
@@ -116,6 +167,8 @@ export default {
 .exc-login__submit:hover:not(:disabled) { background:#dc6712; transform:translateY(-1px); }
 .exc-login__submit:disabled { opacity:.65; cursor:not-allowed; }
 .exc-login__error { margin:14px 0 0; padding:11px 13px; color:#a51e25; background:#fff0f0; border:1px solid #f2c6c6; border-radius:9px; font-size:13px; }
+.exc-login__captcha { margin-top:14px; min-height:70px; }
+.exc-login__captcha small { color:#587163; font-size:12px; display:block; margin-top:6px; }
 .exc-login__footer { margin-top:26px; text-align:center; font-size:11px; color:#89958c; }
 @media(max-width:760px) { .exc-login { padding:18px; } .exc-login__shell { grid-template-columns:1fr; max-width:470px; } .exc-login__welcome { padding:24px; } .exc-login__welcome-content { margin:16px 0 0; } .exc-login__welcome h1 { font-size:26px; margin:12px 0; } .exc-login__welcome p,.exc-login__rule,.exc-login__welcome small { display:none; } .exc-login__card { padding:26px 28px 32px; } .exc-login__logo-wrap { width:95px; height:95px; } }
 @media(prefers-reduced-motion:reduce) { .exc-login__submit,.exc-login__card input { transition:none; } }

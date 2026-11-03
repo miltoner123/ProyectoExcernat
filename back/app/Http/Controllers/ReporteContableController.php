@@ -6,6 +6,51 @@ use Illuminate\Support\Facades\DB;
 
 class ReporteContableController extends Controller
 {
+    public function pdf(Request $request)
+    {
+        // Se reutiliza el endpoint de resumen: mismos filtros y misma autorización.
+        $datos = $this->resumen($request)->getData(true);
+        $pdf = new \App\Support\ReportePdfSimple();
+        $pdf->titulo('EXCERNAT - REPORTE DE VENTAS Y COBROS');
+        $pdf->texto('Generado: '.now()->format('d/m/Y H:i'));
+        $pdf->texto('Emitido por: '.$request->user()->name);
+        $pdf->texto('Periodo: '.($request->query('desde') ?: 'Inicio').' - '.($request->query('hasta') ?: 'Hoy'));
+        if ($request->filled('id_evento')) {
+            $nombre = DB::table('eventos')->where('id_evento', $request->query('id_evento'))->value('nombre');
+            $pdf->texto('Evento: '.($nombre ?: $request->query('id_evento')));
+        }
+        if ($request->filled('id_ubicacion')) {
+            $nombre = DB::table('ubicaciones')->where('id_ubicacion', $request->query('id_ubicacion'))->value('nombre');
+            $pdf->texto('Ubicacion: '.($nombre ?: $request->query('id_ubicacion')));
+        }
+        $pdf->separador();
+        $pdf->texto('VENTAS CONFIRMADAS: '.($datos['ventas_confirmadas'] ?? 0), 11, true);
+        $pdf->texto('TOTAL VENTAS: Bs '.number_format((float)($datos['total_ventas'] ?? 0), 2, '.', ','), 11, true);
+        $pdf->texto('TOTAL COBRADO: Bs '.number_format((float)($datos['total_cobrado'] ?? 0), 2, '.', ','), 11, true);
+        $pdf->separador();
+        $pdf->texto('VENTAS POR UBICACION', 12, true);
+        foreach ($datos['por_ubicacion'] ?? [] as $fila) {
+            $pdf->texto(sprintf('%s | %s | %d ventas | Bs %s',
+                $fila['nombre'], $fila['tipo'], $fila['operaciones'],
+                number_format((float)$fila['total'],2,'.',',')));
+        }
+        if (empty($datos['por_ubicacion'])) $pdf->texto('No existen ventas en los filtros seleccionados.');
+        $pdf->separador();
+        $pdf->texto('COBROS POR METODO',12,true);
+        foreach ($datos['cobros_por_metodo'] ?? [] as $fila) {
+            $pdf->texto(sprintf('%s | %d cobros | Bs %s',
+                $fila['metodo_pago'], $fila['operaciones'], number_format((float)$fila['total'],2,'.',',')));
+        }
+        if (empty($datos['cobros_por_metodo'])) $pdf->texto('No existen cobros para este periodo.');
+        $pdf->separador();
+        $pdf->texto('Reporte operativo: ventas no equivalen a utilidad neta.');
+        return response($pdf->generar(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="excernat_reporte_ventas.pdf"',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
     public function resumen(Request $request)
     {
         abort_unless($request->user()->hasRole('ADMIN') || $request->user()->can('contabilidad.ver'), 403);

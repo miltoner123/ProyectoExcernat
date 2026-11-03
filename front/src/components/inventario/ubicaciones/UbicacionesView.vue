@@ -191,7 +191,7 @@ export default {
 
         if (peticion !== this.numeroPeticion) return;
 
-        console.log('Ubicaciones recibidas:', data);
+
 
         // Laravel paginate() devuelve registros dentro de "data".
         const registros = Array.isArray(data)

@@ -11,7 +11,7 @@ class PermisoOEncargo
         $u = $request->user();
         if (!$u || !$u->estado) abort(403);
         if ($u->hasRole('ADMIN') || $u->can($permiso)) return $next($request);
-        if (!in_array($permiso, ['eventos.ver', 'ventas.ver', 'ventas.registrar', 'transferencias.recibir'], true)) abort(403);
+        if (!in_array($permiso, ['eventos.ver', 'ventas.ver', 'ventas.registrar', 'transferencias.recibir', 'cobros.ver', 'cobros.registrar'], true)) abort(403);
         if (!app(AccesoTemporalEvento::class)->asignado($u)) abort(403, 'No existe asignacion operativa vigente.');
         // Los controladores verifican adicionalmente la ubicacion solicitada.
         return $next($request);

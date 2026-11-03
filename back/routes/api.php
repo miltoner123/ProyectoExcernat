@@ -16,6 +16,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/stands/{id}/responsables-operativos', [\App\Http\Controllers\ContextoOperativoController::class, 'responsables']);
     // Panel de ubicaciones vigentes del usuario (sin exponer asignaciones ajenas).
     Route::get('/mi-panel-operativo', [\App\Http\Controllers\PanelOperativoController::class, 'index']);
+    Route::get('/mi-inventario-operativo', [\App\Http\Controllers\PanelOperativoController::class, 'inventario']);
+    Route::post('/mi-stand/devolucion', [\App\Http\Controllers\MovimientoInventarioController::class, 'devolverStand']);
 
     // USUARIOS
     Route::get('/usuarios', [UsuarioController::class, 'index'])->middleware('permission:usuarios.ver');
@@ -62,12 +64,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/lotes/{id}/estado', [\App\Http\Controllers\LoteController::class, 'cambiarEstado'])->middleware('permission:lotes.gestionar');
 
     // UBICACIONES
-    Route::get('/ubicaciones', [\App\Http\Controllers\UbicacionController::class, 'index'])->middleware('permission:ubicaciones.ver');
+    Route::get('/ubicaciones', [\App\Http\Controllers\UbicacionController::class, 'index'])->middleware('permission:ubicaciones.ver|eventos.gestionar');
     Route::post('/ubicaciones', [\App\Http\Controllers\UbicacionController::class, 'store'])->middleware('permission:ubicaciones.gestionar|eventos.gestionar');
-    Route::get('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'show'])->middleware('permission:ubicaciones.ver');
+    Route::get('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'show'])->middleware('permission:ubicaciones.ver|eventos.gestionar');
     Route::post('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'update'])->middleware('permission:ubicaciones.gestionar|eventos.gestionar');
     Route::post('/ubicaciones/{id}/habilitacion-inventario', [\App\Http\Controllers\UbicacionController::class, 'habilitarInventario'])->middleware('permission:recepciones.confirmar');
-    Route::delete('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'destroy'])->middleware('permission:ubicaciones.gestionar');
+    Route::delete('/ubicaciones/{id}', [\App\Http\Controllers\UbicacionController::class, 'destroy'])->middleware('permission:ubicaciones.gestionar|eventos.gestionar');
 
     Route::get('/avisos-operativos', [\App\Http\Controllers\AvisosOperativosController::class, 'index']);
 
@@ -105,10 +107,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/movimientos-inventario/{id}', [\App\Http\Controllers\MovimientoInventarioController::class, 'show'])->middleware('permission:movimientos.ver');
 
     // VENTAS POR STAND
-    Route::get('/cajas-punto-venta/ubicaciones', [\App\Http\Controllers\CajaPuntoVentaController::class, 'ubicaciones'])->middleware('permission:cobros.ver');
-    Route::get('/cajas-punto-venta', [\App\Http\Controllers\CajaPuntoVentaController::class, 'index'])->middleware('permission:cobros.ver');
-    Route::post('/cajas-punto-venta/abrir', [\App\Http\Controllers\CajaPuntoVentaController::class, 'abrir'])->middleware('permission:cobros.registrar');
-    Route::post('/cajas-punto-venta/{id}/cerrar', [\App\Http\Controllers\CajaPuntoVentaController::class, 'cerrar'])->middleware('permission:cobros.registrar');
+    Route::get('/cajas-punto-venta/ubicaciones', [\App\Http\Controllers\CajaPuntoVentaController::class, 'ubicaciones'])->middleware('\App\Http\Middleware\PermisoOEncargo:cobros.ver');
+    Route::get('/cajas-punto-venta', [\App\Http\Controllers\CajaPuntoVentaController::class, 'index'])->middleware('\App\Http\Middleware\PermisoOEncargo:cobros.ver');
+    Route::post('/cajas-punto-venta/abrir', [\App\Http\Controllers\CajaPuntoVentaController::class, 'abrir'])->middleware('\App\Http\Middleware\PermisoOEncargo:cobros.registrar');
+    Route::post('/cajas-punto-venta/{id}/cerrar', [\App\Http\Controllers\CajaPuntoVentaController::class, 'cerrar'])->middleware('\App\Http\Middleware\PermisoOEncargo:cobros.registrar');
     Route::get('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'index'])->middleware('permission:cobros.ver');
     Route::post('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'store'])->middleware('permission:cobros.registrar');
     Route::get('/reportes/contabilidad/resumen', [\App\Http\Controllers\ReporteContableController::class, 'resumen'])->middleware('permission:contabilidad.ver');

@@ -119,11 +119,11 @@ router.beforeEach(async (to) => {
   const admin = sesion.usuario.roles?.some(r => r.name === 'ADMIN');
   const permisos = sesion.usuario.permisos || [];
   // Gerencia Comercial puede crear y editar SUCURSALES o STANDS; el backend limita tipos.
-  const standComercial = (to.path === '/ubicaciones/crear' || /^\/ubicaciones\/editar\/\d+$/.test(to.path)) && permisos.includes('eventos.gestionar');
+  const standComercial = (to.path.startsWith('/ubicaciones') || to.path.startsWith('/asignaciones')) && permisos.includes('eventos.gestionar');
   // Permisos permanentes primero; solo las rutas operativas admiten asignacion temporal.
   // La API restringe el evento/stand y comprueba la asignacion vigente en cada peticion.
   let temporal = false;
-  const rutasTemporales = ['/eventos', '/recepciones-transferencias', '/ventas-stand', '/mi-panel-operativo'];
+  const rutasTemporales = ['/eventos', '/recepciones-transferencias', '/ventas-stand', '/mi-panel-operativo', '/cajas-punto-venta'];
   if (!admin && rutasTemporales.includes(to.path) && !permisos.includes(encontrada?.[1])) {
     try {
       const { data } = await api.get('/api/mi-contexto-eventos');

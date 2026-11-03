@@ -52,7 +52,7 @@ async function cerrarSesion() {
             <RouterLink v-if="puede('lotes.ver')" to="/produccion/seguimiento" class="menu-item"><AppIcon name="clipboard"/> Seguimiento de lotes</RouterLink>
             <RouterLink v-if="puede('lotes.ver')" to="/lotes" class="menu-item"><AppIcon name="tag"/> Producción y lotes</RouterLink>
             </div><button v-if="alguno('ubicaciones.ver','inventarios.ver','movimientos.ver','pedidos.ver','recepciones.ver','transferencias.recibir') || encargadoTemporal()" class="menu-section exc-group" @click="abiertos.inventario=!abiertos.inventario">INVENTARIO <span>{{abiertos.inventario?'⌃':'⌄'}}</span></button><div v-show="abiertos.inventario" class="exc-group-links">
-            <RouterLink v-if="puede('ubicaciones.ver')" to="/ubicaciones" class="menu-item"><AppIcon name="pin"/> Ubicaciones</RouterLink>
+            <RouterLink v-if="puede('ubicaciones.ver') || puede('eventos.gestionar')" to="/ubicaciones" class="menu-item"><AppIcon name="pin"/> Ubicaciones</RouterLink>
             <RouterLink v-if="puede('inventarios.ver')" to="/inventarios" class="menu-item"><AppIcon name="package"/> Inventarios</RouterLink>
             <RouterLink v-if="puede('movimientos.ver')" to="/movimientos" class="menu-item"><AppIcon name="arrows"/> Movimientos de Inventario</RouterLink>
             <RouterLink v-if="puede('recepciones.ver')" to="/recepciones-produccion" class="menu-item"><AppIcon name="package"/> Recepción de producción</RouterLink>
@@ -64,7 +64,7 @@ async function cerrarSesion() {
             </div><button v-if="puede('ventas.ver') || puede('cobros.ver') || encargadoTemporal()" class="menu-section exc-group" @click="abiertos.comercial=!abiertos.comercial">VENTAS Y CAJAS <span>{{abiertos.comercial?'⌃':'⌄'}}</span></button>
             <div v-show="abiertos.comercial" class="exc-group-links">
               <RouterLink v-if="puede('ventas.ver') || encargadoTemporal()" to="/ventas-stand" class="menu-item"><AppIcon name="clipboard"/> Ventas por ubicación</RouterLink>
-              <RouterLink v-if="puede('cobros.ver')" to="/cajas-punto-venta" class="menu-item"><AppIcon name="briefcase"/> Consultar cajas</RouterLink>
+              <RouterLink v-if="puede('cobros.ver') || encargadoTemporal()" to="/cajas-punto-venta" class="menu-item"><AppIcon name="briefcase"/> Consultar cajas</RouterLink>
               <RouterLink v-if="puede('cobros.ver')" to="/cobros-ventas" class="menu-item"><AppIcon name="clipboard"/> Consulta de cobros</RouterLink>
             </div>
             <RouterLink v-if="puede('contabilidad.ver')" to="/reportes/contabilidad" class="menu-item"><AppIcon name="clipboard"/> Resumen contable</RouterLink>

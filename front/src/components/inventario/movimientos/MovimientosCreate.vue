@@ -28,8 +28,10 @@
         <label>Ubicación de origen:</label>
         <select v-model="movimiento.id_ubicacion_origen" @change="actualizarUbicacion" required>
           <option :value="null" disabled>Seleccione el origen</option>
-          <option v-for="u in ubicaciones" :key="u.id_ubicacion" :value="u.id_ubicacion">{{ u.nombre }} - {{ u.tipo }}</option>
+          <option v-for="u in origenesOrdenados" :key="u.id_ubicacion" :value="u.id_ubicacion">{{ u.nombre }} - {{ u.tipo }}</option>
         </select>
+        <small v-if="movimiento.tipo === 'TRANSFERENCIA'" class="nota">Para abastecer un stand, selecciona ALMACÉN CENTRAL como origen. Elige un stand como origen solo si necesitas transferir existencias que ya están allí.</small>
+
       </div>
       <div v-if="mostrarDestino" class="panel-destino">
         <div class="campo">
@@ -43,19 +45,19 @@
         </div>
         <div v-if="tipoDestino === 'STAND'" class="campo">
           <label>Evento o feria:</label>
-          <select v-model="idEventoDestino" @change="movimiento.id_ubicacion_destino = null" required>
+          <select v-model="idEventoDestino" @change="cambiarEventoDestino" required>
             <option :value="null" disabled>Seleccione primero el evento</option>
-            <option v-for="e in eventosConStands" :key="e.id_evento" :value="e.id_evento">{{ e.nombre }}</option>
+            <option v-for="e in eventosConStands" :key="e.id_evento" :value="e.id_evento">{{ e.nombre }} ({{ cantidadStandsDestino(e.id_evento) }} stand(s) disponible(s))</option>
           </select>
           <small>Solo se muestran eventos con stands activos registrados.</small>
         </div>
         <div v-if="tipoDestino && (tipoDestino !== 'STAND' || idEventoDestino)" class="campo">
           <label>{{ tipoDestino === 'STAND' ? 'Stand del evento:' : 'Ubicación de destino:' }}</label>
-          <select v-model="movimiento.id_ubicacion_destino" required>
+          <select :key="tipoDestino === 'STAND' ? `stand-${idEventoDestino}` : `destino-${tipoDestino}`" v-model="movimiento.id_ubicacion_destino" required>
             <option :value="null" disabled>Seleccione el destino</option>
-            <option v-for="u in destinosFiltrados" :key="u.id_ubicacion" :value="u.id_ubicacion">{{ u.nombre }} - {{ u.tipo }}</option>
+            <option v-for="u in destinosFiltrados" :key="u.id_ubicacion" :value="u.id_ubicacion">{{ u.nombre }} - {{ u.tipo }}{{ tipoDestino === 'STAND' ? ' | ' + nombreEvento(u.id_evento) : '' }}</option>
           </select>
-          <small v-if="tipoDestino === 'STAND' && !destinosFiltrados.length">Este evento no tiene stands disponibles para la transferencia.</small>
+          <small v-if="tipoDestino === 'STAND' && !destinosFiltrados.length" class="alerta-destino">No hay otro stand activo disponible para este evento. Revisa que sus stands estén activos y que el stand de origen no sea el único registrado.</small>
         </div>
         <div v-if="destinoSeleccionado?.tipo === 'STAND'" class="panel-encargado">
           <div class="panel-encargado-titulo">Responsables del stand</div>
@@ -173,12 +175,20 @@ export default {
 
     mostrarOrigen() { return ['SALIDA','TRANSFERENCIA','DEVOLUCION','AJUSTE'].includes(this.movimiento.tipo); },
     mostrarDestino() { return ['ENTRADA','TRANSFERENCIA','DEVOLUCION'].includes(this.movimiento.tipo); },
+    origenesOrdenados() {
+      const central = u => u.tipo === 'ALMACEN' && ['ALMACÉN CENTRAL', 'ALMACEN CENTRAL'].includes(String(u.nombre || '').trim().toUpperCase());
+      return [...this.ubicaciones].sort((a,b) => Number(central(b)) - Number(central(a)) || String(a.nombre).localeCompare(String(b.nombre)));
+    },
     destinos() {
       return this.ubicaciones.filter(u => Number(u.id_ubicacion) !== Number(this.movimiento.id_ubicacion_origen));
     },
     destinosFiltrados() {
-      return this.destinos.filter(u => u.tipo === this.tipoDestino &&
-        (this.tipoDestino !== 'STAND' || Number(u.id_evento) === Number(this.idEventoDestino)));
+      return this.destinos.filter(u => {
+        if (u.tipo !== this.tipoDestino) return false;
+        if (this.tipoDestino !== 'STAND') return true;
+        if (!this.idEventoDestino || !u.id_evento) return false;
+        return String(u.id_evento) === String(this.idEventoDestino);
+      });
     },
     eventosConStands() {
       const ids = new Set(this.destinos.filter(u => u.tipo === 'STAND').map(u => Number(u.id_evento)));
@@ -209,6 +219,15 @@ export default {
   },
   mounted() { this.cargarCatalogos(); },
   methods: {
+    cantidadStandsDestino(idEvento) {
+      return this.destinos.filter(u => u.tipo === 'STAND' && Number(u.id_evento) === Number(idEvento)).length;
+    },
+    seleccionarAlmacenCentral() {
+      if (this.movimiento.id_ubicacion_origen || this.idPedido) return;
+      if (!['TRANSFERENCIA', 'SALIDA'].includes(this.movimiento.tipo)) return;
+      const central = this.ubicaciones.find(u => u.tipo === 'ALMACEN' && ['ALMACÉN CENTRAL','ALMACEN CENTRAL'].includes(String(u.nombre || '').trim().toUpperCase()));
+      if (central) this.movimiento.id_ubicacion_origen = central.id_ubicacion;
+    },
     async cargarPedidosPendientes() {
       try {
         const {data} = await api.get(`${API}/pedidos-pendientes-despacho`);
@@ -336,11 +355,12 @@ export default {
           this.obtenerTodos('inventarios'),
           this.obtenerTodos('movimientos-inventario',{tipo:'ENTRADA'})
         ]);
-        this.ubicaciones = ubicaciones.filter(u => u.estado === true || u.estado === 1);
+        this.ubicaciones = ubicaciones.filter(u => [true, 1, '1', 'true'].includes(u.estado));
         // La ubicación ya trae la relación evento. No exigir eventos.ver a Logística.
         this.eventos = [...new Map(ubicaciones.filter(u => u.id_evento && u.evento).map(u => [Number(u.id_evento), u.evento])).values()];
         this.lotes = lotes.filter(l => l.estado === true || l.estado === 1);
         this.inventarios = inventarios;
+        this.seleccionarAlmacenCentral();
         const ingresos = {};
         for (const m of movimientos) for (const d of m.detalles || []) {
           ingresos[d.id_lote] = (ingresos[d.id_lote] || 0) + Number(d.cantidad);
@@ -365,6 +385,12 @@ export default {
       this.idEventoDestino = null;
       this.movimiento.detalles = [{id_presentacion:null,id_lote:null,cantidad:1}];
       this.idPedido = null;
+      this.seleccionarAlmacenCentral();
+    },
+    cambiarEventoDestino() {
+      this.movimiento.id_ubicacion_destino = null;
+      this.asignacionesStand = [];
+      this.errorResponsables = null;
     },
     cambiarDestino() {
       this.idEventoDestino = null;
@@ -374,8 +400,12 @@ export default {
       return this.eventos.find(e => Number(e.id_evento) === Number(id))?.nombre || 'Evento';
     },
     actualizarUbicacion() {
-      if (this.movimiento.id_ubicacion_origen === this.movimiento.id_ubicacion_destino)
+      if (this.movimiento.id_ubicacion_destino && !this.destinosFiltrados.some(u => Number(u.id_ubicacion) === Number(this.movimiento.id_ubicacion_destino)))
         this.movimiento.id_ubicacion_destino = null;
+      if (this.tipoDestino === 'STAND' && this.idEventoDestino && !this.eventosConStands.some(e => Number(e.id_evento) === Number(this.idEventoDestino))) {
+        this.idEventoDestino = null;
+        this.movimiento.id_ubicacion_destino = null;
+      }
     },
     agregarDetalle() { this.movimiento.detalles.push({id_presentacion:null,id_lote:null,cantidad:1}); },
     lotesDisponibles(actual) {
@@ -468,6 +498,8 @@ td select,td input{width:100%;padding:9px;box-sizing:border-box}.informacion{bac
 .panel-destino .campo{margin-bottom:12px}.panel-destino small{font-size:12px;color:#61756b}
 .resumen-destino{display:flex;flex-direction:column;gap:5px;border-left:4px solid #f47b20;padding:12px;background:white;border-radius:9px;color:#124734}
 .panel-destino select{border-radius:9px;border:1px solid #c8dacd;background:#fff}
+.alerta-destino { display:block; color:#a74716; font-weight:600; padding:8px 0; }
+.alerta-destino { display:block; color:#a74716; font-weight:600; padding:8px 0; }
 </style>
 
 

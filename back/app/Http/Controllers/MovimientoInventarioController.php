@@ -9,6 +9,7 @@ use App\Models\Ubicacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Services\AccesoTemporalEvento;
 
 class MovimientoInventarioController extends Controller
 {
@@ -18,6 +19,33 @@ class MovimientoInventarioController extends Controller
         'detalles.lote.presentacion.producto',
         'receptor'
     ];
+
+    // Devolución operativa: el encargado solo devuelve stock de su propio stand.
+    // Utiliza la misma transacción, descuentos de stock y recepción pendiente del movimiento normal.
+    public function devolverStand(Request $request, AccesoTemporalEvento $acceso)
+    {
+        $datos = $request->validate([
+            'id_ubicacion_origen' => 'required|integer|exists:ubicaciones,id_ubicacion',
+            'id_lote' => 'required|integer|exists:lotes,id_lote',
+            'cantidad' => 'required|integer|min:1',
+            'observacion' => 'required|string|min:5|max:1000',
+        ]);
+        $origen = (int) $datos['id_ubicacion_origen'];
+        abort_unless($request->user()->hasRole('ADMIN') || $acceso->ubicaciones($request->user())->contains($origen), 403,
+            'No puede devolver productos de otro stand.');
+        $stand = Ubicacion::findOrFail($origen);
+        abort_unless($stand->tipo === 'STAND', 422, 'La devolución temporal requiere un STAND.');
+        $almacenes = Ubicacion::where('tipo', 'ALMACEN')->where('estado', true)
+            ->whereIn('nombre', ['ALMACÉN CENTRAL', 'ALMACEN CENTRAL'])->get();
+        abort_unless($almacenes->count() === 1, 422, 'Debe existir un único Almacén Central activo.');
+        $request->merge([
+            'tipo' => 'DEVOLUCION', 'id_ubicacion_origen' => $origen,
+            'id_ubicacion_destino' => $almacenes->first()->id_ubicacion,
+            'detalles' => [['id_lote' => $datos['id_lote'], 'cantidad' => $datos['cantidad']]],
+            'observacion' => trim($datos['observacion']),
+        ]);
+        return $this->store($request);
+    }
 
     // LISTAR Y BUSCAR MOVIMIENTOS
     public function index(Request $request)

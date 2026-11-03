@@ -17,6 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
     $middleware->statefulApi();
 
+    // EXCERNAT: la API no utiliza una ruta web llamada "login".
+    // Cuando falta autenticacion en /api/*, emitir 401 JSON en vez de redirigir.
+    $middleware->redirectGuestsTo(
+        fn (Request $request) => $request->is('api/*') ? null : '/',
+    );
+
     $middleware->alias([
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,

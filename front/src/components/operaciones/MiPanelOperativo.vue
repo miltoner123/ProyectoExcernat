@@ -22,6 +22,7 @@
       <div v-if="pestana==='ventas'" class="acciones">
         <RouterLink v-if="u.encargado && permisos.vender" :to="'/ventas-stand?id_ubicacion=' + u.id">Registrar venta</RouterLink>
         <RouterLink v-if="u.encargado && permisos.ventas_ver" :to="'/ventas-stand?id_ubicacion=' + u.id">Historial de ventas</RouterLink>
+        <RouterLink v-if="u.encargado && permisos.ventas_ver" :to="{path:'/mi-informe-ventas',query:{id_ubicacion:u.id,id_evento:u.id_evento||undefined}}">Ver informe de ventas</RouterLink>
         <RouterLink v-if="u.encargado" :to="'/cajas-punto-venta?id_ubicacion=' + u.id">Mi caja</RouterLink>
       </div>
       <section v-if="pestana==='operaciones' && inventarioAbierto===u.id" class="stock-panel">

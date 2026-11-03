@@ -23,8 +23,7 @@ final class ReportePdfSimple
     public function texto(string $texto, int $size = 10, bool $bold = false): void
     {
         if ($this->y < 65) $this->paginaSiguiente();
-        $bytes = iconv('UTF-8', 'Windows-1252//TRANSLIT', $texto);
-        if ($bytes === false) $bytes = $texto;
+        $bytes = $this->aBytes($texto);
         $bytes = str_replace(["\\", '(', ')', "\r", "\n"], ['\\\\', '\\(', '\\)', '', ' '], $bytes);
         // Truncar por ancho para mantener legibilidad en A4.
         if (strlen($bytes) > 105) $bytes = substr($bytes, 0, 102) . '...';
@@ -47,6 +46,65 @@ final class ReportePdfSimple
             }
         }
         if ($linea !== '') $this->texto($linea);
+    }
+
+    /** Tabla A4 con ajuste de texto, saltos de página y cabeceras repetidas. */
+    public function tabla(array $cabeceras, array $filas, array $anchos): void
+    {
+        if (count($cabeceras) !== count($anchos) || array_sum($anchos) > 510) {
+            throw new \InvalidArgumentException('Columnas PDF incompatibles con A4.');
+        }
+        $n = count($cabeceras);
+        $cabecera = function () use ($cabeceras, $anchos, $n) {
+            if ($this->y < 92) $this->paginaSiguiente();
+            $this->lineas[] = '0.06 0.22 0.16 rg 43 '.($this->y-17).' '.array_sum($anchos).' 21 re f';
+            $x=47;
+            for ($i=0;$i<$n;$i++) {
+                $this->textoPosicion((string)$cabeceras[$i], $x, $this->y-10, 8, true, true);
+                $x += $anchos[$i];
+            }
+            $this->y -= 26;
+        };
+        $cabecera();
+        if (empty($filas)) $filas=[array_pad(['Sin registros'], $n, '')];
+        foreach ($filas as $fila) {
+            $lineas=[];
+            foreach ($anchos as $i=>$ancho) {
+                $bytes=$this->aBytes((string)($fila[$i] ?? ''));
+                $max=max(5,(int)floor(($ancho-16)/5.5));
+                $lineas[$i]=str_split($bytes,$max);
+            }
+            $alto=max(1,max(array_map('count',$lineas)))*11+8;
+            if ($alto > 645) { // Protege contra filas individuales extremadamente largas.
+                foreach ($lineas as &$partes) $partes=array_slice($partes,0,50);
+                unset($partes);
+                $alto=max(1,max(array_map('count',$lineas)))*11+8;
+            }
+            if ($this->y-$alto < 65) { $this->paginaSiguiente();$cabecera(); }
+            $x=47;
+            for ($i=0;$i<$n;$i++) {
+                foreach ($lineas[$i] as $j=>$linea) $this->textoPosicion($linea,$x,$this->y-10-$j*11,8,false,false,true);
+                $x += $anchos[$i];
+            }
+            $this->lineas[]='0.85 0.89 0.86 RG 43 '.($this->y-$alto).' '.array_sum($anchos).' 0 re S';
+            $this->y -= $alto;
+        }
+        $this->y -= 10;
+    }
+
+    private function aBytes(string $valor): string
+    {
+        // Una sola conversion UTF-8 -> WinAnsi por texto; sin advertencias por datos legados.
+        $out = @iconv('UTF-8', 'Windows-1252//TRANSLIT//IGNORE', $valor);
+        return $out === false ? preg_replace('/[^\x20-\x7E]/', '?', $valor) : $out;
+    }
+
+    private function textoPosicion(string $texto, int $x, int $y, int $size=8, bool $negrita=false, bool $blanco=false, bool $yaConvertido=false): void
+    {
+        $bytes=$yaConvertido ? $texto : $this->aBytes($texto);
+        $bytes=str_replace(['\\','(',')',"\r","\n"],['\\\\','\\(','\\)','', ' '],$bytes);
+        $color=$blanco?'1 1 1 rg':'0.07 0.2 0.15 rg';
+        $this->lineas[]=$color.' BT '.($negrita?'/F2':'/F1').' '.$size.' Tf '.$x.' '.$y.' Td ('.$bytes.') Tj ET';
     }
 
     private function paginaSiguiente(): void

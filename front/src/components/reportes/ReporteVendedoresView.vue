@@ -1,8 +1,8 @@
 <template>
   <section class="vendedores-reporte">
     <header class="encabezado">
-      <div><p class="eyebrow">EXCERNAT · ADMINISTRACIÓN</p><h1>Ventas por vendedor</h1><p>Importes históricos, descuentos y comisiones calculadas.</p></div>
-      <router-link to="/reportes/contabilidad" class="enlace">Volver al resumen</router-link>
+      <div><p class="eyebrow">EXCERNAT · INFORMES</p><h1>{{ operativo ? "Informe operativo de ventas" : "Ventas por vendedor" }}</h1><p>Productos, cantidades, precios históricos y descuentos.</p></div>
+      <router-link :to="operativo ? '/mi-panel-operativo' : '/reportes/contabilidad'" class="enlace">Volver</router-link>
     </header>
     <form class="filtros" @submit.prevent="consultar">
       <label>Desde<input type="date" v-model="f.desde"></label>
@@ -22,30 +22,30 @@
         <article><small>Ventas</small><strong>{{datos.totales.ventas}}</strong></article>
         <article><small>Unidades</small><strong>{{datos.totales.unidades}}</strong></article>
         <article><small>Total neto</small><strong>Bs {{dinero(datos.totales.neto)}}</strong></article>
-        <article><small>Comisión estimada</small><strong>Bs {{dinero(datos.totales.comision)}}</strong></article>
+        <article v-if="!operativo"><small>Comisión estimada</small><strong>Bs {{dinero(datos.totales.comision)}}</strong></article><article><small>Descuentos</small><strong>Bs {{dinero(datos.totales.descuento)}}</strong></article><article v-if="operativo"><small>Cobrado</small><strong>Bs {{dinero(datos.totales.cobrado)}}</strong></article>
       </div>
       <div class="advertencias" v-if="datos.advertencias.length"><p v-for="(a,i) in datos.advertencias" :key="i">{{a}}</p></div>
       <div class="tabla-scroll" role="region" aria-label="Resultados por vendedor" tabindex="0">
         <table>
-          <thead><tr><th>Vendedor</th><th>Ventas</th><th>Unidades</th><th>Bruto</th><th>Descuento</th><th>Neto</th><th>Comisión</th><th>Detalle</th></tr></thead>
+          <thead><tr><th>Vendedor</th><th>Ventas</th><th>Unidades</th><th>Bruto</th><th>Descuento</th><th>Neto</th><th v-if="!operativo">Comisión</th><th>Detalle</th></tr></thead>
           <tbody>
             <template v-for="v in datos.vendedores" :key="v.id_asignacion_vendedor">
               <tr><td><strong>{{v.vendedor}}</strong><small>Asignación #{{v.id_asignacion_vendedor}} · {{v.tipo_remuneracion}}</small></td>
                 <td>{{v.ventas}}</td><td>{{v.unidades}}</td><td>Bs {{dinero(v.bruto)}}</td><td>Bs {{dinero(v.descuento)}}</td>
-                <td>Bs {{dinero(v.neto)}}</td><td>Bs {{dinero(v.comision)}}</td>
+                <td>Bs {{dinero(v.neto)}}</td><td v-if="!operativo">Bs {{dinero(v.comision)}}</td>
                 <td><button class="detalle-btn" @click="alternar(v.id_asignacion_vendedor)" :aria-expanded="abierto===v.id_asignacion_vendedor">{{abierto===v.id_asignacion_vendedor?'Ocultar':'Ver productos'}}</button></td>
               </tr>
-              <tr v-if="abierto===v.id_asignacion_vendedor"><td colspan="8" class="celda-detalle">
-                <p><strong>Fijo referencial:</strong> Bs {{dinero(v.monto_fijo_referencial)}} · <strong>Remuneración referencial:</strong> Bs {{dinero(v.remuneracion_referencial)}}</p>
+              <tr v-if="abierto===v.id_asignacion_vendedor"><td :colspan="operativo ? 7 : 8" class="celda-detalle">
+                <p v-if="!operativo"><strong>Fijo referencial:</strong> Bs {{dinero(v.monto_fijo_referencial)}} · <strong>Remuneración referencial:</strong> Bs {{dinero(v.remuneracion_referencial)}}</p>
                 <div class="tabla-scroll" role="region" tabindex="0" aria-label="Detalle de ventas del vendedor">
-                  <table class="subtabla"><thead><tr><th>Fecha</th><th>Evento / Stand</th><th>Producto / presentación</th><th>Cant.</th><th>Precio</th><th>Bruto</th><th>Descuento</th><th>Neto</th><th>Comisión</th></tr></thead>
+                  <table class="subtabla"><thead><tr><th>Fecha</th><th>Evento / Stand</th><th>Producto / presentación</th><th>Cant.</th><th>Precio</th><th>Bruto</th><th>Descuento</th><th>Neto</th><th v-if="!operativo">Comisión</th></tr></thead>
                   <tbody><tr v-for="(l,j) in v.detalle" :key="j"><td>{{l.fecha}}</td><td>{{l.evento}} / {{l.stand}}</td>
                     <td>{{l.producto}} · {{l.presentacion}}</td><td>{{l.cantidad}}</td><td>Bs {{dinero(l.precio_unitario)}}</td>
-                    <td>Bs {{dinero(l.bruto)}}</td><td>Bs {{dinero(l.descuento)}}</td><td>Bs {{dinero(l.neto)}}</td><td>Bs {{dinero(l.comision)}}</td></tr></tbody></table>
+                    <td>Bs {{dinero(l.bruto)}}</td><td>Bs {{dinero(l.descuento)}}</td><td>Bs {{dinero(l.neto)}}</td><td v-if="!operativo">Bs {{dinero(l.comision)}}</td></tr></tbody></table>
                 </div>
               </td></tr>
             </template>
-            <tr v-if="!datos.vendedores.length"><td colspan="8">No se encontraron ventas confirmadas de vendedores para los filtros seleccionados.</td></tr>
+            <tr v-if="!datos.vendedores.length"><td :colspan="operativo ? 7 : 8">No se encontraron ventas confirmadas de vendedores para los filtros seleccionados.</td></tr>
           </tbody>
         </table>
       </div>
@@ -57,19 +57,38 @@ import {ref,computed,onMounted} from 'vue';
 import {useRoute} from 'vue-router';
 import api from '../../services/api';
 const route=useRoute();
+const operativo=route.path==='/mi-informe-ventas';
 const f=ref({desde:'',hasta:'',id_evento:String(route.query.id_evento||''),id_ubicacion:''});
 const eventos=ref([]),ubicaciones=ref([]),datos=ref(null),error=ref(''),cargando=ref(false),exportando=ref(false),abierto=ref(null);
 const ubicacionesFiltradas=computed(()=>ubicaciones.value.filter(u=>!f.value.id_evento || String(u.id_evento)===f.value.id_evento));
 const dinero=n=>Number(n||0).toFixed(2);
+const endpoint=operativo?'/api/mi-informe-ventas':'/api/reportes/vendedores';
 const params=()=>Object.fromEntries(Object.entries(f.value).filter(([,v])=>v!==''));
 const alternar=id=>{abierto.value=abierto.value===id?null:id;};
-async function consultar(){cargando.value=true;error.value='';abierto.value=null;try{const {data}=await api.get('/api/reportes/vendedores',{params:params()});datos.value=data;}
+async function consultar(){cargando.value=true;error.value='';abierto.value=null;try{const {data}=await api.get(endpoint,{params:params()});datos.value=data;}
 catch(e){datos.value=null;error.value=e.response?.data?.message||'No se pudo consultar las ventas por vendedor.';}
 finally{cargando.value=false;}}
-async function pdf(){exportando.value=true;error.value='';try{const {data}=await api.get('/api/reportes/vendedores/pdf',{params:params(),responseType:'blob'});
+async function pdf(){exportando.value=true;error.value='';try{const {data}=await api.get(endpoint+'/pdf',{params:params(),responseType:'blob'});
   const url=URL.createObjectURL(new Blob([data],{type:'application/pdf'}));const a=document.createElement('a');a.href=url;a.download='EXCERNAT_Ventas_Vendedores.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }catch(e){error.value='No se pudo generar el reporte PDF.';}finally{exportando.value=false;}}
-onMounted(async()=>{const r=await Promise.allSettled([api.get('/api/eventos',{params:{limit:50}}),api.get('/api/ventas-stand/stands')]);
+onMounted(async()=>{
+if(operativo){
+ try{
+  const {data}=await api.get('/api/mi-panel-operativo');
+  const seen=new Set();
+  ubicaciones.value=(data.asignaciones||[]).map(a=>a.ubicacion).filter(u=>{
+   if(!u || seen.has(u.id_ubicacion))return false;
+   seen.add(u.id_ubicacion);return true;
+  });
+  const events=new Map();
+  for(const u of ubicaciones.value){if(u.id_evento)events.set(String(u.id_evento),{id_evento:u.id_evento,nombre:u.evento?.nombre||'Evento #'+u.id_evento});}
+  eventos.value=[...events.values()];
+  if(f.value.id_ubicacion && !ubicaciones.value.some(u=>String(u.id_ubicacion)===f.value.id_ubicacion))f.value.id_ubicacion='';
+  if(f.value.id_evento && !events.has(f.value.id_evento))f.value.id_evento='';
+ }catch(e){error.value='No se pudieron cargar las ubicaciones asignadas.';return;}
+ await consultar(); return;
+}
+const r=await Promise.allSettled([api.get('/api/eventos',{params:{limit:50}}),api.get('/api/ventas-stand/stands')]);
 if(r[0].status==='fulfilled'){let x=r[0].value.data;eventos.value=Array.isArray(x)?x:(x.data||[]);}
 if(r[1].status==='fulfilled'){let x=r[1].value.data;ubicaciones.value=Array.isArray(x)?x:[];}
 await consultar();});

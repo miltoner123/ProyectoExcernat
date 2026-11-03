@@ -1,0 +1,50 @@
+{
+  "base": "ProyectoExcernat-main (31)(1).zip",
+  "files": [
+    {
+      "path": "back/app/Http/Controllers/ReporteVendedoresController.php",
+      "before_sha256": "c1db7b2282e940d45e780d087b9aa6bb13885225d5d305576d22b65709b614d1",
+      "after_sha256": "218b7fd1e71a9ccc9998c343de4701ab52d14ce290930ecde387951bbf56e1f1"
+    },
+    {
+      "path": "back/app/Http/Controllers/VentaController.php",
+      "before_sha256": "35131de6489c74479da27c2ea3820b0029673ece5913f744a5e14937c4fc6640",
+      "after_sha256": "e47d213f539157df5be977cee6320187726ebe52352e59c8402a2e4a7a56cb9b"
+    },
+    {
+      "path": "back/app/Support/ReportePdfSimple.php",
+      "before_sha256": "41176259649b477ca57ac5ba36afc694c90e3571474e99c704d7ed551fe36182",
+      "after_sha256": "ad4db6b09701c0a4b8af756a75305a0e379221580376814f64937b4dc7b3cb20"
+    },
+    {
+      "path": "back/routes/api.php",
+      "before_sha256": "2d62a4c5afecaf95c403b4b7bc1a487cbc1bb0fa7c65028d7b37b0faa3dbbee5",
+      "after_sha256": "5e424e90a9d7c8bf89df27b16585fe8bf5418aa06a440bf75db3e36d83656e97"
+    },
+    {
+      "path": "back/tests/Unit/ReportePdfTabularTest.php",
+      "before_sha256": null,
+      "after_sha256": "73706a938427f5dc317b02020f80a41b38c46f45811defa325721774cf35a641"
+    },
+    {
+      "path": "front/src/main.js",
+      "before_sha256": "0e8d603f9580a015f4c48286b1a7ac0f1d4893a68d9e6d4dd42592b43b976dbe",
+      "after_sha256": "54377b83a5f98c30fa4637350d5f2e6806d0b5e7b7eacc35d3461dc6cec0057d"
+    },
+    {
+      "path": "front/src/components/ventas/VentasStandView.vue",
+      "before_sha256": "9fe73496b76fba843b9ad783c819e361ad3dd2a912bdcca28db4f34ac86f19be",
+      "after_sha256": "293a6f85187515011dfe30eafb6b9844c8bb11b58cd04536102916f5a923a564"
+    },
+    {
+      "path": "front/src/components/operaciones/MiPanelOperativo.vue",
+      "before_sha256": "772ef1c3dad4307d048805bd228bcb4f9290906f595352148dc5fcd4b8215233",
+      "after_sha256": "79eb8114d13a57c0a73f8677d17408a30753693a8449b43e4380760d1492da24"
+    },
+    {
+      "path": "front/src/components/reportes/ReporteVendedoresView.vue",
+      "before_sha256": "7daea681d7e6180e1844280a358c0f4892b163e9c6819457d025936e4cdd82b5",
+      "after_sha256": "9a39a1312d7fa8a85e53b8928257682264f4227be63595cf5b15a0e2073a7dd5"
+    }
+  ]
+}

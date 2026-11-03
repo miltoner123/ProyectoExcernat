@@ -37,6 +37,7 @@ const routes = [
   { path: "/cajas-punto-venta", component: () => import("./components/ventas/CajasPuntoVentaView.vue") },
   { path: "/cobros-ventas", component: () => import("./components/ventas/CobrosVentasView.vue") },
   { path: "/reportes/vendedores", component: () => import("./components/reportes/ReporteVendedoresView.vue") },
+  { path: "/mi-informe-ventas", component: () => import("./components/reportes/ReporteVendedoresView.vue") },
   { path: "/reportes/contabilidad", component: () => import("./components/reportes/ReporteContableView.vue") },
   { path: "/ventas-stand", component: () => import("./components/ventas/VentasStandView.vue") },
   { path: "/pedidos", component: () => import("./components/pedidos/PedidosView.vue") },

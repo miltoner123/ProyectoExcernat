@@ -10,9 +10,9 @@ use Illuminate\Validation\ValidationException;
 /** Informe derivado de ventas registradas, sin alterar movimientos ni ventas históricas. */
 class ReporteVendedoresController extends Controller
 {
-    private function filtros(Request $request): array
+    private function filtros(Request $request, bool $operativo = false): array
     {
-        abort_unless($request->user()->hasRole('ADMIN') || $request->user()->can('contabilidad.ver') || $request->user()->can('eventos.gestionar'), 403);
+        if (!$operativo) abort_unless($request->user()->hasRole('ADMIN') || $request->user()->can('contabilidad.ver') || $request->user()->can('eventos.gestionar'), 403);
         $data = $request->validate([
             'desde'=>'nullable|date', 'hasta'=>'nullable|date|after_or_equal:desde',
             'id_evento'=>'nullable|integer|exists:eventos,id_evento',
@@ -30,12 +30,13 @@ class ReporteVendedoresController extends Controller
     private function centavos($valor): int { return (int) round((float)$valor * 100); }
     private function bs(int $valor): string { return number_format($valor/100,2,'.',''); }
 
-    private function datos(array $f): array
+    private function datos(array $f, ?array $permitidas = null): array
     {
         $q = Venta::query()->with([
-            'ubicacion.evento', 'asignacionVendedor.personal.persona',
+            'ubicacion.evento', 'asignacionVendedor.personal.persona', 'cobros',
             'detalles.lote.presentacion.producto.categoria',
         ])->where('estado','CONFIRMADA')->whereNotNull('id_asignacion_vendedor');
+        if ($permitidas !== null) $q->whereIn('id_ubicacion', $permitidas);
         if (!empty($f['desde'])) $q->whereDate('fecha_venta','>=',$f['desde']);
         if (!empty($f['hasta'])) $q->whereDate('fecha_venta','<=',$f['hasta']);
         if (!empty($f['id_ubicacion'])) $q->where('id_ubicacion',$f['id_ubicacion']);
@@ -66,7 +67,7 @@ class ReporteVendedoresController extends Controller
                     'tarifa_polvo'=>$asig->comision_polvo,
                     'tarifa_granola'=>$asig->comision_granola,
                     'ventas'=>0, 'unidades'=>0, 'bruto_cents'=>0, 'descuento_cents'=>0,
-                    'neto_cents'=>0,'comision_cents'=>0,
+                    'neto_cents'=>0,'cobrado_cents'=>0,'comision_cents'=>0,
                     'detalle'=>[], 'eventos'=>[],
                 ];
             }
@@ -83,6 +84,7 @@ class ReporteVendedoresController extends Controller
             $g['bruto_cents']+=$bruto;
             $g['descuento_cents']+=$desc;
             $g['neto_cents']+=$neto;
+            $g['cobrado_cents'] += $venta->cobros->sum(fn($c) => $this->centavos($c->monto));
             $resto=$desc;
             foreach ($detalle as $idx=>$d) {
                 $lineaBruta=$brutos[$idx];
@@ -122,7 +124,7 @@ class ReporteVendedoresController extends Controller
             }
             unset($g);
         }
-        $filas=[]; $totales=['ventas'=>0,'unidades'=>0,'bruto'=>0,'descuento'=>0,'neto'=>0,'comision'=>0];
+        $filas=[]; $totales=['ventas'=>0,'unidades'=>0,'bruto'=>0,'descuento'=>0,'neto'=>0,'cobrado'=>0,'comision'=>0];
         foreach ($grupos as $g) {
             // El monto fijo corresponde a UNA asignación, no a cada venta. Los filtros parciales
             // no permiten inferir prorrateos contractuales: se presenta separado e informativo.
@@ -139,45 +141,112 @@ class ReporteVendedoresController extends Controller
                 'tipo_remuneracion'=>$g['tipo_remuneracion'], 'ventas'=>$g['ventas'],
                 'unidades'=>$g['unidades'],'bruto'=>$this->bs($g['bruto_cents']),
                 'descuento'=>$this->bs($g['descuento_cents']),'neto'=>$this->bs($g['neto_cents']),
+                'cobrado'=>$this->bs($g['cobrado_cents']),
                 'comision'=>$this->bs($g['comision_cents']),'monto_fijo_referencial'=>$this->bs($fijo),
                 'remuneracion_referencial'=>$this->bs($fijo+$g['comision_cents']),
                 'eventos'=>array_keys($g['eventos']),'detalle'=>$g['detalle'],
             ];
             foreach (['ventas','unidades'] as $k) $totales[$k]+=$g[$k];
-            foreach (['bruto','descuento','neto','comision'] as $k) $totales[$k]+=$g[$k.'_cents'];
+            foreach (['bruto','descuento','neto','cobrado','comision'] as $k) $totales[$k]+=$g[$k.'_cents'];
         }
-        foreach (['bruto','descuento','neto','comision'] as $k) $totales[$k]=$this->bs($totales[$k]);
+        foreach (['bruto','descuento','neto','cobrado','comision'] as $k) $totales[$k]=$this->bs($totales[$k]);
         usort($filas,fn($a,$b)=>strcmp($a['vendedor'],$b['vendedor']));
         return ['filtros'=>$f,'totales'=>$totales,'vendedores'=>$filas,'advertencias'=>array_keys($alertas)];
+    }
+
+    /** El encargado consulta únicamente sus stands o sucursales. No concede permisos contables. */
+    private function operativo(Request $request): array
+    {
+        $f = $this->filtros($request, true);
+        $permitidas = app(\App\Services\AccesoTemporalEvento::class)
+            ->ubicaciones($request->user())->map(fn ($id) => (int) $id)->all();
+        abort_if(empty($permitidas), 403, 'No tiene ubicaciones operativas asignadas.');
+        if (!empty($f['id_ubicacion']) && !in_array((int)$f['id_ubicacion'], $permitidas, true)) {
+            abort(403, 'No tiene acceso al stand solicitado.');
+        }
+        $datos = $this->datos($f, $permitidas);
+        // El reporte operativo no publica tarifas contractuales ni remuneración.
+        $datos['totales']['comision'] = null;
+        foreach ($datos['vendedores'] as &$v) {
+            $v['comision'] = null;
+            $v['monto_fijo_referencial'] = null;
+            $v['remuneracion_referencial'] = null;
+            $v['tarifa_polvo'] = null;
+            $v['tarifa_granola'] = null;
+            foreach ($v['detalle'] as &$linea) $linea['comision'] = null;
+            unset($linea);
+        }
+        unset($v);
+        $datos['advertencias'] = array_values(array_filter($datos['advertencias'],
+            fn ($aviso) => !str_contains(mb_strtolower($aviso), 'tarifa')
+                && !str_contains(mb_strtolower($aviso), 'comisi')
+                && !str_contains(mb_strtolower($aviso), 'monto fijo')));
+        $datos['ubicaciones_autorizadas'] = $permitidas;
+        return $datos;
+    }
+
+    public function indexOperativo(Request $request)
+    {
+        return response()->json($this->operativo($request));
+    }
+
+    public function pdfOperativo(Request $request)
+    {
+        return $this->generarPdf($request, $this->operativo($request), true);
     }
 
     public function index(Request $request) { return response()->json($this->datos($this->filtros($request))); }
 
     public function pdf(Request $request)
     {
-        $datos=$this->datos($this->filtros($request));
-        $pdf=new ReportePdfSimple();
-        $pdf->titulo('EXCERNAT - VENTAS POR VENDEDOR');
+        return $this->generarPdf($request, $this->datos($this->filtros($request)), false);
+    }
+
+    private function generarPdf(Request $request, array $datos, bool $operativo)
+    {
+        $pdf = new ReportePdfSimple();
+        $pdf->titulo('EXCERNAT - INFORME DE VENTAS POR VENDEDOR');
+        $pdf->texto('Excelentes Cereales Naturales | Documento de control interno');
         $pdf->texto('Emitido por: '.$request->user()->name);
         $pdf->texto('Generado: '.now()->format('d/m/Y H:i'));
-        $pdf->texto('Periodo: '.($request->query('desde','Inicio')).' - '.($request->query('hasta','Hoy')));
-        $pdf->texto('Evento: '.($request->query('id_evento')?:'Todos').' | Stand: '.($request->query('id_ubicacion')?:'Todos'));
+        $pdf->texto('Periodo: '.($request->query('desde') ?: 'Inicio').' - '.($request->query('hasta') ?: 'Hoy'));
+        $pdf->texto('Evento ID: '.($request->query('id_evento') ?: 'Todos').' | Ubicacion ID: '.($request->query('id_ubicacion') ?: 'Autorizadas'));
         $pdf->separador();
-        $pdf->texto('TOTAL NETO Bs '.$datos['totales']['neto'].' | COMISION Bs '.$datos['totales']['comision'],11,true);
+        $t=$datos['totales'];
+        $pdf->texto('Ventas: '.$t['ventas'].' | Unidades: '.$t['unidades'].' | Neto: Bs '.$t['neto'],11,true);
+        $pdf->texto('Subtotal: Bs '.$t['bruto'].' | Descuentos: Bs '.$t['descuento']);
+        $pdf->texto('Total cobrado: Bs '.$t['cobrado'].' (no equivale a ventas netas)');
+        if (!$operativo) $pdf->texto('Comision estimada: Bs '.($t['comision'] ?? '0.00'));
+        $pdf->separador();
+        $resumen=[];
+        foreach ($datos['vendedores'] as $v) {
+            $fila=[$v['vendedor'],(string)$v['ventas'],(string)$v['unidades'],'Bs '.$v['bruto'],'Bs '.$v['descuento'],'Bs '.$v['neto']];
+            if (!$operativo) $fila[]='Bs '.$v['comision'];
+            $resumen[]=$fila;
+        }
+        $headers=['Vendedor','Ventas','Unid.','Bruto','Dscto.','Neto'];
+        $anchos=[154,45,45,86,86,93];
+        if (!$operativo) { $headers[]='Comision';$anchos=[124,42,42,78,78,77,68]; }
+        $pdf->tabla($headers,$resumen,$anchos);
         foreach ($datos['vendedores'] as $v) {
             $pdf->separador();
-            $pdf->texto($v['vendedor'].' | Asignacion #'.$v['id_asignacion_vendedor'],11,true);
-            $pdf->texto('Ventas: '.$v['ventas'].' | Unidades: '.$v['unidades'].' | Bruto Bs '.$v['bruto']);
-            $pdf->texto('Descuento Bs '.$v['descuento'].' | Neto Bs '.$v['neto'].' | Comision Bs '.$v['comision']);
-            foreach ($v['detalle'] as $linea) {
-                $pdf->textoPartido($linea['fecha'].' | '.$linea['evento'].' / '.$linea['stand'].' | '.$linea['producto'].' '.$linea['presentacion']);
-                $pdf->texto('  '.$linea['cantidad'].' x Bs '.$linea['precio_unitario'].' | Neto Bs '.$linea['neto'].' | Comision Bs '.$linea['comision']);
+            $pdf->textoPartido('VENDEDOR: '.$v['vendedor'].' | ASIGNACION #'.$v['id_asignacion_vendedor']);
+            if (!$operativo) $pdf->texto('Comision estimada: Bs '.$v['comision'].' | Fijo referencial: Bs '.$v['monto_fijo_referencial']);
+            $filas=[];
+            foreach ($v['detalle'] as $l) {
+                $filas[]=[
+                    $l['fecha'], $l['stand'], $l['producto'].' / '.$l['presentacion'],
+                    (string)$l['cantidad'], 'Bs '.$l['precio_unitario'],
+                    'Bs '.$l['descuento'], 'Bs '.$l['neto'],
+                ];
             }
+            $pdf->tabla(['Fecha','Stand','Producto / presentacion','Cant.','Precio','Dscto.','Neto'],
+                $filas,[61,82,162,36,59,53,56]);
         }
-        foreach ($datos['advertencias'] as $aviso) { $pdf->separador(); $pdf->textoPartido('NOTA: '.$aviso); }
+        foreach ($datos['advertencias'] as $aviso) { $pdf->separador();$pdf->textoPartido('NOTA: '.$aviso); }
         return response($pdf->generar(),200,[
             'Content-Type'=>'application/pdf',
-            'Content-Disposition'=>'attachment; filename="EXCERNAT_vendedores.pdf"',
+            'Content-Disposition'=>'attachment; filename="EXCERNAT_informe_vendedores.pdf"',
             'Cache-Control'=>'private, no-store',
         ]);
     }

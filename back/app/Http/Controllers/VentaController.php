@@ -70,6 +70,61 @@ class VentaController extends Controller {
         }
         return response()->json($venta);
     }
+    /** Comprobante interno histórico; jamás factura fiscal. */
+    public function comprobantePdf(Request $request, int $id)
+    {
+        $venta=Venta::with([
+            'ubicacion.evento','usuario','asignacionVendedor.personal.persona',
+            'detalles.lote.presentacion.producto','cobros'
+        ])->findOrFail($id);
+        $this->autorizarConsulta($request, (int)$venta->id_ubicacion);
+        $pdf=new \App\Support\ReportePdfSimple();
+        $pdf->titulo('EXCERNAT - COMPROBANTE INTERNO DE VENTA');
+        $pdf->texto('Excelentes Cereales Naturales | No valido como factura fiscal');
+        $pdf->texto('Comprobante #'.$venta->id_venta.' | Estado: '.$venta->estado);
+        $pdf->texto('Fecha: '.($venta->fecha_venta?->format('d/m/Y H:i') ?? '-'));
+        $pdf->textoPartido('Evento: '.($venta->ubicacion?->evento?->nombre??'Sin evento').' | Ubicacion: '.($venta->ubicacion?->nombre??'-'));
+        $vendedor=$venta->asignacionVendedor?->personal?->persona;
+        $nombre=trim(($vendedor?->nombres_razon_social??'').' '.($vendedor?->apellidos??''));
+        $pdf->textoPartido('Registrado por: '.($venta->usuario?->name??'-'));
+        $pdf->textoPartido('Vendedor: '.($nombre?:'Sin vendedor asociado'));
+        $pdf->separador();
+        $filas=[];
+        foreach ($venta->detalles as $d) {
+            $pres=$d->lote?->presentacion;
+            $filas[]=[
+                $pres?->producto?->nombre??'Producto no disponible',
+                ($pres?->nombre_presentacion??''). ' | '.($d->lote?->codigo_lote??''),
+                (string)$d->cantidad,
+                number_format((float)$d->precio_unitario,2,'.',''),
+                number_format((float)$d->subtotal,2,'.','')
+            ];
+        }
+        $pdf->tabla(['Producto','Presentacion / lote','Cant.','Precio Bs','Subtotal Bs'],
+            $filas,[136,170,40,80,83]);
+        $bruto=(float)($venta->subtotal_bruto ?? $venta->detalles->sum('subtotal'));
+        $descuento=(float)($venta->descuento_total??($bruto-(float)$venta->total));
+        $pdf->texto('Subtotal bruto: Bs '.number_format($bruto,2,'.',''));
+        $pdf->texto('Descuento: Bs '.number_format($descuento,2,'.',''));
+        $pdf->texto('TOTAL NETO: Bs '.number_format((float)$venta->total,2,'.',''),12,true);
+        if ($venta->cobros->count()) {
+            $cobros=$venta->cobros->groupBy('metodo_pago');
+            foreach ($cobros as $metodo=>$registros) {
+                $pdf->texto('Cobrado por '.$metodo.': Bs '.number_format($registros->sum('monto'),2,'.',''));
+            }
+        } else {
+            $pdf->texto('Sin cobro registrado; la confirmacion no acredita un pago.');
+        }
+        if ($venta->estado==='ANULADA') $pdf->textoPartido('VENTA ANULADA. Motivo: '.($venta->motivo_anulacion??'No indicado'));
+        $pdf->separador();
+        $pdf->texto('Documento interno de control - No valido como factura fiscal.');
+        return response($pdf->generar(),200,[
+            'Content-Type'=>'application/pdf',
+            'Content-Disposition'=>'attachment; filename="EXCERNAT_comprobante_'.$venta->id_venta.'.pdf"',
+            'Cache-Control'=>'private, no-store',
+        ]);
+    }
+
     public function anular(Request $request, int $id) {
         if (!$request->user()->hasRole('ADMIN')) abort(403,'No tiene permiso para anular ventas.');
         $data=$request->validate(['motivo_anulacion'=>'required|string|min:10|max:1000']);

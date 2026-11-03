@@ -77,6 +77,7 @@
                       {{ eventoAbierto === evento.id_evento ? '▴ Ocultar' : '▾ Stands' }}
                     </button>
                     <button v-if="puedeAdministrar" class="btn btn-editar" @click="verPendientes(evento)">Pendientes</button>
+                    <button v-if="puedeAdministrar" class="btn btn-editar" @click="$router.push(`/reportes/vendedores?id_evento=${evento.id_evento}`)">Ventas por vendedor</button>
                     <button v-if="puedeAdministrar && ['EN_CURSO', 'PENDIENTE DE FINALIZAR'].includes(estadoVisible(evento))" class="btn btn-editar" @click="finalizarEvento(evento)">Finalizar</button>
                     <button v-if="puedeAdministrar && evento.estado_operativo === 'FINALIZADO'" class="btn btn-editar" @click="cerrarEvento(evento)">Cerrar</button>
                     <button v-if="puedeAdministrar" class="btn btn-editar" @click="$router.push(`/eventos/editar/${evento.id_evento}`)">Editar</button>

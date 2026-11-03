@@ -33,6 +33,22 @@ final class ReportePdfSimple
         $this->y -= ($size >= 15 ? 25 : 15);
     }
 
+    /** Divide textos sin truncar palabras, sin depender de extensiones opcionales. */
+    public function textoPartido(string $texto): void
+    {
+        $palabras = preg_split('/\s+/u', trim($texto)) ?: [];
+        $linea = '';
+        foreach ($palabras as $palabra) {
+            if ($linea !== '' && strlen($linea.' '.$palabra) > 85) {
+                $this->texto($linea);
+                $linea = $palabra;
+            } else {
+                $linea = $linea === '' ? $palabra : $linea.' '.$palabra;
+            }
+        }
+        if ($linea !== '') $this->texto($linea);
+    }
+
     private function paginaSiguiente(): void
     {
         $this->paginas[] = implode("\n", $this->lineas);

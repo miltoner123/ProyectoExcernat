@@ -36,6 +36,7 @@ const routes = [
 
   { path: "/cajas-punto-venta", component: () => import("./components/ventas/CajasPuntoVentaView.vue") },
   { path: "/cobros-ventas", component: () => import("./components/ventas/CobrosVentasView.vue") },
+  { path: "/reportes/vendedores", component: () => import("./components/reportes/ReporteVendedoresView.vue") },
   { path: "/reportes/contabilidad", component: () => import("./components/reportes/ReporteContableView.vue") },
   { path: "/ventas-stand", component: () => import("./components/ventas/VentasStandView.vue") },
   { path: "/pedidos", component: () => import("./components/pedidos/PedidosView.vue") },
@@ -95,6 +96,7 @@ router.beforeEach(async (to) => {
   if (to.path === '/auditoria-seguridad' && !sesion.usuario.roles?.some(r => r.name === 'ADMIN')) return '/';
   // Seguridad de navegacion: los permisos reales siguen siendo exigidos por Laravel.
   const reglas = [
+    [/^\/reportes\/vendedores(?:\/|$)/, 'contabilidad.ver'],
     [/^\/auditoria-seguridad(?:\/|$)/, 'usuarios.ver'],
     [/^\/usuarios(?:\/|$)/, 'usuarios.ver'],
     [/^\/productos(?:\/|$)/, 'productos.ver'],
@@ -119,7 +121,7 @@ router.beforeEach(async (to) => {
   const admin = sesion.usuario.roles?.some(r => r.name === 'ADMIN');
   const permisos = sesion.usuario.permisos || [];
   // Gerencia Comercial puede crear y editar SUCURSALES o STANDS; el backend limita tipos.
-  const standComercial = (to.path.startsWith('/ubicaciones') || to.path.startsWith('/asignaciones')) && permisos.includes('eventos.gestionar');
+  const standComercial = (to.path.startsWith('/ubicaciones') || to.path.startsWith('/asignaciones') || to.path.startsWith('/reportes/vendedores')) && permisos.includes('eventos.gestionar');
   // Permisos permanentes primero; solo las rutas operativas admiten asignacion temporal.
   // La API restringe el evento/stand y comprueba la asignacion vigente en cada peticion.
   let temporal = false;

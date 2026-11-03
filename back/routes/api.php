@@ -114,6 +114,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cajas-punto-venta/{id}/cerrar', [\App\Http\Controllers\CajaPuntoVentaController::class, 'cerrar'])->middleware('\App\Http\Middleware\PermisoOEncargo:cobros.registrar');
     Route::get('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'index'])->middleware('permission:cobros.ver');
     Route::post('/cobros-ventas', [\App\Http\Controllers\CobroVentaController::class, 'store'])->middleware('permission:cobros.registrar');
+    Route::get('/reportes/vendedores', [\App\Http\Controllers\ReporteVendedoresController::class, 'index'])->middleware('permission:contabilidad.ver|eventos.gestionar');
+    Route::get('/reportes/vendedores/pdf', [\App\Http\Controllers\ReporteVendedoresController::class, 'pdf'])->middleware('permission:contabilidad.ver|eventos.gestionar');
     Route::get('/reportes/contabilidad/resumen', [\App\Http\Controllers\ReporteContableController::class, 'resumen'])->middleware('permission:contabilidad.ver');
     Route::get('/reportes/contabilidad/pdf', [\App\Http\Controllers\ReporteContableController::class, 'pdf'])->middleware('permission:contabilidad.ver');
     Route::get('/ventas-stand/vendedores', [\App\Http\Controllers\VentaController::class, 'vendedores'])->middleware('\App\Http\Middleware\PermisoOEncargo:ventas.registrar');

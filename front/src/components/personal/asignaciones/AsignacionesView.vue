@@ -463,7 +463,7 @@ export default {
 }
 
 .encabezado button {
-    background: #2563eb;
+    background: #f47b20;
     color: white;
     border: none;
     padding: 11px 18px;
@@ -494,9 +494,12 @@ export default {
     background: white;
     border-radius: 8px;
     overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
 }
 
 table {
+    min-width: 1080px;
     width: 100%;
     border-collapse: collapse;
 }
@@ -507,6 +510,8 @@ td {
     border-bottom: 1px solid #e5e7eb;
     text-align: left;
     font-size: 14px;
+    overflow-wrap: normal;
+    word-break: normal;
 }
 
 th {
@@ -536,6 +541,7 @@ th {
 .acciones {
     display: flex;
     gap: 5px;
+    flex-wrap: nowrap;
 }
 
 .acciones button {
@@ -543,7 +549,7 @@ th {
     padding: 7px 10px;
     border-radius: 5px;
     cursor: pointer;
-    background: #2563eb;
+    background: #14533c;
     color: white;
 }
 
@@ -568,5 +574,13 @@ th {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+@media (max-width: 720px) {
+    .encabezado { align-items: flex-start; flex-direction: column; gap: 12px; }
+    .filtros { flex-direction: column; }
+    .filtros input, .filtros select { min-width: 0; width: 100%; }
+    .paginacion { flex-wrap: wrap; gap: 12px; }
+    .tabla-contenedor { outline-offset: 2px; }
+    th, td { font-size: 12px; padding: 9px 10px; }
 }
 </style>

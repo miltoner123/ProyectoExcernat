@@ -10,12 +10,20 @@ import { useRouter } from 'vue-router';
 import api from './services/api';
 import { sesion, establecerUsuario } from './services/sesion';
 const router = useRouter();
+let versionContexto = 0;
 const saliendo = ref(false);
 const contexto = ref({ asignaciones: [], eventos_ids: [], ubicaciones_ids: [] });
-watch(() => sesion.usuario?.id, async (id) => {
+// Refrescar el contexto también después de crear/editar/finalizar asignaciones.
+// La API es la fuente de verdad; nunca se concede acceso desde el menú.
+watch([() => sesion.usuario?.id, () => router.currentRoute.value.fullPath], async () => {
+  const version = ++versionContexto;
+  const id = sesion.usuario?.id;
   contexto.value = { asignaciones: [], eventos_ids: [], ubicaciones_ids: [] };
   if (!id) return;
-  try { const { data } = await api.get('/api/mi-contexto-eventos'); if (sesion.usuario?.id === id) contexto.value = data; } catch (_) { /* Sin accesos temporales */ }
+  try {
+    const { data } = await api.get('/api/mi-contexto-eventos');
+    if (version === versionContexto && sesion.usuario?.id === id) contexto.value = data;
+  } catch (_) { /* La API no autorizó contexto temporal */ }
 }, { immediate: true });
 const encargadoTemporal = () => (contexto.value.asignaciones || []).length > 0;
 

@@ -7,11 +7,8 @@ use Illuminate\Validation\ValidationException;
 class CobroVentaController extends Controller {
     private function verificarAcceso(Request $request, Venta $venta): void {
         if ($request->user()->hasRole('ADMIN')) return;
-        $personal=Personal::where('id_persona',$request->user()->id_persona)->where('estado',true)->pluck('id_personal');
-        $vigente=AsignacionPersonal::whereIn('id_personal',$personal)->where('id_ubicacion',$venta->id_ubicacion)
-            ->where('estado',true)->whereDate('fecha_inicio','<=',now()->toDateString())
-            ->where(fn($q)=>$q->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',now()->toDateString()))->exists();
-        if (!$vigente) abort(403,'No tiene asignación vigente al stand de esta venta.');
+        if (!app(\App\Services\AccesoTemporalEvento::class)->ubicaciones($request->user())->contains((int)$venta->id_ubicacion))
+            abort(403,'No tiene asignacion operativa activa en el punto de venta.');
     }
     private function resumen(Venta $venta): array {
         $cobrado=(int) round((float)CobroVenta::where('id_venta',$venta->id_venta)->sum('monto')*100);

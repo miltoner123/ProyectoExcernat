@@ -12,29 +12,22 @@ class VentaController extends Controller {
         }
         \App\Http\Controllers\CajaPuntoVentaController::validarEvento($ubicacion);
         if ($request->user()->hasRole('ADMIN')) return;
-        $persona=$request->user()->id_persona;
-        $personal=Personal::where('id_persona',$persona)->where('estado',true)->pluck('id_personal');
-        $asignado=AsignacionPersonal::whereIn('id_personal',$personal)->where('id_ubicacion',$id)
-            ->where('estado',true)->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['ENCARGADO'])->whereDate('fecha_inicio','<=',now()->toDateString())
-            ->where(function($q){$q->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',now()->toDateString());})->exists();
+        $asignado = app(\App\Services\AccesoTemporalEvento::class)
+            ->ubicaciones($request->user())->contains($id);
         if (!$asignado) abort(403,'No tiene asignación vigente a este punto de venta.');
     }
     private function autorizarConsulta(Request $request, int $id): void {
         if ($request->user()->hasRole('ADMIN') || $request->user()->can('contabilidad.ver') || $request->user()->can('ventas.supervisar')) return;
-        $personal=Personal::where('id_persona',$request->user()->id_persona)->where('estado',true)->pluck('id_personal');
-        if (!AsignacionPersonal::whereIn('id_personal',$personal)->where('id_ubicacion',$id)
-            ->where('estado',true)->whereDate('fecha_inicio','<=',now()->toDateString())
-            ->where(fn($q)=>$q->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',now()->toDateString()))
-            ->exists()) abort(403,'No tiene asignación vigente a esta ubicación.');
+        if (!app(\App\Services\AccesoTemporalEvento::class)
+            ->ubicaciones($request->user())->contains($id)) {
+            abort(403, 'No tiene asignación vigente a esta ubicación.');
+        }
     }
     public function stands(Request $request) {
         $query=Ubicacion::with('evento')->whereIn('tipo',['STAND','SUCURSAL','ALMACEN','ALMACEN_CENTRAL','CENTRAL'])->where('estado',true);
         if (!$request->user()->hasRole('ADMIN') && !$request->user()->can('contabilidad.ver') && !$request->user()->can('ventas.supervisar')) {
-            $ids=Personal::where('id_persona',$request->user()->id_persona)->where('estado',true)->pluck('id_personal');
-            $ubicaciones=AsignacionPersonal::whereIn('id_personal',$ids)->where('estado',true)->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['ENCARGADO'])
-                ->whereDate('fecha_inicio','<=',now()->toDateString())
-                ->where(fn($q)=>$q->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',now()->toDateString()))
-                ->pluck('id_ubicacion');
+            $ubicaciones = app(\App\Services\AccesoTemporalEvento::class)
+                ->ubicaciones($request->user());
             $query->whereIn('id_ubicacion',$ubicaciones);
         }
         return response()->json($query->orderBy('nombre')->get());
@@ -64,9 +57,8 @@ class VentaController extends Controller {
         if($request->filled('estado')) $q->where('estado',$request->query('estado'));
         if($request->filled('id_ubicacion')) { $id=(int)$request->query('id_ubicacion');$this->autorizarConsulta($request,$id);$q->where('id_ubicacion',$id); }
         elseif(!$request->user()->hasRole('ADMIN') && !$request->user()->can('contabilidad.ver') && !$request->user()->can('ventas.supervisar')) {
-            $ids=Personal::where('id_persona',$request->user()->id_persona)->where('estado',true)->pluck('id_personal');
-            $loc=AsignacionPersonal::whereIn('id_personal',$ids)->where('estado',true)->whereDate('fecha_inicio','<=',now()->toDateString())
-              ->where(fn($w)=>$w->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',now()->toDateString()))->pluck('id_ubicacion');
+            $loc = app(\App\Services\AccesoTemporalEvento::class)
+                ->ubicaciones($request->user());
             $q->whereIn('id_ubicacion',$loc);
         }
         return response()->json($q->paginate(15));
@@ -101,7 +93,8 @@ class VentaController extends Controller {
         $data=$request->validate([
             'id_ubicacion'=>'required|integer|exists:ubicaciones,id_ubicacion',
             'observacion'=>'nullable|string|max:1000',
-            'descuento_total'=>'nullable|numeric|min:0|max:9999999.99',
+            'descuento_total'=>'nullable|numeric|min:0|max:9999999.99', // Compatibilidad con clientes anteriores
+            'monto_cancelado'=>'nullable|numeric|gt:0|max:9999999.99',
             'id_asignacion_vendedor'=>'required|integer|exists:asignaciones_personal,id_asignacion',
             'detalles'=>'required|array|min:1|max:30',
             'detalles.*.id_lote'=>'required|integer|distinct|exists:lotes,id_lote',
@@ -119,7 +112,7 @@ class VentaController extends Controller {
             ->where(fn($q) => $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', today()))
             ->whereHas('personal', fn($q) => $q->where('estado', true))->first();
         if (!$asignacion) throw ValidationException::withMessages(['id_asignacion_vendedor'=>'Seleccione un vendedor vigente del punto de venta.']);
-        $venta=DB::transaction(function()use($data,$id,$request){
+        $venta=DB::transaction(function()use($data,$id,$request,$asignacion){
             // La caja se bloquea antes del inventario para serializar venta y cierre.
             $caja=null;
             if (!empty($data['pago'])) {
@@ -149,11 +142,27 @@ class VentaController extends Controller {
                 $lineas[]=['inventario'=>$inventario,'id_lote'=>$item['id_lote'],'cantidad'=>$cantidad,
                     'precio'=>number_format($centavos/100,2,'.',''),'subtotal'=>number_format($subtotal/100,2,'.','')];
             }
-            $descuentoCentavos=(int) round((float)($data['descuento_total']??0)*100);
-            if ($descuentoCentavos >= $totalCentavos) {
-                throw ValidationException::withMessages(['descuento_total'=>'El descuento debe ser menor al subtotal de la venta.']);
+            // El servidor calcula importes con precios vigentes de las presentaciones;
+            // el importe comunicado por el cliente es el precio FINAL acordado,
+            // no dinero entregado para calcular cambio ni un abono parcial.
+            if (array_key_exists('monto_cancelado', $data) && $data['monto_cancelado'] !== null) {
+                $totalFinalCentavos = (int) round((float) $data['monto_cancelado'] * 100);
+                if ($totalFinalCentavos <= 0 || $totalFinalCentavos > $totalCentavos) {
+                    throw ValidationException::withMessages([
+                        'monto_cancelado' => 'El total acordado debe ser mayor a cero y no superar el subtotal.'
+                    ]);
+                }
+                $descuentoCentavos = $totalCentavos - $totalFinalCentavos;
+            } else {
+                // Mantener compatibilidad con solicitudes anteriores.
+                $descuentoCentavos = (int) round((float) ($data['descuento_total'] ?? 0) * 100);
+                if ($descuentoCentavos >= $totalCentavos) {
+                    throw ValidationException::withMessages([
+                        'descuento_total' => 'El descuento debe ser menor al subtotal de la venta.'
+                    ]);
+                }
+                $totalFinalCentavos = $totalCentavos - $descuentoCentavos;
             }
-            $totalFinalCentavos=$totalCentavos-$descuentoCentavos;
             $venta=Venta::create(['id_ubicacion'=>$id,'id_usuario'=>$request->user()->id,'id_asignacion_vendedor'=>$asignacion->id_asignacion,
                 'fecha_venta'=>now(),'estado'=>'CONFIRMADA','subtotal_bruto'=>number_format($totalCentavos/100,2,'.',''),
                 'descuento_total'=>number_format($descuentoCentavos/100,2,'.',''),

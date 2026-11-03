@@ -69,7 +69,7 @@
                 <td>{{ formatearFecha(evento.fecha_inicio) }}</td>
                 <td>{{ formatearFecha(evento.fecha_fin) }}</td>
                 <td>{{ nombreResponsable(evento) }}</td>
-                <td><span :class="evento.estado ? 'estado-activo' : 'estado-inactivo'">{{ estadoVisible(evento) }}</span></td>
+                <td><span :class="evento.estado ? 'estado-activo' : 'estado-inactivo'">{{ estadoVisible(evento) }}</span><small v-if="estadoVisible(evento) === 'PENDIENTE DE FINALIZAR'" style="display:block;color:#a04b13;font-weight:600">Revisar devoluciones y finalizar manualmente</small></td>
                 <td>
                   <div class="acciones">
                     <button class="btn btn-stands" :aria-expanded="eventoAbierto === evento.id_evento"
@@ -77,7 +77,7 @@
                       {{ eventoAbierto === evento.id_evento ? '▴ Ocultar' : '▾ Stands' }}
                     </button>
                     <button v-if="puedeAdministrar" class="btn btn-editar" @click="verPendientes(evento)">Pendientes</button>
-                    <button v-if="puedeAdministrar && estadoVisible(evento) === 'EN_CURSO'" class="btn btn-editar" @click="finalizarEvento(evento)">Finalizar</button>
+                    <button v-if="puedeAdministrar && ['EN_CURSO', 'PENDIENTE DE FINALIZAR'].includes(estadoVisible(evento))" class="btn btn-editar" @click="finalizarEvento(evento)">Finalizar</button>
                     <button v-if="puedeAdministrar && evento.estado_operativo === 'FINALIZADO'" class="btn btn-editar" @click="cerrarEvento(evento)">Cerrar</button>
                     <button v-if="puedeAdministrar" class="btn btn-editar" @click="$router.push(`/eventos/editar/${evento.id_evento}`)">Editar</button>
                     <button v-if="puedeAdministrar" class="btn btn-eliminar" :disabled="eliminando === evento.id_evento" @click="eliminarEvento(evento)">Eliminar</button>
@@ -165,9 +165,17 @@ export default {
       } catch(e) { this.error=e.response?.data?.message || 'No se pudo consultar pendientes.'; }
     },
     async finalizarEvento(evento) {
-      if (!window.confirm(`¿Finalizar ${evento.nombre}? Se bloquearán las ventas y nuevas aperturas de caja.`)) return;
-      try { await api.post(`/api/eventos/${evento.id_evento}/finalizar`); await this.eventosGet(); }
-      catch(e) { this.error=e.response?.data?.message || 'No se pudo finalizar.'; }
+      try {
+        const { data } = await api.get(`/api/eventos/${evento.id_evento}/pendientes`);
+        const p = data.pendientes;
+        if (Object.values(p).some(valor => Number(valor) > 0)) {
+          window.alert(`No se puede finalizar ${evento.nombre}. Debes devolver existencias y conciliar las operaciones:\nStock: ${p.stock_sobrante}\nTransferencias: ${p.transferencias_pendientes}\nDiferencias: ${p.recepciones_observadas}\nCajas abiertas: ${p.cajas_abiertas}`);
+          return;
+        }
+        if (!window.confirm(`¿Confirmas la finalización MANUAL de ${evento.nombre}?`)) return;
+        await api.post(`/api/eventos/${evento.id_evento}/finalizar`);
+        await this.eventosGet();
+      } catch(e) { this.error=Object.values(e.response?.data?.errors || {}).flat().join(' ') || e.response?.data?.message || 'No se pudo finalizar.'; }
     },
     async cerrarEvento(evento) {
       if (!window.confirm(`¿Cerrar definitivamente ${evento.nombre}? Deben estar conciliados todos los pendientes.`)) return;

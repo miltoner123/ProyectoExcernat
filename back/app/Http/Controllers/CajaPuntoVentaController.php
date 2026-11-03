@@ -8,19 +8,18 @@ class CajaPuntoVentaController extends Controller {
  public static function validarEvento(Ubicacion $u): void {
   $u->loadMissing('evento');
   if (!$u->estado) abort(422,'Punto de venta inactivo.');
-  if ($u->id_evento && (!$u->evento || !$u->evento->estado || in_array($u->evento->estado_operativo, ['FINALIZADO','CERRADO'], true) || ($u->evento->fecha_fin && $u->evento->fecha_fin->lt(today())))) abort(422,'Evento finalizado: operaciones comerciales bloqueadas.');
+  if ($u->id_evento && (!$u->evento || !$u->evento->estado || in_array($u->evento->estado_operativo, ['FINALIZADO','CERRADO'], true))) abort(422,'Evento finalizado: operaciones comerciales bloqueadas.');
  }
  public static function autorizar(Request $r, Ubicacion $u): void {
   self::validarEvento($u);
   if($r->user()->hasRole('ADMIN')) return;
-  $ids=Personal::where('id_persona',$r->user()->id_persona)->where('estado',true)->pluck('id_personal');
-  if(!AsignacionPersonal::whereIn('id_personal',$ids)->where('id_ubicacion',$u->id_ubicacion)->where('estado',true)->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['ENCARGADO'])->whereDate('fecha_inicio','<=',today())->where(fn($q)=>$q->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',today()))->exists()) abort(403,'No tiene asignación vigente a este punto de venta.');
+  if(!app(\App\Services\AccesoTemporalEvento::class)->ubicaciones($r->user())->contains($u->id_ubicacion))
+   abort(403,'No tiene asignacion operativa activa a este punto de venta.');
  }
  public function ubicaciones(Request $r){
   $q=Ubicacion::with('evento')->where('estado',true);
   if(!$r->user()->hasRole('ADMIN') && !$r->user()->can('contabilidad.ver')){
-   $ids=Personal::where('id_persona',$r->user()->id_persona)->where('estado',true)->pluck('id_personal');
-   $q->whereIn('id_ubicacion',AsignacionPersonal::whereIn('id_personal',$ids)->where('estado',true)->whereRaw('UPPER(TRIM(funcion_asignada)) = ?', ['ENCARGADO'])->whereDate('fecha_inicio','<=',today())->where(fn($w)=>$w->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',today()))->pluck('id_ubicacion'));
+   $q->whereIn('id_ubicacion', app(\App\Services\AccesoTemporalEvento::class)->ubicaciones($r->user()));
   }
   return $q->orderBy('nombre')->get();
  }

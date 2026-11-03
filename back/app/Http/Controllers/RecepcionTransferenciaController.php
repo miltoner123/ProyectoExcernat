@@ -27,14 +27,8 @@ class RecepcionTransferenciaController extends Controller
         if ($usuario->hasRole('ADMIN')) return true;
         if ($usuario->can('recepciones.confirmar') && $this->esAlmacenCentral($mov->id_ubicacion_destino)) return true;
         if (!$usuario->id_persona || !$mov->id_ubicacion_destino) return false;
-        $personalIds = Personal::where('id_persona', $usuario->id_persona)->where('estado', true)->pluck('id_personal');
-        return AsignacionPersonal::whereIn('id_personal', $personalIds)
-            ->where('id_ubicacion', $mov->id_ubicacion_destino)
-            ->where('estado', true)
-            ->whereDate('fecha_inicio', '<=', now()->toDateString())
-            ->where(function ($q) { $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', now()->toDateString()); })
-            ->whereRaw("UPPER(funcion_asignada) LIKE ?", ['%ENCARGAD%'])
-            ->exists();
+        return app(\App\Services\AccesoTemporalEvento::class)->ubicaciones($usuario)
+            ->contains((int)$mov->id_ubicacion_destino);
     }
 
     public function index(Request $request)
@@ -42,11 +36,7 @@ class RecepcionTransferenciaController extends Controller
         $query = MovimientoInventario::with(['origen', 'destino.evento', 'detalles.lote.presentacion.producto'])
             ->whereIn('tipo', ['TRANSFERENCIA','DEVOLUCION'])->where('estado_recepcion', 'PENDIENTE');
         if (!$request->user()->hasRole('ADMIN')) {
-            $ids = Personal::where('id_persona', $request->user()->id_persona)->where('estado', true)->pluck('id_personal');
-            $ubicaciones = AsignacionPersonal::whereIn('id_personal', $ids)->where('estado', true)
-                ->whereDate('fecha_inicio', '<=', now()->toDateString())
-                ->where(function ($q) { $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', now()->toDateString()); })
-                ->whereRaw("UPPER(funcion_asignada) LIKE ?", ['%ENCARGAD%'])->pluck('id_ubicacion');
+            $ubicaciones = app(\App\Services\AccesoTemporalEvento::class)->ubicaciones($request->user());
             if ($request->user()->can('recepciones.confirmar')) {
                 $central = \App\Models\Ubicacion::where('tipo', 'ALMACEN')->where('estado', true)
                     ->whereRaw("UPPER(TRIM(nombre)) IN ('ALMACÉN CENTRAL', 'ALMACEN CENTRAL')")
@@ -128,11 +118,7 @@ class RecepcionTransferenciaController extends Controller
             ->whereIn('tipo',['TRANSFERENCIA','DEVOLUCION'])
             ->whereIn('estado_recepcion',['RECIBIDA','OBSERVADA']);
         if (!$usuario->hasRole('ADMIN')) {
-            $ids=Personal::where('id_persona',$usuario->id_persona)->where('estado',true)->pluck('id_personal');
-            $destinos=AsignacionPersonal::whereIn('id_personal',$ids)->where('estado',true)
-                ->whereDate('fecha_inicio','<=',today())
-                ->where(fn($q)=>$q->whereNull('fecha_fin')->orWhereDate('fecha_fin','>=',today()))
-                ->whereRaw('UPPER(funcion_asignada) LIKE ?', ['%ENCARGAD%'])->pluck('id_ubicacion');
+            $destinos=app(\App\Services\AccesoTemporalEvento::class)->ubicaciones($usuario);
             $central=$usuario->can('recepciones.confirmar')
                 ? \App\Models\Ubicacion::where('tipo','ALMACEN')->where('estado',true)
                     ->whereRaw("UPPER(TRIM(nombre)) IN ('ALMACÉN CENTRAL','ALMACEN CENTRAL')")
@@ -150,11 +136,8 @@ class RecepcionTransferenciaController extends Controller
     {
         $pedido = \App\Models\Pedido::with(['ubicacionSolicitante','detalles.presentacion.producto'])->findOrFail($id);
         if (!$request->user()->hasRole('ADMIN')) {
-            $ids = Personal::where('id_persona', $request->user()->id_persona)->where('estado', true)->pluck('id_personal');
-            $autorizado = AsignacionPersonal::whereIn('id_personal', $ids)
-                ->where('id_ubicacion', $pedido->id_ubicacion_solicitante)->where('estado', true)
-                ->whereDate('fecha_inicio', '<=', now()->toDateString())
-                ->where(function ($q) { $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', now()->toDateString()); })->exists();
+            $autorizado=app(\App\Services\AccesoTemporalEvento::class)
+                ->ubicaciones($request->user())->contains((int)$pedido->id_ubicacion_solicitante);
             if (!$autorizado) abort(403);
         }
         $movimientos = MovimientoInventario::with(['detalles.lote','origen','destino','receptor'])

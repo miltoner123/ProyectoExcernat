@@ -11,7 +11,8 @@ class ContextoOperativoController extends Controller
     {
         $u = $request->user();
         return response()->json(['asignaciones' => $acceso->asignaciones($u),
-            'eventos_ids' => $acceso->eventos($u), 'ubicaciones_ids' => $acceso->ubicaciones($u)]);
+            'eventos_ids' => $acceso->eventos($u), 'ubicaciones_ids' => $acceso->ubicaciones($u),
+            'diagnostico' => $acceso->asignado($u) ? 'ENCARGO_VIGENTE_O_EVENTO_PENDIENTE_CIERRE' : 'SIN_ENCARGO_VIGENTE']);
     }
     public function standsEvento(Request $request, int $id, AccesoTemporalEvento $acceso)
     {

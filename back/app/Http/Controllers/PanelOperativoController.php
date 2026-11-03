@@ -22,23 +22,14 @@ class PanelOperativoController extends Controller
             ->orderBy('id_lote')->get());
     }
 
-    public function index(Request $request)
+    public function index(Request $request, AccesoTemporalEvento $acceso)
     {
         $usuario = $request->user();
         $admin = $usuario->hasRole('ADMIN');
-        $query = AsignacionPersonal::with(['personal.persona','ubicacion.evento'])
-            ->where('estado', true)
-            ->whereNotNull('id_ubicacion')
-            ->whereDate('fecha_inicio', '<=', now()->toDateString())
-            ->where(function ($q) {
-                $q->whereNull('fecha_fin')->orWhereDate('fecha_fin', '>=', now()->toDateString());
-            });
-        if (!$admin) {
-            $personalIds = Personal::where('id_persona', $usuario->id_persona)
-                ->where('estado', true)->pluck('id_personal');
-            $query->whereIn('id_personal', $personalIds);
-        }
-        $asignaciones = $query->orderBy('id_ubicacion')->get();
+        $asignaciones = $admin
+            ? AsignacionPersonal::with(['personal.persona', 'ubicacion.evento'])
+                ->where('estado', true)->whereNotNull('id_ubicacion')->get()
+            : $acceso->asignaciones($usuario)->filter(fn($a) => $a->id_ubicacion)->values();
         $ubicaciones = $asignaciones->pluck('id_ubicacion')->unique()->values();
         $pendientes = collect();
         if ($usuario->can('transferencias.recibir') || $asignaciones->contains(fn($a) => str_contains(mb_strtoupper((string)$a->funcion_asignada), 'ENCARGAD'))) {

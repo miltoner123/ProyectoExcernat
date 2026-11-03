@@ -7,6 +7,7 @@
       <div class="fila"><div><h2>{{ u.nombre }}</h2><p>{{ u.evento || u.tipo }} · {{ u.funciones.join(', ') }}</p></div><span v-if="u.pendientes" class="pendientes">{{ u.pendientes }} recepción(es) pendiente(s)</span></div>
       <div class="acciones">
         <RouterLink v-if="u.encargado && u.evento" to="/eventos">Ver evento y stands</RouterLink>
+        <button v-if="u.encargado && u.id_evento" :disabled="finalizando" @click="finalizarEvento(u)">Finalizar evento manualmente</button>
         <RouterLink v-if="u.encargado" to="/recepciones-transferencias">Recibir productos</RouterLink>
         <RouterLink v-if="u.encargado && permisos.vender" :to="'/ventas-stand?id_ubicacion=' + u.id">Registrar venta</RouterLink>
         <RouterLink v-if="u.encargado && permisos.ventas_ver" :to="'/ventas-stand?id_ubicacion=' + u.id">Historial de ventas</RouterLink>
@@ -31,14 +32,14 @@
 import api from '../../services/api';
 export default {
   name:'MiPanelOperativo',
-  data(){return {asignaciones:[],pendientes:{},permisos:{},cargando:false,error:'',inventarioAbierto:null,existencias:[],cantidades:{},observacion:'',cargandoStock:false,devolviendo:false}},
+  data(){return {asignaciones:[],pendientes:{},permisos:{},cargando:false,error:'',inventarioAbierto:null,existencias:[],cantidades:{},observacion:'',cargandoStock:false,devolviendo:false,finalizando:false}},
   computed:{
     ubicaciones(){
       const mapa=new Map();
       for(const a of this.asignaciones){
         const u=a.ubicacion;if(!u)continue;
         const id=Number(u.id_ubicacion);
-        if(!mapa.has(id))mapa.set(id,{id,nombre:u.nombre,tipo:u.tipo,evento:u.evento?.nombre,funciones:[],encargado:false,pendientes:Number(this.pendientes[id]||0)});
+        if(!mapa.has(id))mapa.set(id,{id,nombre:u.nombre,tipo:u.tipo,evento:u.evento?.nombre,id_evento:Number(u.id_evento||u.evento?.id_evento||0),funciones:[],encargado:false,pendientes:Number(this.pendientes[id]||0)});
         const item=mapa.get(id),funcion=String(a.funcion_asignada||'').toUpperCase();
         if(!item.funciones.includes(funcion))item.funciones.push(funcion);
         if(funcion.includes('ENCARGAD'))item.encargado=true;
@@ -48,6 +49,23 @@ export default {
   },
   mounted(){this.cargar()},
   methods:{
+    async finalizarEvento(u){
+      if(!u.id_evento)return;
+      this.error='';this.finalizando=true;
+      try{
+        const {data}=await api.get(`/api/eventos/${u.id_evento}/pendientes`);
+        const p=data.pendientes||{};
+        if(Object.values(p).some(v=>Number(v)>0)){
+          this.error=`Para finalizar ${u.evento} debes devolver y conciliar: stock ${p.stock_sobrante||0}, transferencias ${p.transferencias_pendientes||0}, diferencias ${p.recepciones_observadas||0}, cajas abiertas ${p.cajas_abiertas||0}.`;
+          return;
+        }
+        if(!window.confirm(`¿Finalizar manualmente ${u.evento}? Esta acción bloquea nuevas ventas y requiere que todos los stands estén conciliados.`))return;
+        await api.post(`/api/eventos/${u.id_evento}/finalizar`);
+        alert('Evento finalizado manualmente. El cierre administrativo corresponde al responsable comercial.');
+        await this.cargar();
+      }catch(e){this.error=Object.values(e.response?.data?.errors||{}).flat().join(' ')||e.response?.data?.message||'No se pudo finalizar el evento.'}
+      finally{this.finalizando=false}
+    },
     async cargarInventario(id){this.inventarioAbierto=id;this.cargandoStock=true;this.error='';this.cantidades={};try{const {data}=await api.get('/api/mi-inventario-operativo',{params:{id_ubicacion:id}});this.existencias=data}catch(e){this.error=e.response?.data?.message||'No se pudo consultar inventario';this.existencias=[]}finally{this.cargandoStock=false}},
     async devolver(id){const filas=this.existencias.filter(x=>Number(this.cantidades[x.id_lote])>0);if(!filas.length){this.error='Indique una cantidad a devolver.';return}if(!this.observacion.trim()||this.observacion.trim().length<5){this.error='Justifique la devolución (mínimo cinco caracteres).';return}if(filas.some(x=>!Number.isInteger(Number(this.cantidades[x.id_lote]))||this.cantidades[x.id_lote]>x.stock_actual)){this.error='Cantidad inválida o superior a las existencias.';return}if(!confirm('¿Confirmar devolución al Almacén Central? Quedará pendiente de recepción.'))return;this.devolviendo=true;this.error='';try{for(const fila of filas){await api.post('/api/mi-stand/devolucion',{id_ubicacion_origen:id,id_lote:fila.id_lote,cantidad:Number(this.cantidades[fila.id_lote]),observacion:this.observacion.trim()})}this.observacion='';await this.cargarInventario(id);alert('Devolución registrada en tránsito; el almacén debe confirmar la recepción.')}catch(e){this.error=e.response?.data?.message||'No se pudo registrar toda la devolución. Revise movimientos antes de repetir.';await this.cargarInventario(id)}finally{this.devolviendo=false}},
     async cargar(){this.cargando=true;this.error='';try{const {data}=await api.get('/api/mi-panel-operativo');this.asignaciones=data.asignaciones||[];this.pendientes=data.recepciones_pendientes||{};this.permisos=data.permisos||{}}catch(e){this.error=e.response?.data?.message||'No fue posible consultar tus asignaciones.'}finally{this.cargando=false}}}

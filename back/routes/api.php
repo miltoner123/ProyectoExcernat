@@ -76,8 +76,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // EVENTOS
     Route::get('/eventos', [\App\Http\Controllers\EventoController::class, 'index'])->middleware('\App\Http\Middleware\PermisoOEncargo:eventos.ver');
     Route::post('/eventos', [\App\Http\Controllers\EventoController::class, 'store'])->middleware('permission:eventos.gestionar');
-    Route::get('/eventos/{id}/pendientes', [\App\Http\Controllers\CierreEventoController::class, 'resumen'])->middleware('permission:eventos.ver');
-    Route::post('/eventos/{id}/finalizar', [\App\Http\Controllers\CierreEventoController::class, 'finalizar'])->middleware('permission:eventos.gestionar');
+    Route::get('/eventos/{id}/pendientes', [\App\Http\Controllers\CierreEventoController::class, 'resumen']);
+    Route::post('/eventos/{id}/finalizar', [\App\Http\Controllers\CierreEventoController::class, 'finalizar']);
     Route::post('/eventos/{id}/cerrar', [\App\Http\Controllers\CierreEventoController::class, 'cerrar'])->middleware('permission:eventos.gestionar');
     Route::get('/eventos/{id}', [\App\Http\Controllers\EventoController::class, 'show'])->middleware('\App\Http\Middleware\PermisoOEncargo:eventos.ver');
     Route::post('/eventos/{id}', [\App\Http\Controllers\EventoController::class, 'update'])->middleware('permission:eventos.gestionar');
